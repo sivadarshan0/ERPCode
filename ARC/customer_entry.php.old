@@ -1,0 +1,149 @@
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// ───── DB connection ─────
+$DB_HOST = "localhost";
+$DB_USER = "dbauser";
+$DB_PASS = "dbauser";
+$DB_NAME = "erpdb";
+
+$conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
+if ($conn->connect_errno) {
+    die("DB connection failed: " . $conn->connect_error);
+}
+
+$msg = '';
+$lastCode = null;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $PhoneNumber    = trim($_POST['PhoneNumber'] ?? '');
+    $Name           = trim($_POST['Name'] ?? '');
+    $Email          = trim($_POST['Email'] ?? '');
+    $Address        = trim($_POST['Address'] ?? '');
+    $City           = trim($_POST['City'] ?? '');
+    $District       = trim($_POST['District'] ?? '');
+    $FirstOrderDate = $_POST['FirstOrderDate'] ?? null;
+
+    // Check if phone number exists
+    $check = $conn->prepare("SELECT CustomerCode FROM customers WHERE PhoneNumber = ?");
+    $check->bind_param("s", $PhoneNumber);
+    $check->execute();
+    $result = $check->get_result();
+    $exists = $result->fetch_assoc();
+    $check->close();
+
+    if ($exists) {
+        // Update existing customer
+        $stmt = $conn->prepare(
+            "UPDATE customers SET
+             Name = ?, Email = ?, Address = ?, City = ?, District = ?, FirstOrderDate = ?
+             WHERE PhoneNumber = ?"
+        );
+        $stmt->bind_param("sssssss", $Name, $Email, $Address, $City, $District, $FirstOrderDate, $PhoneNumber);
+        if ($stmt->execute()) {
+            $msg = "✅ Customer details updated.";
+            $lastCode = $exists['CustomerCode'];
+        } else {
+            $msg = "❌ Update failed: " . $conn->error;
+        }
+    } else {
+        // Insert new customer
+        $stmt = $conn->prepare(
+            "INSERT INTO customers
+             (PhoneNumber, Name, Email, Address, City, District, FirstOrderDate)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        );
+        $stmt->bind_param("sssssss", $PhoneNumber, $Name, $Email, $Address, $City, $District, $FirstOrderDate);
+        if ($stmt->execute()) {
+            // Fetch generated CustomerCode
+            $sel = $conn->prepare("SELECT CustomerCode FROM customers WHERE PhoneNumber = ?");
+            $sel->bind_param("s", $PhoneNumber);
+            $sel->execute();
+            $res = $sel->get_result();
+            $lastCode = $res->fetch_assoc()['CustomerCode'] ?? '';
+            $msg = "✅ New customer added. Code: <b>$lastCode</b>";
+            $sel->close();
+        } else {
+            $msg = "❌ Insert failed: " . $conn->error;
+        }
+    }
+    $stmt->close();
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Customer Entry</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a href="index.php" class="back-link">← Back to Main Menu</a>
+<div class="container">
+  <h1>Customer Entry</h1>
+
+  <?php if ($msg): ?>
+    <p class="msg <?= str_starts_with($msg, '✅') ? 'ok' : 'err' ?>"><?= $msg ?></p>
+  <?php endif; ?>
+
+  <form method="POST" id="customerForm" autocomplete="off">
+    <label>Phone Number*</label>
+    <input type="text" name="PhoneNumber" required pattern="[0-9+]{7,15}" title="Valid phone number" autocomplete="off">
+
+    <label>Name*</label>
+    <input type="text" name="Name" required>
+
+    <label>Email</label>
+    <input type="email" name="Email">
+
+    <label>Address</label>
+    <textarea name="Address" rows="2"></textarea>
+
+    <label>City</label>
+    <input type="text" name="City">
+
+    <label>District</label>
+    <input type="text" name="District">
+
+    <label>First Order Date</label>
+    <input type="date" name="FirstOrderDate">
+
+    <input type="submit" value="Save Customer">
+  </form>
+
+  <?php if ($lastCode): ?>
+    <p class="msg ok">🆔 Customer Code: <strong><?= $lastCode ?></strong></p>
+  <?php endif; ?>
+</div>
+
+<script>
+async function fetchCustomer(phone) {
+  if (!phone || phone.length < 7) return;
+
+  try {
+    const res = await fetch(`get_customer.php?phone=${encodeURIComponent(phone)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data) return;
+    document.querySelector('input[name="Name"]').value = data.Name || '';
+    document.querySelector('input[name="Email"]').value = data.Email || '';
+    document.querySelector('textarea[name="Address"]').value = data.Address || '';
+    document.querySelector('input[name="City"]').value = data.City || '';
+    document.querySelector('input[name="District"]').value = data.District || '';
+    document.querySelector('input[name="FirstOrderDate"]').value = data.FirstOrderDate || '';
+  } catch (e) {
+    console.warn("Fetch error", e);
+  }
+}
+
+const phoneInput = document.querySelector('input[name="PhoneNumber"]');
+let debounce;
+phoneInput.addEventListener('input', () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(() => fetchCustomer(phoneInput.value), 500);
+});
+</script>
+</body>
+</html>

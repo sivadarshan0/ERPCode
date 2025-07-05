@@ -1,0 +1,82 @@
+#!/bin/bash
+# File: install_erpdb.sh
+# chmod +x install_erpdb.sh
+# Usage: sudo ./install_erpdb.sh
+# Make sure you have mysql client installed and root password
+
+DB_ROOT_USER="root"
+DB_ROOT_PASS="toor"
+DB_NAME="erpdb"
+DB_USER="dbauser"
+DB_PASS="dbauser"
+SQL_FILE="/tmp/erpdb_init.sql"
+
+# Create SQL file
+cat <<EOF > $SQL_FILE
+CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE $DB_NAME;
+
+CREATE TABLE IF NOT EXISTS category (
+  CategoryCode VARCHAR(10) NOT NULL PRIMARY KEY,
+  Category VARCHAR(100) NOT NULL UNIQUE,
+  Description TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sub_category (
+  SubCategoryCode VARCHAR(10) NOT NULL PRIMARY KEY,
+  SubCategory VARCHAR(100) NOT NULL UNIQUE,
+  Description TEXT,
+  CategoryCode VARCHAR(10) NOT NULL,
+  FOREIGN KEY (CategoryCode) REFERENCES category(CategoryCode) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS item (
+  ItemCode INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  Item VARCHAR(200) NOT NULL UNIQUE,
+  Description TEXT,
+  CategoryCode VARCHAR(10) NOT NULL,
+  SubCategoryCode VARCHAR(10) NOT NULL,
+  FOREIGN KEY (CategoryCode) REFERENCES category(CategoryCode) ON DELETE RESTRICT ON UPDATE CASCADE,
+  FOREIGN KEY (SubCategoryCode) REFERENCES sub_category(SubCategoryCode) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS customers (
+  CustomerCode INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  PhoneNumber VARCHAR(15) NOT NULL UNIQUE,
+  Name VARCHAR(100) NOT NULL,
+  Email VARCHAR(100),
+  Address TEXT,
+  City VARCHAR(50),
+  District VARCHAR(50),
+  FirstOrderDate DATE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS grn_master (
+  GRNCode VARCHAR(10) NOT NULL PRIMARY KEY,
+  GRNDate DATE NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS grn_detail (
+  ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  GRNCode VARCHAR(10) NOT NULL,
+  ItemCode INT NOT NULL,
+  UOM VARCHAR(10) NOT NULL,
+  Quantity INT NOT NULL CHECK (Quantity >= 0),
+  CostPrice DECIMAL(10,2) NOT NULL,
+  Remarks TEXT,
+  FOREIGN KEY (GRNCode) REFERENCES grn_master(GRNCode) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (ItemCode) REFERENCES item(ItemCode) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+
+# Execute the SQL script
+mysql -u$DB_ROOT_USER -p$DB_ROOT_PASS < $SQL_FILE
+
+# Cleanup
+rm $SQL_FILE
+
+echo "Database, tables, and user created successfully."

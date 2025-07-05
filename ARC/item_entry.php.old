@@ -1,0 +1,159 @@
+<?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+$DB_HOST = "localhost";
+$DB_USER = "dbauser";
+$DB_PASS = "dbauser"; // 🔁 Replace with secure password
+$DB_NAME = "erpdb";
+
+$conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
+if ($conn->connect_error) {
+    die("DB connection failed: " . $conn->connect_error);
+}
+
+$msg = '';
+$itemCode = null;
+
+// Fetch categories and sub-categories
+$categories = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY Category") ?: [];
+$subCategories = $conn->query("SELECT SubCategoryCode, SubCategory FROM sub_category ORDER BY SubCategory") ?: [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $item        = $_POST['Item'] ?? '';
+    $desc        = $_POST['Description'] ?? '';
+    $catCode     = $_POST['CategoryCode'] ?? null;
+    $subCatCode  = $_POST['SubCategoryCode'] ?? null;
+
+    // Check if item exists
+    $stmt = $conn->prepare("SELECT ItemCode, Description FROM item WHERE Item = ?");
+    $stmt->bind_param("s", $item);
+    $stmt->execute();
+    $stmt->store_result();
+
+    if ($stmt->num_rows > 0) {
+        // Update
+        $stmt->bind_result($itemCode, $existingDesc);
+        $stmt->fetch();
+        $stmt->close();
+
+        $update = $conn->prepare("UPDATE item SET Description=?, CategoryCode=?, SubCategoryCode=? WHERE Item=?");
+        $update->bind_param("ssss", $desc, $catCode, $subCatCode, $item);
+        if ($update->execute()) {
+            $msg = "✅ Item updated successfully (Code: <b>$itemCode</b>)";
+        } else {
+            $msg = "❌ Error updating: " . $conn->error;
+        }
+        $update->close();
+    } else {
+        // Insert
+        $stmt->close();
+        $insert = $conn->prepare("INSERT INTO item (Item, Description, CategoryCode, SubCategoryCode) VALUES (?, ?, ?, ?)");
+        $insert->bind_param("ssss", $item, $desc, $catCode, $subCatCode);
+        if ($insert->execute()) {
+            $result = $conn->query("SELECT ItemCode FROM item WHERE Item='" . $conn->real_escape_string($item) . "'");
+            if ($row = $result->fetch_assoc()) {
+                $itemCode = $row['ItemCode'];
+                $msg = "✅ Item added. Code: <b>$itemCode</b>";
+            }
+        } else {
+            $msg = "❌ Error inserting: " . $conn->error;
+        }
+        $insert->close();
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Item Entry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Item Entry</h1>
+
+    <?php if ($msg): ?>
+        <p class="msg <?= str_starts_with($msg, '✅') ? 'ok' : 'err' ?>"><?= $msg ?></p>
+    <?php endif; ?>
+
+    <form id="itemForm" method="POST" autocomplete="off">
+        <div class="form-group">
+            <label for="CategoryCode">Category*</label>
+            <select name="CategoryCode" id="CategoryCode" required>
+                <option value="">-- Select Category --</option>
+                <?php while($row = $categories->fetch_assoc()): ?>
+                    <option value="<?= $row['CategoryCode'] ?>"><?= htmlspecialchars($row['Category']) ?></option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="SubCategoryCode">Sub-Category*</label>
+            <select name="SubCategoryCode" id="SubCategoryCode" required>
+                <option value="">-- Select Sub-Category --</option>
+                <?php while($row = $subCategories->fetch_assoc()): ?>
+                    <option value="<?= $row['SubCategoryCode'] ?>"><?= htmlspecialchars($row['SubCategory']) ?></option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="Item">Item*</label>
+            <input type="text" name="Item" id="Item" required>
+        </div>
+
+        <div class="form-group">
+            <label for="Description">Description</label>
+            <textarea name="Description" id="Description" rows="3"></textarea>
+        </div>
+
+        <input type="submit" value="Save Item">
+    </form>
+
+    <?php if ($itemCode): ?>
+        <p class="msg ok">🏦 Your Item Code: <strong><?= $itemCode ?></strong></p>
+    <?php endif; ?>
+
+    <div style="margin-top: 20px;">
+        <a href="category_entry.php" class="back-link">➕ Add Category</a> |
+        <a href="sub_category_entry.php" class="back-link">➕ Add Sub-Category</a>
+    </div>
+
+    <p><a href="index.php" class="back-link">&larr; Back to Menu</a></p>
+</div>
+
+<script>
+// Inline validation
+const form = document.getElementById('itemForm');
+form.addEventListener('submit', function(e) {
+  const cat = document.getElementById('CategoryCode').value;
+  const sub = document.getElementById('SubCategoryCode').value;
+  const item = document.getElementById('Item').value.trim();
+
+  if (!cat || !sub || item.length < 3) {
+    alert('Please fill all fields correctly.');
+    e.preventDefault();
+  }
+});
+
+// AJAX auto-fill
+const itemInput = document.getElementById('Item');
+itemInput.addEventListener('blur', async () => {
+  const itemName = itemInput.value.trim();
+  if (itemName.length < 3) return;
+
+  const res = await fetch(`fetch_item.php?item=${encodeURIComponent(itemName)}`);
+  if (!res.ok) return;
+  const data = await res.json();
+  if (data && data.ItemCode) {
+    document.getElementById('Description').value = data.Description;
+    document.getElementById('CategoryCode').value = data.CategoryCode;
+    document.getElementById('SubCategoryCode').value = data.SubCategoryCode;
+  }
+});
+</script>
+</body>
+</html>

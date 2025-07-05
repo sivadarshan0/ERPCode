@@ -1,0 +1,80 @@
+#Credientials 
+admin / root
+
+------------------------------------------
+
+#Get OS details.
+cat /etc/os-release
+
+#Check if OS is 32-bit or 64-bit and kernal version 
+uname -m -r
+-------------------------------------------
+
+#Configure SSH on VS Code 
+Create config file on 
+C:\Users\Admin\.ssh\
+
+Host raspberrypi4
+    HostName 10.0.7.108
+    User admin
+
+-------------------------------------------
+Create install_lamp.sh 
+Move the file to the destination 
+sftp admin@10.0.7.108
+put install_lamp.sh
+chmod +x install_lamp.sh
+./install_lamp.sh
+DB - root/toor
+-------------------------------------------
+
+
+
+-------------------------------------------
+
+#Connect MariaDB remotly 
+$Install DB VS Code Extensions
+🔌 SQLTools
+🔌 SQLTools MariaDB/Mysql Driver
+
+$Allow Remote Connections on MariaDB
+sudo nano /etc/mysql/mariadb.conf.d/50-server.cnf
+bind-address = 127.0.0.1
+to 
+bind-address = 0.0.0.0
+sudo systemctl restart mariadb
+
+#Create user in MariaDB with remote access 
+sudo mariadb
+
+CREATE USER 'webuser'@'%' IDENTIFIED BY 'StrongPass123!';
+GRANT ALL PRIVILEGES ON *.* TO 'webuser'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EXIT;
+
+---------------------------------------------------
+
+sudo nmcli connection show
+sudo nmcli device wifi rescan
+sudo nmcli device wifi list
+sudo nmcli device wifi connect "TP-LINK_EC3E" password "771060853"
+sudo nmcli -f NAME,TYPE,AUTOCONNECT,AUTOCONNECT-PRIORITY connection show
+sudo nmcli connection modify "TP-LINK_EC3E" connection.autoconnect-priority 5
+sudo nmcli connection modify "preconfigured" connection.autoconnect-priority 10
+sudo nmcli connection modify "netplan-wlan0-ABCCorp#" connection.autoconnect-priority 10
+
+ssh-keygen -R 10.0.7.108
+
+--------------------------------------------------
+
+
+
+
+
+
+#Set ownership to Apache (www-data) 
+sudo chown www-data:www-data /var/www/html/price_cal.php
+
+#Set secure read/write permissions
+sudo chmod 644 /var/www/html/price_cal.php
+

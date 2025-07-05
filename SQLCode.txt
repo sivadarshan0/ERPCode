@@ -1,0 +1,76 @@
+-- Database: erpdb
+
+-- 1. Category Table
+CREATE TABLE IF NOT EXISTS categories (
+  CategoryCode VARCHAR(10) PRIMARY KEY,
+  Category     VARCHAR(100) NOT NULL UNIQUE,
+  Description  TEXT,
+  CreatedAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Trigger to generate CategoryCode like cat000001
+DELIMITER $$
+CREATE TRIGGER trg_categories_ai
+BEFORE INSERT ON categories
+FOR EACH ROW
+BEGIN
+  IF NEW.CategoryCode IS NULL OR NEW.CategoryCode = '' THEN
+    DECLARE next INT;
+    SELECT IFNULL(MAX(CAST(SUBSTRING(CategoryCode, 4) AS UNSIGNED)), 0) + 1
+      INTO next FROM categories;
+    SET NEW.CategoryCode = CONCAT('cat', LPAD(next, 6, '0'));
+  END IF;
+END $$
+DELIMITER ;
+
+
+-- 2. Sub-Category Table
+CREATE TABLE IF NOT EXISTS sub_categories (
+  SubCategoryCode VARCHAR(10) PRIMARY KEY,
+  SubCategory     VARCHAR(100) NOT NULL UNIQUE,
+  Description     TEXT,
+  CreatedAt       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Trigger to generate SubCategoryCode like sca000001
+DELIMITER $$
+CREATE TRIGGER trg_subcategories_ai
+BEFORE INSERT ON sub_categories
+FOR EACH ROW
+BEGIN
+  IF NEW.SubCategoryCode IS NULL OR NEW.SubCategoryCode = '' THEN
+    DECLARE next INT;
+    SELECT IFNULL(MAX(CAST(SUBSTRING(SubCategoryCode, 4) AS UNSIGNED)), 0) + 1
+      INTO next FROM sub_categories;
+    SET NEW.SubCategoryCode = CONCAT('sca', LPAD(next, 6, '0'));
+  END IF;
+END $$
+DELIMITER ;
+
+
+-- 3. Items Table
+CREATE TABLE IF NOT EXISTS items (
+  ItemCode        VARCHAR(10) PRIMARY KEY,
+  Item            VARCHAR(100) NOT NULL UNIQUE,
+  Description     TEXT,
+  CategoryCode    VARCHAR(10),
+  SubCategoryCode VARCHAR(10),
+  CreatedAt       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (CategoryCode) REFERENCES categories(CategoryCode) ON DELETE SET NULL,
+  FOREIGN KEY (SubCategoryCode) REFERENCES sub_categories(SubCategoryCode) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Trigger to generate ItemCode like itm000001
+DELIMITER $$
+CREATE TRIGGER trg_items_ai
+BEFORE INSERT ON items
+FOR EACH ROW
+BEGIN
+  IF NEW.ItemCode IS NULL OR NEW.ItemCode = '' THEN
+    DECLARE next INT;
+    SELECT IFNULL(MAX(CAST(SUBSTRING(ItemCode, 4) AS UNSIGNED)), 0) + 1
+      INTO next FROM items;
+    SET NEW.ItemCode = CONCAT('itm', LPAD(next, 6, '0'));
+  END IF;
+END $$
+DELIMITER ;
