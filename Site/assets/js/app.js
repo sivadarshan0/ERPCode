@@ -1,5 +1,5 @@
 // Global application JavaScript
-// file: Site/assets/js/app.js
+// File: Site/assets/js/app.js
 
 document.addEventListener('DOMContentLoaded', function () {
     initAutoComplete();
@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('rate')) {
         updateRate(false);
     }
+
+    // Hook up calculate button if present
+    const calcBtn = document.querySelector('button[onclick="calculate()"]');
+    if (calcBtn) {
+        calcBtn.addEventListener('click', calculate);
+    }
 });
 
 /* ---------------- AutoComplete ---------------- */
@@ -16,7 +22,6 @@ function initAutoComplete() {
     document.querySelectorAll('[data-autocomplete]').forEach(input => {
         const target = input.dataset.autocomplete;
         const dropdown = document.getElementById(target);
-
         if (!dropdown) return;
 
         input.addEventListener('input', debounce(async function () {
@@ -87,7 +92,7 @@ window.addEventListener('unload', function () {
     navigator.sendBeacon('/Site/logout.php?auto=1');
 });
 
-/* ---------------- Price Calculator ---------------- */
+/* ---------------- Exchange Rate Utilities ---------------- */
 const fallbackRates = { USD: 300, EUR: 325, GBP: 375, INR: 3.75 };
 const apiKey = '2dceae62011fd1aa98c40c89';
 
@@ -96,10 +101,7 @@ function getCacheKey(currency) {
 }
 
 function cacheRate(currency, rate) {
-    const data = {
-        value: rate,
-        timestamp: Date.now()
-    };
+    const data = { value: rate, timestamp: Date.now() };
     localStorage.setItem(getCacheKey(currency), JSON.stringify(data));
 }
 
@@ -133,7 +135,6 @@ async function updateRate(forceRefresh = false) {
     const currencyEl = document.getElementById('currency');
     const rateField = document.getElementById('rate');
     const status = document.getElementById('rateStatus');
-
     if (!currencyEl || !rateField || !status) return;
 
     const currency = currencyEl.value;
@@ -141,7 +142,6 @@ async function updateRate(forceRefresh = false) {
     status.textContent = 'Fetching live rate…';
 
     let rate = null;
-
     if (!forceRefresh) {
         rate = getCachedRate(currency);
         if (rate) {
@@ -163,13 +163,14 @@ async function updateRate(forceRefresh = false) {
     rateField.removeAttribute('readonly');
 }
 
+/* ---------------- Price Calculation ---------------- */
 function calculate() {
-    const cost = parseFloat(document.getElementById('cost')?.value);
-    const rate = parseFloat(document.getElementById('rate')?.value);
-    const grams = parseFloat(document.getElementById('weight')?.value);
+    const cost         = parseFloat(document.getElementById('cost')?.value);
+    const rate         = parseFloat(document.getElementById('rate')?.value);
+    const grams        = parseFloat(document.getElementById('weight')?.value);
     const courierPerKg = parseFloat(document.getElementById('courier')?.value);
-    const profitPct = parseFloat(document.getElementById('profit')?.value);
-    const resultField = document.getElementById('result');
+    const profitPct    = parseFloat(document.getElementById('profit')?.value);
+    const resultField  = document.getElementById('result');
 
     if (!resultField) return;
 
@@ -179,11 +180,11 @@ function calculate() {
         return;
     }
 
-    const costLKR = cost * rate;
-    const weightKg = grams / 1000;
+    const costLKR      = cost * rate;
+    const weightKg     = grams / 1000;
     const courierTotal = courierPerKg * weightKg;
-    const baseTotal = costLKR + courierTotal;
-    const selling = baseTotal + (baseTotal * profitPct / 100);
+    const baseTotal    = costLKR + courierTotal;
+    const selling      = baseTotal + (baseTotal * profitPct / 100);
 
     resultField.textContent = `Selling Price: LKR ${selling.toFixed(2)}`;
 }

@@ -1,16 +1,37 @@
 <?php
 // File: includes/auth.php
 
-// NOTE: Disable error display in production
+// Recommended: Disable display errors in production, log them instead
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Show errors in logs, not to the user
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 
-require_once __DIR__ . '/db.php'; // Ensure db() function is available
+require_once __DIR__ . '/db.php'; // db() must return a valid mysqli connection
+
+define('SESSION_TIMEOUT', 600); // 10 minutes
 
 /**
- * Attempt user login
+ * Initializes or resumes a secure session
+ */
+function start_secure_session() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    // Check for session timeout
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {
+        logout(); // Auto logout due to inactivity
+        header("Location: /login.php?timeout=1");
+        exit;
+    }
+
+    // Update activity timestamp
+    $_SESSION['last_activity'] = time();
+}
+
+/**
+ * Attempt to login the user
  */
 function login($username, $password) {
     try {
@@ -22,21 +43,19 @@ function login($username, $password) {
         $conn = db();
         if (!$conn || $conn->connect_error) {
             error_log("Database connection error: " . $conn->connect_error);
-            throw new Exception("Database connection failed");
+            throw new Exception("Database error");
         }
 
-        // Ensure users table exists
         $check = $conn->query("SHOW TABLES LIKE 'users'");
         if ($check->num_rows === 0) {
-            error_log("Login failed: 'users' table does not exist");
+            error_log("Login failed: users table missing");
             throw new Exception("Configuration error");
         }
 
-        // Lookup user
         $stmt = $conn->prepare("SELECT id, password, is_active FROM users WHERE username = ? LIMIT 1");
         if (!$stmt) {
-            error_log("Login prepare failed: " . $conn->error);
-            throw new Exception("Query preparation error");
+            error_log("Prepare failed: " . $conn->error);
+            throw new Exception("Query error");
         }
 
         $stmt->bind_param("s", $username);
@@ -45,23 +64,23 @@ function login($username, $password) {
 
         if ($result->num_rows !== 1) {
             error_log("Login failed: User not found ($username)");
-            usleep(rand(100000, 300000)); // Anti-brute delay
+            usleep(rand(100000, 300000)); // anti-brute force
             return false;
         }
 
         $user = $result->fetch_assoc();
 
         if (!password_verify($password, $user['password'])) {
-            error_log("Login failed: Incorrect password ($username)");
+            error_log("Login failed: Invalid password ($username)");
             return false;
         }
 
         if ((int)$user['is_active'] !== 1) {
-            error_log("Login failed: Inactive account ($username)");
-            throw new Exception("Account is inactive");
+            error_log("Login failed: Account inactive ($username)");
+            throw new Exception("Inactive account");
         }
 
-        // Successful login
+        // Login success
         session_start();
         session_regenerate_id(true);
 
@@ -69,7 +88,7 @@ function login($username, $password) {
         $_SESSION['username']      = $username;
         $_SESSION['last_activity'] = time();
 
-        error_log("Login successful for user: $username");
+        error_log("Login success for user: $username");
         return true;
 
     } catch (Exception $e) {
@@ -82,14 +101,15 @@ function login($username, $password) {
  * Log the user out safely
  */
 function logout() {
-    session_start();
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
 
-    // Clear session data
     $_SESSION = [];
     session_unset();
     session_destroy();
 
-    // Delete session cookie
+    // Destroy session cookie
     if (ini_get("session.use_cookies")) {
         $params = session_get_cookie_params();
         setcookie(session_name(), '', time() - 3600, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
