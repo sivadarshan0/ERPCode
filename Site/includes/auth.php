@@ -1,75 +1,44 @@
 <?php
-// Authentication Functions with Password Hashing
+// Add at the very top
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Disable on production
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__.'/../logs/php_errors.log');
 
-/**
- * Verify login credentials with hashed passwords
- */
 function login($username, $password) {
     try {
+        if (!function_exists('password_verify')) {
+            throw new Exception("Password functions not available");
+        }
+
         $conn = db();
-        $stmt = $conn->prepare("SELECT id, password, is_active, locked_until FROM users WHERE username = ?");
+        if (!$conn) {
+            throw new Exception("Database connection failed");
+        }
+
+        $stmt = $conn->prepare("SELECT id, password, is_active FROM users WHERE username = ?");
+        if (!$stmt) {
+            throw new Exception("Prepare failed: ".$conn->error);
+        }
+
         $stmt->bind_param("s", $username);
-        $stmt->execute();
+        if (!$stmt->execute()) {
+            throw new Exception("Execute failed: ".$stmt->error);
+        }
+
         $result = $stmt->get_result();
-        
         if ($result->num_rows === 1) {
             $user = $result->fetch_assoc();
             
-            // Check if account is locked
-            if ($user['locked_until'] && strtotime($user['locked_until']) > time()) {
-                error_log("Account locked for user: $username until {$user['locked_until']}");
-                return false;
-            }
-            
-            // Verify password against hash
             if (password_verify($password, $user['password'])) {
-                // Rehash if needed
-                if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
-                    $newHash = password_hash($password, PASSWORD_DEFAULT);
-                    $updateStmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-                    $updateStmt->bind_param("si", $newHash, $user['id']);
-                    $updateStmt->execute();
-                }
-                
-                // Reset failed attempts and update last login
-                $conn->query("UPDATE users SET failed_attempts = 0, locked_until = NULL, last_login = NOW() WHERE id = {$user['id']}");
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $username;
                 return true;
-            } else {
-                // Record failed attempt
-                $conn->query("UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = {$user['id']}");
-                
-                // Lock account after 5 failed attempts
-                if ($user['failed_attempts'] + 1 >= 5) {
-                    $conn->query("UPDATE users SET locked_until = DATE_ADD(NOW(), INTERVAL 30 MINUTE) WHERE id = {$user['id']}");
-                }
             }
         }
+        return false;
     } catch (Exception $e) {
-        error_log("Login error: " . $e->getMessage());
+        error_log("Login error: ".$e->getMessage());
+        return false;
     }
-    return false;
-}
-
-/**
- * Hash a password for secure storage
- */
-function hash_password($password) {
-    return password_hash($password, PASSWORD_DEFAULT);
-}
-
-/**
- * Validate password strength
- */
-function validate_password($password) {
-    $errors = [];
-    if (strlen($password) < 8) {
-        $errors[] = "Must be at least 8 characters";
-    }
-    if (!preg_match('/[A-Z]/', $password)) {
-        $errors[] = "Must contain uppercase letters";
-    }
-    if (!preg_match('/[0-9]/', $password)) {
-        $errors[] = "Must contain numbers";
-    }
-    return empty($errors) ? true : $errors;
 }
