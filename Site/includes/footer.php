@@ -1,10 +1,10 @@
 <?php
 // File: includes/footer.php
 ?>
-<footer class="site-footer">
-    <div class="container">
+    <footer class="dashboard-footer">
         <p>&copy; <?= date('Y') ?> ERP System. All rights reserved.</p>
-    </div>
-</footer>
+    </footer>
+
+    <script src="/assets/js/app.js"></script>
 </body>
 </html>
