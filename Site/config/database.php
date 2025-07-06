@@ -4,8 +4,8 @@
 
 return [
     'host' => 'localhost',
-    'username' => 'your_db_user',
-    'password' => 'your_db_password',
-    'database' => 'your_db_name',
+    'username' => 'dbauser',
+    'password' => 'dbauser',
+    'database' => 'erpdb',
     'charset' => 'utf8mb4'
 ];
