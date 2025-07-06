@@ -2,9 +2,11 @@
 
 // Site/login.php
 
-define('BASE_PATH', realpath(__DIR__));
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Start session if not exists
+// Start session at the VERY TOP
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => 86400,
@@ -16,6 +18,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+define('BASE_PATH', realpath(__DIR__));
+
 require_once BASE_PATH . '/includes/db.php';
 require_once BASE_PATH . '/includes/functions.php';
 require_once BASE_PATH . '/includes/auth.php';
@@ -24,19 +28,17 @@ require_once BASE_PATH . '/includes/auth.php';
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = sanitize_input($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? ''; // Don't sanitize passwords
+    $password = $_POST['password'] ?? '';
     
     if (empty($username) || empty($password)) {
         $error = 'Both fields are required';
     } elseif (login($username, $password)) {
-        // Set success message
         $_SESSION['flash'] = [
             'type' => 'success',
             'message' => 'Login successful'
         ];
         
-        // Redirect to intended page
-        $redirect = $_SESSION['redirect_to'] ?? '/dashboard.php';
+        $redirect = $_SESSION['redirect_to'] ?? 'index.php';
         unset($_SESSION['redirect_to']);
         header("Location: $redirect");
         exit;
@@ -45,7 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Load templates
 $title = 'ERP System - Login';
 require_once BASE_PATH . '/includes/header.php';
 ?>
@@ -58,11 +59,6 @@ require_once BASE_PATH . '/includes/header.php';
             <?php if (!empty($error)): ?>
                 <div class="alert alert-danger">
                     <?= htmlspecialchars($error) ?>
-                    <?php if ($_SERVER['REQUEST_METHOD'] === 'POST'): ?>
-                        <div class="debug-info">
-                            Mode: <?= file_get_contents(BASE_PATH . '/auth_mode.txt') ?>
-                        </div>
-                    <?php endif; ?>
                 </div>
             <?php endif; ?>
             

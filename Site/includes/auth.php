@@ -2,6 +2,10 @@
 
 // Site/includes/auth.php
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 function is_logged_in() {
     return isset($_SESSION['user_id']);
 }
@@ -17,23 +21,12 @@ function login($username, $password) {
         if ($result->num_rows === 1) {
             $user = $result->fetch_assoc();
             
-            // QUICK FIX: Plain text comparison (temporary)
             if ($password === $user['password']) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $username;
                 error_log("Login success for: $username");
                 return true;
             }
-            
-            // Original hashed password check (commented out for now)
-            /*
-            if (password_verify($password, $user['password'])) {
-                session_regenerate_id(true);
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $username;
-                return true;
-            }
-            */
         }
     } catch (Exception $e) {
         error_log("Login error: " . $e->getMessage());
@@ -58,7 +51,7 @@ function logout() {
 function require_login() {
     if (!is_logged_in()) {
         $_SESSION['redirect_to'] = $_SERVER['REQUEST_URI'];
-        header('Location: /login.php');
+        header('Location: login.php');
         exit;
     }
 }

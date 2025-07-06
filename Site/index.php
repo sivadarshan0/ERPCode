@@ -1,17 +1,23 @@
 <?php
 
-// Site/index.php 
+// Site/index.php
 
-$title = 'ERP System - Dashboard';
-$headerTitle = 'Main Menu';
-require_once __DIR__.'/includes/header.php';
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Start session at the VERY TOP
+session_start();
 
 // Verify authentication
-session_start();
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
 }
+
+$title = 'ERP System - Dashboard';
+$headerTitle = 'Main Menu';
+require_once __DIR__.'/includes/header.php';
 ?>
 
 <div class="menu-grid">
