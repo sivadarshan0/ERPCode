@@ -1,25 +1,36 @@
 <?php
-// File: /var/www/html/includes/auth.php
+// File: /includes/auth.php
 
 /**
- * Check if user is logged in
- * @return bool True if user is logged in, false otherwise
+ * Authentication System with Password Hashing
+ * 
+ * This file handles all user authentication functions
+ * including secure password storage and verification
+ */
+
+// Error reporting for development
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+/**
+ * Check if a user is logged in
+ * @return bool True if user is authenticated
  */
 function is_logged_in() {
     return isset($_SESSION['user_id']);
 }
 
 /**
- * Authenticate user credentials
+ * Authenticate a user with password verification
  * @param string $username 
  * @param string $password
- * @return bool True if login successful, false otherwise
+ * @return bool True if authentication succeeds
  */
 function login($username, $password) {
     try {
         $conn = db();
         
-        // Prepare statement to prevent SQL injection
+        // Prepared statement to prevent SQL injection
         $stmt = $conn->prepare("SELECT id, password, is_active FROM users WHERE username = ?");
         if (!$stmt) {
             throw new Exception("Database query preparation failed: " . $conn->error);
@@ -38,9 +49,16 @@ function login($username, $password) {
                 return false;
             }
             
-            // TEMPORARY: Plain text comparison (remove in production)
-            // Replace with password_verify() in production
-            if ($password === $user['password']) {
+            // Verify password against stored hash
+            if (password_verify($password, $user['password'])) {
+                
+                // Check if password needs rehashing (if algorithm changed)
+                if (password_needs_rehash($user['password'], PASSWORD_DEFAULT)) {
+                    $newHash = hash_password($password);
+                    update_password($user['id'], $newHash);
+                }
+                
+                // Set session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $username;
                 
@@ -52,16 +70,6 @@ function login($username, $password) {
                 
                 return true;
             }
-            
-            /* PRODUCTION VERSION:
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $username;
-                session_regenerate_id(true);
-                update_last_login($user['id']);
-                return true;
-            }
-            */
         }
     } catch (Exception $e) {
         error_log("Login error for $username: " . $e->getMessage());
@@ -71,7 +79,43 @@ function login($username, $password) {
 }
 
 /**
- * Update user's last login timestamp
+ * Create a password hash for secure storage
+ * @param string $password Plain text password
+ * @return string Hashed password
+ */
+function hash_password($password) {
+    return password_hash($password, PASSWORD_DEFAULT);
+}
+
+/**
+ * Check if a password hash needs rehashing
+ * @param string $hash Existing password hash
+ * @return bool True if needs rehash
+ */
+function password_needs_rehash($hash) {
+    return password_needs_rehash($hash, PASSWORD_DEFAULT);
+}
+
+/**
+ * Update a user's password in the database
+ * @param int $userId
+ * @param string $hashedPassword
+ * @return bool True on success
+ */
+function update_password($userId, $hashedPassword) {
+    try {
+        $conn = db();
+        $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt->bind_param("si", $hashedPassword, $userId);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        error_log("Password update failed: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Update last login timestamp
  * @param int $userId
  */
 function update_last_login($userId) {
@@ -86,7 +130,7 @@ function update_last_login($userId) {
 }
 
 /**
- * Destroy user session
+ * Destroy user session securely
  */
 function logout() {
     // Unset all session variables
@@ -111,7 +155,7 @@ function logout() {
 }
 
 /**
- * Redirect to login page if not authenticated
+ * Redirect to login if not authenticated
  */
 function require_login() {
     if (!is_logged_in()) {
@@ -123,9 +167,9 @@ function require_login() {
 }
 
 /**
- * Check if user has required permission
- * @param string $permission
- * @return bool
+ * Check if user has specific permission
+ * @param string $permission Permission name
+ * @return bool True if user has permission
  */
 function has_permission($permission) {
     if (!is_logged_in()) {
@@ -149,17 +193,48 @@ function has_permission($permission) {
 }
 
 /**
- * Get current user's ID
- * @return int|null
+ * Get current user ID
+ * @return int|null User ID or null if not logged in
  */
 function current_user_id() {
     return $_SESSION['user_id'] ?? null;
 }
 
 /**
- * Get current user's username
- * @return string|null
+ * Get current username
+ * @return string|null Username or null if not logged in
  */
 function current_username() {
     return $_SESSION['username'] ?? null;
+}
+
+/**
+ * Validate password strength
+ * @param string $password
+ * @return bool|array True if valid, or array of errors
+ */
+function validate_password($password) {
+    $errors = [];
+    
+    if (strlen($password) < 8) {
+        $errors[] = "Must be at least 8 characters";
+    }
+    
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = "Must contain uppercase letters";
+    }
+    
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = "Must contain lowercase letters";
+    }
+    
+    if (!preg_match('/[0-9]/', $password)) {
+        $errors[] = "Must contain numbers";
+    }
+    
+    if (!preg_match('/[^A-Za-z0-9]/', $password)) {
+        $errors[] = "Must contain special characters";
+    }
+    
+    return empty($errors) ? true : $errors;
 }
