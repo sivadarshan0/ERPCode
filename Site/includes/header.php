@@ -1,20 +1,5 @@
 <?php
-// Only start session if not already active
-if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => 86400,
-        'path' => '/',
-        'secure' => false,
-        'httponly' => true,
-        'samesite' => 'Strict'
-    ]);
-    session_start();
-}
-
-// Security headers
-header("X-Frame-Options: DENY");
-header("X-Content-Type-Options: nosniff");
-header_remove("X-Powered-By");
+// File: /var/www/html/includes/header.php
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -25,13 +10,3 @@ header_remove("X-Powered-By");
     <link rel="stylesheet" href="/assets/css/main.css">
 </head>
 <body>
-    <header class="app-header">
-        <h1><?= htmlspecialchars($headerTitle ?? 'ERP System') ?></h1>
-        <?php if (isset($_SESSION['username'])): ?>
-            <nav>
-                <span>Welcome, <?= htmlspecialchars($_SESSION['username']) ?></span>
-                <a href="/logout.php">Logout</a>
-            </nav>
-        <?php endif; ?>
-    </header>
-    <main class="container">

@@ -46,39 +46,33 @@ $title = 'ERP System - Login';
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<div class="login-container">
-    <div class="login-box">
-        <div class="login-header">
-            <h2>System Login</h2>
-            
-            <?php if (!empty($error)): ?>
-                <div class="alert alert-danger">
-                    <?= htmlspecialchars($error) ?>
-                </div>
-            <?php endif; ?>
-            
-            <?php if (isset($_SESSION['flash'])): ?>
-                <div class="alert alert-<?= $_SESSION['flash']['type'] ?>">
-                    <?= htmlspecialchars($_SESSION['flash']['message']) ?>
-                </div>
-                <?php unset($_SESSION['flash']); ?>
-            <?php endif; ?>
-        </div>
+<div class="simple-login-container">
+    <div class="simple-login-box">
+        <h1>ERP System</h1>
+        <h2>System Login</h2>
         
-        <form method="POST" class="login-form">
-            <div class="form-group">
+        <?php if (!empty($error)): ?>
+            <div class="simple-error"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
+        
+        <form method="POST" class="simple-login-form">
+            <div class="simple-form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required autofocus
                        value="<?= htmlspecialchars($username ?? '') ?>">
             </div>
             
-            <div class="form-group">
+            <div class="simple-form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
             </div>
             
-            <button type="submit" class="btn btn-primary">Login</button>
+            <button type="submit" class="simple-login-btn">Login</button>
         </form>
+        
+        <div class="simple-footer">
+            © <?= date('Y') ?> ERP System
+        </div>
     </div>
 </div>
 
