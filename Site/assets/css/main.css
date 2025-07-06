@@ -138,3 +138,88 @@ body {
     color: #c0392b;
     font-weight: 500;
 }
+
+/* ===== Dashboard Styles ===== */
+.user-welcome {
+    color: #7f8c8d;
+    margin: 0 0 1.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.dashboard-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.menu-card {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.menu-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #3498db;
+}
+
+.card-icon {
+    font-size: 2rem;
+    color: #3498db;
+    margin-bottom: 0.75rem;
+}
+
+.menu-card h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+}
+
+.menu-card p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+.dashboard-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.btn-logout {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-decoration: none;
+}
+
+.btn-logout:hover {
+    background: #c0392b;
+}
+
+/* ===== Mobile Responsiveness for Dashboard ===== */
+@media (max-width: 600px) {
+    .dashboard-menu {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 400px) {
+    .dashboard-menu {
+        grid-template-columns: 1fr;
+    }
+}

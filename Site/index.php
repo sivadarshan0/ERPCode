@@ -3,7 +3,7 @@
 
 // Error handling
 error_reporting(E_ALL);
-ini_set('display_errors', 1); // Show errors temporarily for debugging
+ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/logs/php_errors.log');
 
@@ -12,7 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => 86400,
         'path' => '/',
-        'secure' => false, // Set to false if you're not using HTTPS in development
+        'secure' => false,
         'httponly' => true,
         'samesite' => 'Strict'
     ]);
@@ -32,22 +32,20 @@ if (isset($_GET['logout'])) {
 }
 
 $title = 'ERP System - Dashboard';
-$headerTitle = 'Main Menu';
 require_once __DIR__.'/includes/header.php';
 ?>
 
-<div class="dashboard-container">
-    <div class="dashboard-box">
-        <div class="dashboard-header">
+<div class="login-container">
+    <div class="login-box">
+        <div class="login-header">
             <h1>ERP System</h1>
             <h2>Main Dashboard</h2>
-            <div class="user-info">
-                <span>Welcome, <?= htmlspecialchars($_SESSION['username'] ?? 'User') ?></span>
-                <a href="?logout=1" class="btn-logout">Logout</a>
+            <div class="user-welcome">
+                Welcome, <?= htmlspecialchars($_SESSION['username'] ?? 'User') ?>
             </div>
         </div>
 
-        <div class="menu-grid">
+        <div class="dashboard-menu">
             <a href="modules/customers/customer.php" class="menu-card">
                 <div class="card-icon">
                     <i class="fas fa-users"></i>
@@ -79,6 +77,10 @@ require_once __DIR__.'/includes/header.php';
                 <h3>GRN Management</h3>
                 <p>Goods receipt notes</p>
             </a>
+        </div>
+
+        <div class="dashboard-footer">
+            <a href="?logout=1" class="btn-logout">Logout</a>
         </div>
     </div>
 </div>
