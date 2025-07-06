@@ -62,7 +62,7 @@ require_once __DIR__.'/includes/header.php';
                 <p>Manage inventory items</p>
             </a>
             
-            <a href="modules/pricing/calculator.php" class="menu-card">
+            <a href="modules/pricing/calculate_price.php" class="menu-card">
                 <div class="card-icon">
                     <i class="fas fa-calculator"></i>
                 </div>
