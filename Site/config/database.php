@@ -1,12 +1,11 @@
 <?php
 
-// File: Site/config/database.php
+// File: config/database.php
 
 return [
-    'host' => getenv('DB_HOST') ?: 'localhost',
-    'database' => getenv('DB_NAME') ?: 'erpdb',
-    'username' => getenv('DB_USER') ?: 'webuser',
-    'password' => getenv('DB_PASS') ?: 'webuser',
-    'charset' => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci'
+    'host' => 'localhost',
+    'username' => 'your_db_user',
+    'password' => 'your_db_password',
+    'database' => 'your_db_name',
+    'charset' => 'utf8mb4'
 ];
