@@ -1,10 +1,10 @@
 <?php
-// Session handling (only start if not already active)
+// Only start session if not already active
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => 86400,
         'path' => '/',
-        'secure' => false,    // Set to true in production with HTTPS
+        'secure' => false,
         'httponly' => true,
         'samesite' => 'Strict'
     ]);
