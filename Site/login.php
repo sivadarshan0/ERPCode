@@ -1,8 +1,11 @@
 <?php
-// Error handling at the top
-error_reporting(0);
+// File: login.php
+
+// Error handling
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-ini_set('error_log', '/var/www/html/logs/php_errors.log');
+ini_set('error_log', __DIR__.'/logs/php_errors.log');
 
 // Secure session
 if (session_status() === PHP_SESSION_NONE) {
@@ -16,11 +19,19 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Check if already logged in
+if (isset($_SESSION['user_id'])) {
+    header("Location: index.php");
+    exit;
+}
+
+require_once __DIR__.'/includes/header.php';
+
 try {
     require_once __DIR__.'/includes/auth.php';
 } catch (Throwable $e) {
     error_log("Auth include failed: ".$e->getMessage());
-    die("System temporarily unavailable");
+    die("<div class='system-error'>System temporarily unavailable</div>");
 }
 
 $error = '';
@@ -45,14 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ERP Login</title>
-    <link rel="stylesheet" href="/assets/css/main.css">
-</head>
-<body class="login-page">
-    <div class="login-container">
+
+<div class="login-container">
+    <div class="login-box">
         <div class="login-header">
             <h1>ERP System</h1>
             <h2>System Login</h2>
@@ -62,24 +68,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
         
-        <form method="POST" class="login-form">
+        <form method="POST" class="login-form" autocomplete="off">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required 
-                       value="<?= htmlspecialchars($username) ?>">
+                       value="<?= htmlspecialchars($username) ?>" autocomplete="username">
             </div>
             
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
             </div>
             
-            <button type="submit" class="btn btn-primary">Login</button>
+            <button type="submit" class="btn-login">Login</button>
             
             <div class="login-footer">
                 <a href="/forgot-password.php">Forgot Password?</a>
             </div>
         </form>
     </div>
-</body>
-</html>
+</div>
+
+<?php require_once __DIR__.'/includes/footer.php'; ?>
