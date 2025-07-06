@@ -1,70 +1,72 @@
 <?php
-// Start session securely
+// Error handling at the top
+error_reporting(0);
+ini_set('log_errors', 1);
+ini_set('error_log', '/var/www/html/logs/php_errors.log');
+
+// Secure session
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => 86400,
         'path' => '/',
-        'secure' => true,       // Requires HTTPS
+        'secure' => true,
         'httponly' => true,
         'samesite' => 'Strict'
     ]);
     session_start();
 }
 
-require_once __DIR__.'/includes/auth.php';
+try {
+    require_once __DIR__.'/includes/auth.php';
+} catch (Throwable $e) {
+    error_log("Auth include failed: ".$e->getMessage());
+    die("System temporarily unavailable");
+}
 
 $error = '';
+$username = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = sanitize_input($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    
-    // Validate inputs
-    if (empty($username) || empty($password)) {
-        $error = 'Username and password are required';
-    } else {
-        // Authenticate with hashed password
-        if (login($username, $password)) {
-            // Regenerate session ID to prevent fixation
-            session_regenerate_id(true);
-            
-            // Redirect to intended page or dashboard
-            $redirect = $_SESSION['redirect_to'] ?? 'index.php';
-            unset($_SESSION['redirect_to']);
-            header("Location: $redirect");
+    try {
+        $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_STRING) ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        if (empty($username) || empty($password)) {
+            $error = 'Both fields are required';
+        } elseif (login($username, $password)) {
+            header("Location: index.php");
             exit;
         } else {
-            // Generic error message (don't reveal which was wrong)
             $error = 'Invalid username or password';
-            
-            // Security logging
-            error_log("Failed login attempt for username: $username from IP: {$_SERVER['REMOTE_ADDR']}");
         }
+    } catch (Throwable $e) {
+        error_log("Login error: ".$e->getMessage());
+        $error = 'System error during login';
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login | ERP System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Login</title>
     <link rel="stylesheet" href="/assets/css/main.css">
 </head>
-<body>
+<body class="login-page">
     <div class="login-container">
+        <div class="login-header">
+            <h1>ERP System</h1>
+            <h2>System Login</h2>
+        </div>
+        
+        <?php if ($error): ?>
+            <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+        <?php endif; ?>
+        
         <form method="POST" class="login-form">
-            <h1>ERP Login</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert alert-error">
-                    <?= htmlspecialchars($error) ?>
-                </div>
-            <?php endif; ?>
-            
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required 
-                       value="<?= htmlspecialchars($username ?? '') ?>">
+                       value="<?= htmlspecialchars($username) ?>">
             </div>
             
             <div class="form-group">
@@ -72,9 +74,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="password" id="password" name="password" required>
             </div>
             
-            <button type="submit" class="btn-login">Sign In</button>
+            <button type="submit" class="btn btn-primary">Login</button>
             
-            <div class="login-links">
+            <div class="login-footer">
                 <a href="/forgot-password.php">Forgot Password?</a>
             </div>
         </form>
