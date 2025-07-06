@@ -10,7 +10,7 @@ ini_set('error_log', __DIR__ . '/logs/php_errors.log');
 // Secure session
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
-        'lifetime' => 86400,
+        'lifetime' => 0,
         'path' => '/',
         'secure' => false,
         'httponly' => true,
