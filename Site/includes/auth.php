@@ -1,6 +1,6 @@
 <?php
-// File: auth.php
-// 20250705 1747
+
+// Site/includes/auth.php
 
 function is_logged_in() {
     return isset($_SESSION['user_id']);

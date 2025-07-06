@@ -1,4 +1,7 @@
 <?php
+
+// Site/index.php 
+
 $title = 'ERP System - Dashboard';
 $headerTitle = 'Main Menu';
 require_once __DIR__.'/includes/header.php';

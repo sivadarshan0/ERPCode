@@ -1,6 +1,6 @@
 <?php
 
-// File: login.php
+// Site/login.php
 
 define('BASE_PATH', realpath(__DIR__));
 
