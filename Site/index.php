@@ -1,13 +1,14 @@
 <?php
+// File: /var/www/html/index.php
 
-// Site/index.php
-
-// Enable error reporting for debugging
+// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Start session at the VERY TOP
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Verify authentication
 if (!isset($_SESSION['user_id'])) {
@@ -15,8 +16,11 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Define page metadata
 $title = 'ERP System - Dashboard';
 $headerTitle = 'Main Menu';
+
+// Include header
 require_once __DIR__.'/includes/header.php';
 ?>
 
@@ -42,4 +46,7 @@ require_once __DIR__.'/includes/header.php';
     </a>
 </div>
 
-<?php require_once __DIR__.'/includes/footer.php'; ?>
+<?php 
+// Include footer
+require_once __DIR__.'/includes/footer.php'; 
+?>

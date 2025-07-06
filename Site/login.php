@@ -1,8 +1,7 @@
 <?php
+// File: /var/www/html/login.php
 
-// Site/login.php
-
-// Enable error reporting for debugging
+// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -18,8 +17,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Define base path
 define('BASE_PATH', realpath(__DIR__));
 
+// Include dependencies (require_once ensures single inclusion)
 require_once BASE_PATH . '/includes/db.php';
 require_once BASE_PATH . '/includes/functions.php';
 require_once BASE_PATH . '/includes/auth.php';
@@ -47,7 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Define page metadata
 $title = 'ERP System - Login';
+
+// Include header
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
@@ -88,4 +92,5 @@ require_once BASE_PATH . '/includes/header.php';
 </div>
 
 <?php
+// Include footer
 require_once BASE_PATH . '/includes/footer.php';
