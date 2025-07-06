@@ -1,11 +1,9 @@
 <?php
 // File: /var/www/html/login.php
 
-// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Start session at the VERY TOP
 if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => 86400,
@@ -17,15 +15,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Define base path
 define('BASE_PATH', realpath(__DIR__));
 
-// Include dependencies (require_once ensures single inclusion)
 require_once BASE_PATH . '/includes/db.php';
 require_once BASE_PATH . '/includes/functions.php';
 require_once BASE_PATH . '/includes/auth.php';
 
-// Process login
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = sanitize_input($_POST['username'] ?? '');
@@ -38,7 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'type' => 'success',
             'message' => 'Login successful'
         ];
-        
         $redirect = $_SESSION['redirect_to'] ?? 'index.php';
         unset($_SESSION['redirect_to']);
         header("Location: $redirect");
@@ -48,10 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Define page metadata
 $title = 'ERP System - Login';
-
-// Include header
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
@@ -91,6 +82,4 @@ require_once BASE_PATH . '/includes/header.php';
     </div>
 </div>
 
-<?php
-// Include footer
-require_once BASE_PATH . '/includes/footer.php';
+<?php require_once BASE_PATH . '/includes/footer.php'; ?>
