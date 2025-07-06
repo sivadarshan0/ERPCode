@@ -1,4 +1,6 @@
 <?php
+// File: /var/www/html/includes/db.php
+
 require_once __DIR__.'/../config/database.php';
 
 class Database {
@@ -6,7 +8,9 @@ class Database {
     private $connection;
     
     private function __construct() {
-        $config = database_config();
+        // Get the configuration array directly
+        $config = require __DIR__.'/../config/database.php';
+        
         $this->connection = new mysqli(
             $config['host'],
             $config['username'],
@@ -15,7 +19,8 @@ class Database {
         );
         
         if ($this->connection->connect_error) {
-            throw new Exception("Connection failed: " . $this->connection->connect_error);
+            error_log("Database connection error: " . $this->connection->connect_error);
+            throw new Exception("Database connection failed");
         }
         
         $this->connection->set_charset($config['charset']);
@@ -58,6 +63,7 @@ class Database {
             return $prefix . str_pad($nextValue, $digits, '0', STR_PAD_LEFT);
         } catch (Exception $e) {
             $conn->rollback();
+            error_log("Generate code error: " . $e->getMessage());
             throw $e;
         }
     }
