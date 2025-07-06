@@ -114,29 +114,86 @@ body {
     text-decoration: underline;
 }
 
-/* ===== Mobile Responsiveness ===== */
-@media (max-width: 480px) {
-    .login-box {
-        padding: 1.5rem;
-        border-radius: 0;
-        box-shadow: none;
-    }
-    
-    .login-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .login-header h2 {
-        font-size: 1rem;
-    }
+/* ===== Price Calculator Styles ===== */
+.calc-container {
+    max-width: 420px;
+    margin: 2rem auto;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.05);
 }
 
-/* ===== System Error ===== */
-.system-error {
-    padding: 2rem;
+.calc-container h2 {
     text-align: center;
-    color: #c0392b;
-    font-weight: 500;
+    margin-top: 0;
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
+.calc-container label {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #34495e;
+}
+
+.calc-container input,
+.calc-container select {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.calc-container input:focus,
+.calc-container select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.calc-container button {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 1rem;
+    background: #3498db;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.calc-container button:hover {
+    background: #2980b9;
+}
+
+.calc-container .refresh-btn {
+    background: #2ecc71;
+    margin-top: 0.5rem;
+}
+
+.calc-container .refresh-btn:hover {
+    background: #27ae60;
+}
+
+.calc-container #result {
+    margin-top: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.calc-container .small {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 0.25rem;
+    text-align: left;
 }
 
 /* ===== Dashboard Styles ===== */
@@ -211,10 +268,34 @@ body {
     background: #c0392b;
 }
 
-/* ===== Mobile Responsiveness for Dashboard ===== */
+/* ===== System Error ===== */
+.system-error {
+    padding: 2rem;
+    text-align: center;
+    color: #c0392b;
+    font-weight: 500;
+}
+
+/* ===== Responsive Design ===== */
 @media (max-width: 600px) {
     .dashboard-menu {
         grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-box {
+        padding: 1.5rem;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .login-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .login-header h2 {
+        font-size: 1rem;
     }
 }
 
