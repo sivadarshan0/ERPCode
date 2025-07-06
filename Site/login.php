@@ -39,7 +39,8 @@ $username = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_STRING) ?? '';
+        // Replace deprecated FILTER_SANITIZE_STRING with modern alternative
+        $username = isset($_POST['username']) ? htmlspecialchars(trim($_POST['username']), ENT_QUOTES, 'UTF-8') : '';
         $password = $_POST['password'] ?? '';
         
         if (empty($username) || empty($password)) {
