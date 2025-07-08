@@ -30,25 +30,25 @@ require_once __DIR__ . '/includes/header.php';
         </div>
 
         <div class="dashboard-menu">
-            <a href="modules/products.php" class="menu-card">
+            <a href="modules/customers/customer.php" class="menu-card">
+                <div class="card-icon">👤</div>
+                <h3>Customers</h3>
+                <p>Customer management</p>
+            </a>
+
+            <a href="modules/inventory/item.php" class="menu-card">
                 <div class="card-icon">📦</div>
                 <h3>Products</h3>
-                <p>View or manage items</p>
+                <p>Product management</p>
             </a>
 
-            <a href="modules/categories.php" class="menu-card">
-                <div class="card-icon">📁</div>
-                <h3>Categories</h3>
-                <p>Organize by type</p>
-            </a>
-
-            <a href="modules/grn.php" class="menu-card">
+            <a href="modules/inventory/grn.php" class="menu-card">
                 <div class="card-icon">📥</div>
                 <h3>GRN Entry</h3>
                 <p>Goods receipt notes</p>
             </a>
 
-            <a href="modules/calculate_price.php" class="menu-card">
+            <a href="modules/pricing/calculate_price.php" class="menu-card">
                 <div class="card-icon">💰</div>
                 <h3>Price Calculator</h3>
                 <p>Live FX-based pricing</p>
