@@ -1,163 +1,193 @@
 <?php
-// Enable error display during development
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// File: item.php
+
 error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// Step 1
-echo "Step 1: Starting Script<br>";
-
-require_once __DIR__ . '/../../includes/header.php';
-require_once __DIR__ . '/../../includes/auth.php';
-require_once __DIR__ . '/../../includes/functions.php';
-
-echo "Step 2: Header included<br>";
-
-// Print session for debugging
-echo "<pre>Session Data: ";
-print_r($_SESSION);
-echo "</pre>";
-
-// Step 3: Require login
-require_login();
-echo "Step 3: User login verified<br>";
-
-// Step 4: DB connection
-$conn = db();
-echo "Step 4: Database connected<br>";
+require_once __DIR__ . '/../../config/database.php';
 
 $msg = '';
-$itemData = null;
+$itemCode = null;
 
-// Step 5: Form submission
+// Fetch categories
+$categories = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY Category") ?: [];
+
+// Fetch subcategories
+$subCategoryMap = [];
+$subCats = $conn->query("SELECT SubCategoryCode, SubCategory, CategoryCode FROM sub_category ORDER BY SubCategory") ?: [];
+while ($row = $subCats->fetch_assoc()) {
+    $subCategoryMap[$row['CategoryCode']][] = $row;
+}
+
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    echo "Step 5: POST Request received<br>";
-    try {
-        $conn->begin_transaction();
-        echo "Step 6: Transaction started<br>";
+    $item        = $_POST['Item'] ?? '';
+    $desc        = $_POST['Description'] ?? '';
+    $catCode     = $_POST['CategoryCode'] ?? '';
+    $subCatCode  = $_POST['SubCategoryCode'] ?? '';
 
-        $itemCode = $_POST['item_code'] ?? null;
-        $itemName = sanitize_input($_POST['item_name']);
-        $description = sanitize_input($_POST['description']);
-        $categoryCode = $_POST['category_code'];
-        $subCategoryCode = $_POST['sub_category_code'];
+    // Check if item exists
+    $stmt = $conn->prepare("SELECT ItemCode FROM item WHERE Item = ?");
+    $stmt->bind_param("s", $item);
+    $stmt->execute();
+    $stmt->store_result();
 
-        if ($itemCode) {
-            echo "Step 7a: Updating item<br>";
-            $stmt = $conn->prepare("UPDATE item SET Item=?, Description=?, CategoryCode=?, SubCategoryCode=? WHERE ItemCode=?");
-            $stmt->bind_param("sssss", $itemName, $description, $categoryCode, $subCategoryCode, $itemCode);
-            $action = 'updated';
+    if ($stmt->num_rows > 0) {
+        // Update
+        $stmt->bind_result($itemCode);
+        $stmt->fetch();
+        $stmt->close();
+
+        $update = $conn->prepare("UPDATE item SET Description=?, CategoryCode=?, SubCategoryCode=? WHERE Item=?");
+        $update->bind_param("ssss", $desc, $catCode, $subCatCode, $item);
+        $msg = $update->execute() ? "✅ Updated item (Code: <b>$itemCode</b>)" : "❌ Update error: " . $conn->error;
+        $update->close();
+    } else {
+        // Insert
+        $stmt->close();
+        $insert = $conn->prepare("INSERT INTO item (Item, Description, CategoryCode, SubCategoryCode) VALUES (?, ?, ?, ?)");
+        $insert->bind_param("ssss", $item, $desc, $catCode, $subCatCode);
+        if ($insert->execute()) {
+            $itemCode = $conn->insert_id;
+            $msg = "✅ Item added (Code: <b>$itemCode</b>)";
         } else {
-            echo "Step 7b: Inserting item<br>";
-            $itemCode = Database::getInstance()->generateCode('item_code', 'itm');
-            $stmt = $conn->prepare("INSERT INTO item (ItemCode, Item, Description, CategoryCode, SubCategoryCode) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $itemCode, $itemName, $description, $categoryCode, $subCategoryCode);
-            $action = 'created';
+            $msg = "❌ Insert error: " . $conn->error;
         }
-
-        $stmt->execute();
-        echo "Step 8: Query executed<br>";
-
-        $conn->commit();
-        echo "Step 9: Transaction committed<br>";
-
-        $msg = "Item $action successfully! Code: $itemCode";
-        $itemData = compact('itemCode', 'itemName', 'description', 'categoryCode', 'subCategoryCode');
-    } catch (Exception $e) {
-        $conn->rollback();
-        echo "Step 10: Transaction rolled back<br>";
-        $msg = "Error: " . $e->getMessage();
-        echo "Error Message: $msg<br>";
+        $insert->close();
     }
 }
-
-// Step 11: Fetch categories
-echo "Step 11: Fetching categories<br>";
-$categories = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY Category");
-if (!$categories) {
-    echo "MySQL Error: " . $conn->error;
-    exit;
-}
-echo "Step 12: Categories fetched<br>";
 ?>
-
-<!-- Step 13: Render Form -->
-<div class="form-container">
-    <h2>Item Management</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Item Entry</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <style>
+        .autocomplete-list {
+            border: 1px solid #ccc;
+            background: white;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 150px;
+            overflow-y: auto;
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+        }
+        .autocomplete-list li {
+            padding: 8px;
+            cursor: pointer;
+        }
+        .autocomplete-list li:hover {
+            background-color: #f0f0f0;
+        }
+        .msg.ok { color: green; }
+        .msg.err { color: red; }
+        .back-link { font-size: 0.9em; margin-left: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📝 Item Entry</h2>
 
     <?php if ($msg): ?>
-        <div class="alert <?= strpos($msg, 'Error') === false ? 'success' : 'error' ?>">
-            <?= $msg ?>
-        </div>
+        <p class="msg <?= str_starts_with($msg, '✅') ? 'ok' : 'err' ?>"><?= $msg ?></p>
     <?php endif; ?>
 
-    <form method="POST" id="itemForm">
-        <input type="hidden" name="item_code" id="itemCode" value="<?= $itemData['itemCode'] ?? '' ?>">
+    <form id="itemForm" method="POST" autocomplete="off">
+        <label for="CategoryCode">Category*</label>
+        <select name="CategoryCode" id="CategoryCode" required>
+            <option value="">-- Select Category --</option>
+            <?php if ($categories instanceof mysqli_result): ?>
+                <?php while($row = $categories->fetch_assoc()): ?>
+                    <option value="<?= $row['CategoryCode'] ?>"><?= htmlspecialchars($row['Category']) ?></option>
+                <?php endwhile; ?>
+            <?php endif; ?>
+        </select>
+        <a href="/modules/inventory/category.php" class="back-link">➕ Add Category</a>
 
-        <div class="form-group">
-            <label for="item_name">Item Name*</label>
-            <input type="text" id="item_name" name="item_name" required value="<?= $itemData['itemName'] ?? '' ?>">
+        <label for="SubCategoryCode">Sub-Category*</label>
+        <select name="SubCategoryCode" id="SubCategoryCode" required>
+            <option value="">-- Select Sub-Category --</option>
+        </select>
+        <a href="/modules/inventory/subcategory.php" class="back-link">➕ Add Sub-Category</a>
+
+        <label for="Item">Item*</label>
+        <div class="autocomplete-wrapper" style="position: relative;">
+            <input type="text" name="Item" id="Item" required>
+            <ul id="suggestions" class="autocomplete-list"></ul>
         </div>
 
-        <div class="form-group">
-            <label for="description">Description</label>
-            <textarea id="description" name="description"><?= $itemData['description'] ?? '' ?></textarea>
-        </div>
+        <label for="Description">Description</label>
+        <textarea name="Description" id="Description" rows="3"></textarea>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label for="category_code">Category*</label>
-                <select id="category_code" name="category_code" required>
-                    <option value="">Select Category</option>
-                    <?php while ($cat = $categories->fetch_assoc()): ?>
-                        <option value="<?= $cat['CategoryCode'] ?>"
-                            <?= ($itemData['categoryCode'] ?? '') === $cat['CategoryCode'] ? 'selected' : '' ?>>
-                            <?= $cat['Category'] ?>
-                        </option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="sub_category_code">Sub-Category*</label>
-                <select id="sub_category_code" name="sub_category_code" required>
-                    <option value="">Select Sub-Category</option>
-                </select>
-            </div>
-        </div>
-
-        <button type="submit" class="btn-primary">Save Item</button>
+        <input type="submit" value="💾 Save Item">
     </form>
+
+    <?php if ($itemCode): ?>
+        <p class="msg ok">🔑 Item Code: <strong><?= $itemCode ?></strong></p>
+    <?php endif; ?>
+
+    <p><a href="/index.php" class="back-link">⬅ Back to Menu</a></p>
 </div>
 
 <script>
-// Populate sub-categories via AJAX
-document.addEventListener('DOMContentLoaded', function () {
-    const categorySelect = document.getElementById('category_code');
-    const subCategorySelect = document.getElementById('sub_category_code');
+const subCategoryMap = <?= json_encode($subCategoryMap) ?>;
+const catSelect = document.getElementById('CategoryCode');
+const subCatSelect = document.getElementById('SubCategoryCode');
+const itemInput = document.getElementById('Item');
+const suggestionsList = document.getElementById('suggestions');
 
-    categorySelect.addEventListener('change', function () {
-        const categoryCode = this.value;
-        subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
+// Category change → populate subcategories
+catSelect.addEventListener('change', () => {
+    const selectedCat = catSelect.value;
+    subCatSelect.innerHTML = '<option value="">-- Select Sub-Category --</option>';
+    if (subCategoryMap[selectedCat]) {
+        subCategoryMap[selectedCat].forEach(sc => {
+            const opt = document.createElement('option');
+            opt.value = sc.SubCategoryCode;
+            opt.textContent = sc.SubCategory;
+            subCatSelect.appendChild(opt);
+        });
+    }
+});
 
-        if (!categoryCode) return;
+// Live autocomplete
+itemInput.addEventListener('input', async () => {
+    const query = itemInput.value.trim();
+    suggestionsList.innerHTML = '';
+    if (query.length < 1) return;
 
-        fetch(`/search.php?type=subcategory&category=${encodeURIComponent(categoryCode)}`)
-            .then(res => res.json())
-            .then(data => {
-                data.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    option.textContent = item.text;
-                    subCategorySelect.appendChild(option);
-                });
-            });
+    const res = await fetch(`/search.php?type=item&q=${encodeURIComponent(query)}`);
+    if (!res.ok) return;
+
+    const items = await res.json();
+    items.forEach(data => {
+        const li = document.createElement('li');
+        li.textContent = data.Item;
+        li.addEventListener('click', () => {
+            itemInput.value = data.Item;
+            document.getElementById('Description').value = data.Description;
+            catSelect.value = data.CategoryCode;
+            catSelect.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+                subCatSelect.value = data.SubCategoryCode;
+            }, 100);
+            suggestionsList.innerHTML = '';
+        });
+        suggestionsList.appendChild(li);
     });
+});
 
-    if (categorySelect.value) {
-        categorySelect.dispatchEvent(new Event('change'));
+// Hide suggestions when clicking outside
+document.addEventListener('click', (e) => {
+    if (!suggestionsList.contains(e.target) && e.target !== itemInput) {
+        suggestionsList.innerHTML = '';
     }
 });
 </script>
-
-<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
+</body>
+</html>
