@@ -9,6 +9,11 @@ echo "Step 1: Starting Script<br>";
 require_once __DIR__.'/../../includes/header.php';
 echo "Step 2: Header included<br>";
 
+echo "<pre>Session Data: ";
+print_r($_SESSION);
+echo "</pre>";
+
+
 require_login();
 echo "Step 3: User login verified<br>";
 
