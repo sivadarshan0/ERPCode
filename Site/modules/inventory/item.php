@@ -72,47 +72,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="login-container">
-    <div class="login-box" style="max-width: 600px">
-        <div class="login-header">
-            <h1>Item Entry</h1>
+<div class="content-container">
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Item Entry</h2>
+            <a href="/index.php" class="back-link">&larr; Back to Menu</a>
         </div>
 
         <?php if ($msg): ?>
-            <p class="msg <?= str_starts_with($msg, '✅') ? 'ok' : 'err' ?>"><?= $msg ?></p>
+            <div class="alert <?= str_starts_with($msg, '✅') ? 'alert-success' : 'alert-error' ?>">
+                <?= $msg ?>
+            </div>
         <?php endif; ?>
 
-        <form id="itemForm" method="POST" autocomplete="off">
-            <label for="category_code">Category*</label>
-            <select name="category_code" id="category_code" required>
-                <option value="">-- Select Category --</option>
-                <?php if ($categories && $categories instanceof mysqli_result): ?>
-                    <?php while($row = $categories->fetch_assoc()): ?>
-                        <option value="<?= $row['CategoryCode'] ?>"><?= htmlspecialchars($row['Category']) ?></option>
-                    <?php endwhile; ?>
-                <?php endif; ?>
-            </select>
-            <a href="/modules/inventory/category.php" class="back-link">➕ Add Category</a>
-
-            <label for="sub_category_code">Sub-Category*</label>
-            <select name="sub_category_code" id="sub_category_code" required>
-                <option value="">-- Select Sub-Category --</option>
-            </select>
-            <a href="/modules/inventory/subcategory.php" class="back-link">➕ Add Sub-Category</a>
-
-            <label for="item_name">Item*</label>
-            <div class="autocomplete-wrapper">
-                <input type="text" name="item_name" id="item_name" required>
-                <ul id="suggestions" class="autocomplete-list"></ul>
+        <form id="itemForm" method="POST" autocomplete="off" class="item-form">
+            <div class="form-group">
+                <label for="category_code">Category*</label>
+                <div class="select-wrapper">
+                    <select name="category_code" id="category_code" required>
+                        <option value="">Select Category</option>
+                        <?php if ($categories && $categories instanceof mysqli_result): ?>
+                            <?php while($row = $categories->fetch_assoc()): ?>
+                                <option value="<?= $row['CategoryCode'] ?>"><?= htmlspecialchars($row['Category']) ?></option>
+                            <?php endwhile; ?>
+                        <?php endif; ?>
+                    </select>
+                    <a href="/modules/inventory/category.php" class="add-link">+ Add Category</a>
+                </div>
             </div>
 
-            <label for="description">Description</label>
-            <textarea name="description" id="description" rows="3"></textarea>
+            <div class="form-group">
+                <label for="sub_category_code">Sub-Category*</label>
+                <div class="select-wrapper">
+                    <select name="sub_category_code" id="sub_category_code" required>
+                        <option value="">Select Sub-Category</option>
+                    </select>
+                    <a href="/modules/inventory/subcategory.php" class="add-link">+ Add Sub-Category</a>
+                </div>
+            </div>
 
-            <input type="submit" value="Save Item">
+            <div class="form-group">
+                <label for="item_name">Item Name*</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" name="item_name" id="item_name" required placeholder="Enter item name">
+                    <ul id="suggestions" class="autocomplete-list"></ul>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" rows="4" placeholder="Enter item description"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Save Item</button>
+            </div>
         </form>
-
-        <p><a href="/index.php" class="back-link">&larr; Back to Menu</a></p>
     </div>
 </div>
 
@@ -123,9 +138,10 @@ const subCatSelect = document.getElementById('sub_category_code');
 const itemInput = document.getElementById('item_name');
 const suggestionsList = document.getElementById('suggestions');
 
+// Update sub-categories when category changes
 catSelect.addEventListener('change', function() {
     const selectedCat = this.value;
-    subCatSelect.innerHTML = '<option value="">-- Select Sub-Category --</option>';
+    subCatSelect.innerHTML = '<option value="">Select Sub-Category</option>';
     if (subCategoryMap[selectedCat]) {
         subCategoryMap[selectedCat].forEach(sc => {
             const opt = document.createElement('option');
@@ -136,16 +152,18 @@ catSelect.addEventListener('change', function() {
     }
 });
 
+// Form validation
 document.getElementById('itemForm').addEventListener('submit', function(e) {
     const cat = catSelect.value;
     const sub = subCatSelect.value;
     const item = itemInput.value.trim();
     if (!cat || !sub || item.length < 3) {
-        alert('Please fill all fields correctly.');
+        alert('Please fill all required fields correctly.');
         e.preventDefault();
     }
 });
 
+// Item autocomplete
 itemInput.addEventListener('input', async () => {
     const query = itemInput.value.trim();
     suggestionsList.innerHTML = '';
@@ -156,49 +174,205 @@ itemInput.addEventListener('input', async () => {
     if (!res.ok) return;
 
     const items = await res.json();
-    items.forEach(data => {
-        const li = document.createElement('li');
-        li.textContent = data.Item;
-        li.addEventListener('click', () => {
-            itemInput.value = data.Item;
-            document.getElementById('description').value = data.Description;
-            catSelect.value = data.CategoryCode;
-            catSelect.dispatchEvent(new Event('change'));
-            setTimeout(() => {
-                subCatSelect.value = data.SubCategoryCode;
-            }, 100);
-            suggestionsList.innerHTML = '';
+    if (items.length > 0) {
+        suggestionsList.style.display = 'block';
+        items.forEach(data => {
+            const li = document.createElement('li');
+            li.textContent = data.Item;
+            li.addEventListener('click', () => {
+                itemInput.value = data.Item;
+                document.getElementById('description').value = data.Description;
+                catSelect.value = data.CategoryCode;
+                catSelect.dispatchEvent(new Event('change'));
+                setTimeout(() => {
+                    subCatSelect.value = data.SubCategoryCode;
+                }, 100);
+                suggestionsList.style.display = 'none';
+            });
+            suggestionsList.appendChild(li);
         });
-        suggestionsList.appendChild(li);
-    });
+    } else {
+        suggestionsList.style.display = 'none';
+    }
 });
 
+// Close autocomplete when clicking outside
 document.addEventListener('click', (e) => {
     if (!suggestionsList.contains(e.target) && e.target !== itemInput) {
-        suggestionsList.innerHTML = '';
+        suggestionsList.style.display = 'none';
     }
 });
 </script>
 
 <style>
+/* Main Container Styles */
+.content-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.form-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-header h2 {
+    margin: 0;
+    color: #333;
+}
+
+.back-link {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+/* Alert Messages */
+.alert {
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Form Elements */
+.item-form {
+    margin-top: 15px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 14px;
+    appearance: none;
+    flex: 1;
+}
+
+.add-link {
+    margin-left: 10px;
+    color: #3498db;
+    text-decoration: none;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.add-link:hover {
+    text-decoration: underline;
+}
+
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Autocomplete Styles */
+.autocomplete-wrapper {
+    position: relative;
+}
+
 .autocomplete-list {
-    border: 1px solid #ccc;
+    position: absolute;
+    z-index: 1000;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
     background: white;
     list-style: none;
-    margin: 0;
     padding: 0;
-    max-height: 150px;
-    overflow-y: auto;
-    position: absolute;
-    width: 200px;
-    z-index: 1000;
+    margin: 0;
+    display: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
 .autocomplete-list li {
-    padding: 8px;
+    padding: 10px 15px;
     cursor: pointer;
+    border-bottom: 1px solid #eee;
 }
+
 .autocomplete-list li:hover {
-    background-color: #f0f0f0;
+    background-color: #f5f5f5;
+}
+
+/* Button Styles */
+.form-actions {
+    margin-top: 25px;
+    text-align: right;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background: #2980b9;
 }
 </style>
 
