@@ -1,17 +1,18 @@
 <?php
 // File: includes/auth.php
 
-// Production-ready error handling
+// Production error logging (logs only, no display)
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Display off
+ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 
+// Load DB connection
 require_once __DIR__ . '/db.php';
 
 /**
  * Attempt user login
- * 
+ *
  * @param string $username
  * @param string $password
  * @return bool
@@ -36,7 +37,7 @@ function login($username, $password) {
             throw new Exception("DB misconfiguration");
         }
 
-        // Query user by username
+        // Query user
         $stmt = $conn->prepare("SELECT id, password, is_active FROM users WHERE username = ? LIMIT 1");
         if (!$stmt) {
             error_log("Login error: prepare failed - " . $conn->error);
@@ -49,7 +50,7 @@ function login($username, $password) {
 
         if ($res->num_rows !== 1) {
             error_log("Login failed: user not found [$username]");
-            usleep(rand(100000, 300000)); // Throttle brute force
+            usleep(rand(100000, 300000)); // throttle brute force
             return false;
         }
 
@@ -65,7 +66,7 @@ function login($username, $password) {
             return false;
         }
 
-        // Authenticated – start session
+        // Authenticated
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
         }
@@ -83,9 +84,8 @@ function login($username, $password) {
     }
 }
 
-
 /**
- * Log the user out safely
+ * Logout user securely
  */
 function logout() {
     if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -112,4 +112,28 @@ function logout() {
     }
 
     error_log("User logged out.");
+}
+
+/**
+ * Require login (with timeout support)
+ */
+function require_login() {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+
+    if (!isset($_SESSION['user_id']) || !isset($_SESSION['username'])) {
+        header('Location: /login.php');
+        exit;
+    }
+
+    // Timeout after 30 minutes of inactivity
+    $timeout = 1800;
+    if (isset($_SESSION['last_activity']) && time() - $_SESSION['last_activity'] > $timeout) {
+        logout();
+        header('Location: /login.php?timeout=1');
+        exit;
+    }
+
+    $_SESSION['last_activity'] = time(); // Update activity time
 }
