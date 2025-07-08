@@ -10,22 +10,49 @@ body {
     background-color: #f5f7fa;
 }
 
-/* ===== Shared Form Styles ===== */
-.form-container {
-    max-width: 600px;
-    margin: 2rem auto;
-    background: #fff;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,.05);
+/* ===== Login Styles ===== */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
 }
 
-.form-container h2 {
+.login-box {
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     text-align: center;
-    margin-top: 0;
-    font-size: 1.8rem;
+}
+
+.login-header h1 {
     color: #2c3e50;
+    margin: 0 0 0.5rem;
+    font-size: 1.8rem;
+}
+
+.login-header h2 {
+    color: #7f8c8d;
+    margin: 0 0 1.5rem;
+    font-size: 1.2rem;
+    font-weight: 400;
+}
+
+.alert-error {
+    color: #c0392b;
+    background-color: #fadbd8;
+    padding: 0.75rem;
+    border-radius: 4px;
     margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.login-form {
+    margin-top: 1.5rem;
 }
 
 .form-group {
@@ -40,38 +67,21 @@ body {
     font-weight: 500;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.form-group input {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 1rem;
     transition: border-color 0.3s;
-    box-sizing: border-box;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.form-group input:focus {
     border-color: #3498db;
     outline: none;
 }
 
-.form-row {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.form-group .input-row {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.btn-primary {
+.btn-login {
     width: 100%;
     padding: 0.75rem;
     background: #3498db;
@@ -82,53 +92,215 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: background 0.3s;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
 }
 
-.btn-primary:hover {
+.btn-login:hover {
     background: #2980b9;
 }
 
-.btn-small {
-    padding: 0.5rem;
-    background: #8e44ad;
-    color: white;
+.login-footer {
+    margin-top: 1.5rem;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.login-footer a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+/* ===== Price Calculator Styles ===== */
+.calc-container {
+    max-width: 420px;
+    margin: 2rem auto;
+    background: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,.05);
+}
+
+.calc-container h2 {
+    text-align: center;
+    margin-top: 0;
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
+.calc-container label {
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #34495e;
+}
+
+.calc-container input,
+.calc-container select {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.calc-container input:focus,
+.calc-container select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.calc-container button {
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 1rem;
+    background: #3498db;
     border: none;
-    border-radius: 4px;
-    font-weight: bold;
+    border-radius: 6px;
+    color: white;
     font-size: 1rem;
     cursor: pointer;
     transition: background 0.3s;
-    width: 42px;
-    height: 42px;
 }
 
-.btn-small:hover {
-    background: #6c3483;
+.calc-container button:hover {
+    background: #2980b9;
 }
 
-.alert {
-    margin-bottom: 1rem;
-    padding: 0.75rem 1rem;
+.calc-container .refresh-btn {
+    background: #2ecc71;
+    margin-top: 0.5rem;
+}
+
+.calc-container .refresh-btn:hover {
+    background: #27ae60;
+}
+
+.calc-container #result {
+    margin-top: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.calc-container .small {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 0.25rem;
+    text-align: left;
+}
+
+/* ===== Dashboard Styles ===== */
+.user-welcome {
+    color: #7f8c8d;
+    margin: 0 0 1.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.dashboard-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.menu-card {
+    background: #f8f9fa;
     border-radius: 6px;
-    font-size: 0.95rem;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    text-decoration: none;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
 }
 
-.alert.success {
-    background-color: #d4edda;
-    color: #155724;
+.menu-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #3498db;
 }
 
-.alert.error {
-    background-color: #f8d7da;
-    color: #721c24;
+.card-icon {
+    font-size: 2rem;
+    color: #3498db;
+    margin-bottom: 0.75rem;
 }
 
-/* Responsive */
+.menu-card h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+}
+
+.menu-card p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+
+.dashboard-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.btn-logout {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+    text-decoration: none;
+}
+
+.btn-logout:hover {
+    background: #c0392b;
+}
+
+/* ===== System Error ===== */
+.system-error {
+    padding: 2rem;
+    text-align: center;
+    color: #c0392b;
+    font-weight: 500;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 600px) {
+    .dashboard-menu {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 @media (max-width: 480px) {
-    .btn-small {
-        width: 38px;
-        height: 38px;
-        font-size: 0.9rem;
+    .login-box {
+        padding: 1.5rem;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .login-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .login-header h2 {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .dashboard-menu {
+        grid-template-columns: 1fr;
     }
 }
