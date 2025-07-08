@@ -5,6 +5,9 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
+// Include auth functions
+require_once __DIR__.'/auth.php';  // ✅ Add this line
+
 // Define a default page title if not already set
 if (!isset($pageTitle)) {
     $pageTitle = 'ERP System';
