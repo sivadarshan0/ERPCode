@@ -5,55 +5,58 @@ require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Load categories for dropdown
+// Fetch categories for dropdown
 $conn = db();
 $categoryStmt = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY Category");
 $categories = $categoryStmt->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<div class="form-container">
-    <h2>Item Management</h2>
+<div class="login-container">
+    <div class="login-box" style="max-width: 600px">
+        <div class="login-header">
+            <h1>Item Management</h1>
+        </div>
 
-    <form action="save_item.php" method="POST" data-validate>
-        <div class="form-group">
-            <label for="category">Category*</label>
-            <div class="input-row">
-                <select name="category" id="category" required>
-                    <option value="">Select Category</option>
-                    <?php foreach ($categories as $cat): ?>
-                        <option value="<?= htmlspecialchars($cat['CategoryCode']) ?>">
-                            <?= htmlspecialchars($cat['Category']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="button" class="btn-small" onclick="promptAdd('category')">+</button>
+        <form action="save_item.php" method="POST" data-validate>
+            <div class="form-group">
+                <label for="category">Category*</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <select name="category" id="category" required style="flex: 1;">
+                        <option value="">Select Category</option>
+                        <?php foreach ($categories as $cat): ?>
+                            <option value="<?= htmlspecialchars($cat['CategoryCode']) ?>">
+                                <?= htmlspecialchars($cat['Category']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="button" onclick="promptAdd('category')" class="btn-add">+</button>
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="subcategory">Sub-Category*</label>
-            <div class="input-row">
-                <select name="subcategory" id="subcategory" required>
-                    <option value="">Select Sub-Category</option>
-                    <!-- Will be dynamically populated -->
-                </select>
-                <button type="button" class="btn-small" onclick="promptAdd('subcategory')">+</button>
+            <div class="form-group">
+                <label for="subcategory">Sub-Category*</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <select name="subcategory" id="subcategory" required style="flex: 1;">
+                        <option value="">Select Sub-Category</option>
+                    </select>
+                    <button type="button" onclick="promptAdd('subcategory')" class="btn-add">+</button>
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="item">Item*</label>
-            <input type="text" name="item" id="item" data-autocomplete="itemList" data-type="item" required>
-            <div id="itemList" class="autocomplete-box"></div>
-        </div>
+            <div class="form-group">
+                <label for="item">Item*</label>
+                <input type="text" name="item" id="item" data-autocomplete="itemList" data-type="item" required>
+                <div id="itemList" class="autocomplete-box"></div>
+            </div>
 
-        <div class="form-group">
-            <label for="description">Description</label>
-            <textarea name="description" id="description" rows="3"></textarea>
-        </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" rows="3" style="width: 100%;"></textarea>
+            </div>
 
-        <button type="submit" class="btn-primary">Save Item</button>
-    </form>
+            <button type="submit" class="btn-login">Save Item</button>
+        </form>
+    </div>
 </div>
 
 <script>
