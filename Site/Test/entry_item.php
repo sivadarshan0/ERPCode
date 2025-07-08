@@ -5,7 +5,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // ───── DB connection ─────
-require_once 'config_db.php';
+require_once __DIR__.'/../includes/db.php';;
 
 $msg = '';
 $itemCode = null;
