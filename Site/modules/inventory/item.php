@@ -11,145 +11,195 @@ $conn = db();
 $msg = '';
 $itemData = null;
 
-// Handle form submit
+// Fetch categories
+$categories = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY Category") ?: [];
+
+// Fetch sub-categories grouped by category
+$subCategoryMap = [];
+$subCats = $conn->query("SELECT SubCategoryCode, SubCategory, CategoryCode FROM sub_category ORDER BY SubCategory") ?: [];
+while($row = $subCats->fetch_assoc()) {
+    $subCategoryMap[$row['CategoryCode']][] = $row;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $conn->begin_transaction();
 
-        $itemCode = $_POST['item_code'] ?? null;
-        $itemName = sanitize_input($_POST['item_name'] ?? '');
-        $description = sanitize_input($_POST['description'] ?? '');
-        $categoryCode = sanitize_input($_POST['category_code'] ?? '');
-        $subCategoryCode = sanitize_input($_POST['sub_category_code'] ?? '');
+        $item        = $_POST['item_name'] ?? '';
+        $desc        = $_POST['description'] ?? '';
+        $catCode     = $_POST['category_code'] ?? null;
+        $subCatCode  = $_POST['sub_category_code'] ?? null;
 
-        if (!$itemName || !$categoryCode || !$subCategoryCode) {
-            throw new Exception("All fields are required.");
-        }
-
-        if ($itemCode) {
-            $stmt = $conn->prepare("UPDATE item SET Item=?, Description=?, CategoryCode=?, SubCategoryCode=? WHERE ItemCode=?");
-            $stmt->bind_param("sssss", $itemName, $description, $categoryCode, $subCategoryCode, $itemCode);
-            $action = 'updated';
-        } else {
-            $itemCode = Database::getInstance()->generateCode('item_code', 'itm');
-            $stmt = $conn->prepare("INSERT INTO item (ItemCode, Item, Description, CategoryCode, SubCategoryCode) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $itemCode, $itemName, $description, $categoryCode, $subCategoryCode);
-            $action = 'created';
-        }
-
+        // Check if item exists
+        $stmt = $conn->prepare("SELECT ItemCode FROM item WHERE Item = ?");
+        $stmt->bind_param("s", $item);
         $stmt->execute();
-        if ($stmt->affected_rows < 1) {
-            throw new Exception("No changes made.");
-        }
-        $conn->commit();
+        $stmt->store_result();
 
-        $msg = "Item $action successfully! Code: $itemCode";
-        $itemData = compact('itemCode', 'itemName', 'description', 'categoryCode', 'subCategoryCode');
+        if ($stmt->num_rows > 0) {
+            // Update
+            $stmt->bind_result($itemCode);
+            $stmt->fetch();
+            $stmt->close();
+
+            $update = $conn->prepare("UPDATE item SET Description=?, CategoryCode=?, SubCategoryCode=? WHERE Item=?");
+            $update->bind_param("ssss", $desc, $catCode, $subCatCode, $item);
+            if ($update->execute()) {
+                $msg = "✅ Item updated successfully (Code: <b>$itemCode</b>)";
+            } else {
+                $msg = "❌ Error updating: " . $conn->error;
+            }
+            $update->close();
+        } else {
+            // Insert
+            $stmt->close();
+            $insert = $conn->prepare("INSERT INTO item (Item, Description, CategoryCode, SubCategoryCode) VALUES (?, ?, ?, ?)");
+            $insert->bind_param("ssss", $item, $desc, $catCode, $subCatCode);
+            if ($insert->execute()) {
+                $itemCode = $conn->insert_id;
+                $msg = "✅ Item added. Code: <b>$itemCode</b>";
+            } else {
+                $msg = "❌ Error inserting: " . $conn->error;
+            }
+            $insert->close();
+        }
+
+        $conn->commit();
     } catch (Exception $e) {
         $conn->rollback();
-        $msg = "Error: " . $e->getMessage();
+        $msg = "❌ Transaction failed: " . $e->getMessage();
     }
 }
-
-// Fetch category list
-$categories = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY Category");
 ?>
 
 <div class="login-container">
     <div class="login-box" style="max-width: 600px">
         <div class="login-header">
-            <h1>Item Management</h1>
+            <h1>Item Entry</h1>
         </div>
 
         <?php if ($msg): ?>
-            <div class="alert <?= strpos($msg, 'Error') === false ? 'success' : 'alert-error' ?>">
-                <?= htmlspecialchars($msg) ?>
-            </div>
+            <p class="msg <?= str_starts_with($msg, '✅') ? 'ok' : 'err' ?>"><?= $msg ?></p>
         <?php endif; ?>
 
-        <form method="POST" id="itemForm">
-            <input type="hidden" name="item_code" id="itemCode" value="<?= htmlspecialchars($itemData['itemCode'] ?? '') ?>">
-
-            <div class="form-group">
-                <label for="category_code">Category*</label>
-                <select id="category_code" name="category_code" required>
-                    <option value="">Select Category</option>
-                    <?php while ($cat = $categories->fetch_assoc()): ?>
-                        <option value="<?= htmlspecialchars($cat['CategoryCode']) ?>"
-                            <?= (isset($itemData['categoryCode']) && $itemData['categoryCode'] === $cat['CategoryCode']) ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($cat['Category']) ?>
-                        </option>
+        <form id="itemForm" method="POST" autocomplete="off">
+            <label for="category_code">Category*</label>
+            <select name="category_code" id="category_code" required>
+                <option value="">-- Select Category --</option>
+                <?php if ($categories && $categories instanceof mysqli_result): ?>
+                    <?php while($row = $categories->fetch_assoc()): ?>
+                        <option value="<?= $row['CategoryCode'] ?>"><?= htmlspecialchars($row['Category']) ?></option>
                     <?php endwhile; ?>
-                </select>
-                <button type="button" onclick="promptAddCategory()">➕</button>
+                <?php endif; ?>
+            </select>
+            <a href="/modules/inventory/category.php" class="back-link">➕ Add Category</a>
+
+            <label for="sub_category_code">Sub-Category*</label>
+            <select name="sub_category_code" id="sub_category_code" required>
+                <option value="">-- Select Sub-Category --</option>
+            </select>
+            <a href="/modules/inventory/subcategory.php" class="back-link">➕ Add Sub-Category</a>
+
+            <label for="item_name">Item*</label>
+            <div class="autocomplete-wrapper">
+                <input type="text" name="item_name" id="item_name" required>
+                <ul id="suggestions" class="autocomplete-list"></ul>
             </div>
 
-            <div class="form-group">
-                <label for="sub_category_code">Sub-Category*</label>
-                <select id="sub_category_code" name="sub_category_code" required>
-                    <option value="">Select Sub-Category</option>
-                </select>
-                <button type="button" onclick="promptAddSubCategory()">➕</button>
-            </div>
+            <label for="description">Description</label>
+            <textarea name="description" id="description" rows="3"></textarea>
 
-            <div class="form-group">
-                <label for="item_name">Item*</label>
-                <input type="text" id="item_name" name="item_name" required data-autocomplete="itemDropdown" data-type="item">
-                <div id="itemDropdown" class="autocomplete-dropdown"></div>
-            </div>
-
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" name="description"><?= htmlspecialchars($itemData['description'] ?? '') ?></textarea>
-            </div>
-
-            <button type="submit" class="btn-login">Save Item</button>
+            <input type="submit" value="Save Item">
         </form>
+
+        <p><a href="/index.php" class="back-link">&larr; Back to Menu</a></p>
     </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const categorySelect = document.getElementById('category_code');
-    const subCategorySelect = document.getElementById('sub_category_code');
+const subCategoryMap = <?= json_encode($subCategoryMap) ?>;
+const catSelect = document.getElementById('category_code');
+const subCatSelect = document.getElementById('sub_category_code');
+const itemInput = document.getElementById('item_name');
+const suggestionsList = document.getElementById('suggestions');
 
-    categorySelect.addEventListener('change', () => {
-        fetch(`/search.php?type=subcategory&category=${categorySelect.value}`)
-            .then(res => res.json())
-            .then(data => {
-                subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
-                data.forEach(sc => {
-                    const opt = document.createElement('option');
-                    opt.value = sc.id;
-                    opt.textContent = sc.text;
-                    subCategorySelect.appendChild(opt);
-                });
-            });
-    });
-
-    if (categorySelect.value) categorySelect.dispatchEvent(new Event('change'));
+catSelect.addEventListener('change', function() {
+    const selectedCat = this.value;
+    subCatSelect.innerHTML = '<option value="">-- Select Sub-Category --</option>';
+    if (subCategoryMap[selectedCat]) {
+        subCategoryMap[selectedCat].forEach(sc => {
+            const opt = document.createElement('option');
+            opt.value = sc.SubCategoryCode;
+            opt.textContent = sc.SubCategory;
+            subCatSelect.appendChild(opt);
+        });
+    }
 });
 
-function promptAddCategory() {
-    const newCat = prompt("Enter new category name:");
-    if (!newCat) return;
-    fetch('/modules/inventory/category.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=create&name=' + encodeURIComponent(newCat)
-    }).then(() => location.reload());
-}
+document.getElementById('itemForm').addEventListener('submit', function(e) {
+    const cat = catSelect.value;
+    const sub = subCatSelect.value;
+    const item = itemInput.value.trim();
+    if (!cat || !sub || item.length < 3) {
+        alert('Please fill all fields correctly.');
+        e.preventDefault();
+    }
+});
 
-function promptAddSubCategory() {
-    const newSub = prompt("Enter new sub-category name:");
-    const catCode = document.getElementById('category_code').value;
-    if (!newSub || !catCode) return;
-    fetch('/modules/inventory/subcategory.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=create&category_code=' + encodeURIComponent(catCode) + '&name=' + encodeURIComponent(newSub)
-    }).then(() => document.getElementById('category_code').dispatchEvent(new Event('change')));
-}
+itemInput.addEventListener('input', async () => {
+    const query = itemInput.value.trim();
+    suggestionsList.innerHTML = '';
+
+    if (query.length < 1) return;
+
+    const res = await fetch(`/modules/inventory/search_item.php?q=${encodeURIComponent(query)}`);
+    if (!res.ok) return;
+
+    const items = await res.json();
+    items.forEach(data => {
+        const li = document.createElement('li');
+        li.textContent = data.Item;
+        li.addEventListener('click', () => {
+            itemInput.value = data.Item;
+            document.getElementById('description').value = data.Description;
+            catSelect.value = data.CategoryCode;
+            catSelect.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+                subCatSelect.value = data.SubCategoryCode;
+            }, 100);
+            suggestionsList.innerHTML = '';
+        });
+        suggestionsList.appendChild(li);
+    });
+});
+
+document.addEventListener('click', (e) => {
+    if (!suggestionsList.contains(e.target) && e.target !== itemInput) {
+        suggestionsList.innerHTML = '';
+    }
+});
 </script>
+
+<style>
+.autocomplete-list {
+    border: 1px solid #ccc;
+    background: white;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    position: absolute;
+    width: 200px;
+    z-index: 1000;
+}
+.autocomplete-list li {
+    padding: 8px;
+    cursor: pointer;
+}
+.autocomplete-list li:hover {
+    background-color: #f0f0f0;
+}
+</style>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
