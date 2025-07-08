@@ -4,19 +4,23 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once __DIR__ . '/../../includes/db.php';   // Database class & db() function
-require_once __DIR__ . '/../../includes/header.php'; // Header + session start + HTML head
+require_once __DIR__ . '/../../includes/db.php';
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/header.php';
 
-require_login(); // Your auth check function
+require_login(); // Ensure user is authenticated
 
 $conn = db();
-
 $msg = '';
 $itemData = null;
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        // CSRF protection
+        if (!validate_csrf_token($_POST['csrf_token'] ?? '')) {
+            throw new Exception("Invalid CSRF token.");
+        }
+
         $conn->begin_transaction();
 
         $itemCode = $_POST['item_code'] ?? null;
@@ -30,12 +34,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($itemCode) {
-            // Update existing item
+            // Update item
             $stmt = $conn->prepare("UPDATE item SET Item=?, Description=?, CategoryCode=?, SubCategoryCode=? WHERE ItemCode=?");
             $stmt->bind_param("sssss", $itemName, $description, $categoryCode, $subCategoryCode, $itemCode);
             $action = 'updated';
         } else {
-            // Create new item code using sequence generator
+            // Create new item
             $itemCode = Database::getInstance()->generateCode('item_code', 'itm');
             $stmt = $conn->prepare("INSERT INTO item (ItemCode, Item, Description, CategoryCode, SubCategoryCode) VALUES (?, ?, ?, ?, ?)");
             $stmt->bind_param("sssss", $itemCode, $itemName, $description, $categoryCode, $subCategoryCode);
@@ -43,51 +47,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stmt->execute();
-
         if ($stmt->affected_rows < 1) {
             throw new Exception("No changes made.");
         }
 
         $conn->commit();
-
-        $msg = "Item $action successfully! Code: $itemCode";
+        $msg = "✅ Item $action successfully! Code: $itemCode";
         $itemData = compact('itemCode', 'itemName', 'description', 'categoryCode', 'subCategoryCode');
 
         $stmt->close();
     } catch (Exception $e) {
         $conn->rollback();
-        $msg = "Error: " . $e->getMessage();
+        $msg = "❌ Error: " . $e->getMessage();
     }
 }
 
 // Fetch categories for dropdown
 $categories = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY Category");
 
+// Set page title
+$pageTitle = "Manage Item";
 ?>
 
-<div class="form-container">
-    <h2>Item Management</h2>
-
-    <?php if ($msg): ?>
-        <div class="alert <?= strpos($msg, 'Error') === false ? 'success' : 'error' ?>">
-            <?= htmlspecialchars($msg) ?>
-        </div>
-    <?php endif; ?>
-
-    <form method="POST" id="itemForm">
-        <input type="hidden" name="item_code" id="itemCode" value="<?= htmlspecialchars($itemData['itemCode'] ?? '') ?>">
-
-        <div class="form-group">
-            <label for="item_name">Item Name*</label>
-            <input type="text" id="item_name" name="item_name" required value="<?= htmlspecialchars($itemData['itemName'] ?? '') ?>">
+<div class="login-container">
+    <div class="login-box" style="max-width: 600px">
+        <div class="login-header">
+            <h1>Item Management</h1>
+            <h2>Create or Update Items</h2>
         </div>
 
-        <div class="form-group">
-            <label for="description">Description</label>
-            <textarea id="description" name="description"><?= htmlspecialchars($itemData['description'] ?? '') ?></textarea>
-        </div>
+        <?php if ($msg): ?>
+            <div class="alert <?= strpos($msg, 'Error') === false ? 'success' : 'error' ?>">
+                <?= htmlspecialchars($msg) ?>
+            </div>
+        <?php endif; ?>
 
-        <div class="form-row">
+        <form method="POST" id="itemForm" data-validate>
+            <input type="hidden" name="item_code" value="<?= htmlspecialchars($itemData['itemCode'] ?? '') ?>">
+            <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
+
+            <div class="form-group">
+                <label for="item_name">Item Name*</label>
+                <input type="text" id="item_name" name="item_name" required value="<?= htmlspecialchars($itemData['itemName'] ?? '') ?>">
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description"><?= htmlspecialchars($itemData['description'] ?? '') ?></textarea>
+            </div>
+
             <div class="form-group">
                 <label for="category_code">Category*</label>
                 <select id="category_code" name="category_code" required>
@@ -105,13 +113,16 @@ $categories = $conn->query("SELECT CategoryCode, Category FROM category ORDER BY
                 <label for="sub_category_code">Sub-Category*</label>
                 <select id="sub_category_code" name="sub_category_code" required>
                     <option value="">Select Sub-Category</option>
-                    <!-- Sub-categories will be populated via JS -->
                 </select>
             </div>
-        </div>
 
-        <button type="submit" class="btn-primary">Save Item</button>
-    </form>
+            <button type="submit" class="btn-login">Save Item</button>
+        </form>
+
+        <div class="login-footer">
+            <a href="/index.php">← Back to Dashboard</a>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -135,18 +146,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     subCategorySelect.appendChild(option);
                 });
 
-                // Optionally select existing sub-category if editing
                 <?php if (isset($itemData['subCategoryCode'])): ?>
                     subCategorySelect.value = "<?= htmlspecialchars($itemData['subCategoryCode']) ?>";
                 <?php endif; ?>
             })
             .catch(() => {
-                // On error, clear options except default
                 subCategorySelect.innerHTML = '<option value="">Select Sub-Category</option>';
             });
     });
 
-    // Trigger change if category is pre-selected to load subcategories
     if (categorySelect.value) {
         categorySelect.dispatchEvent(new Event('change'));
     }
