@@ -1,5 +1,5 @@
 <?php
-// File: modules/inventory/category.php
+// File: /modules/inventory/category.php
 
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
@@ -7,11 +7,10 @@ require_once __DIR__ . '/../../includes/header.php';
 
 require_login();
 $conn = db();
-
 $msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $category    = sanitize_input($_POST['category'] ?? '');
+    $category = sanitize_input($_POST['category'] ?? '');
     $description = sanitize_input($_POST['description'] ?? '');
 
     if (strlen($category) < 3) {
@@ -33,11 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="content-container">
-    <div class="form-container">
-        <div class="form-header">
-            <h2>Category Entry</h2>
-            <a href="/index.php" class="back-link">&larr; Back to Menu</a>
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h2>➕ Add New Category</h2>
+            <a href="/index.php" class="back-link">← Back to Home</a>
         </div>
 
         <?php if ($msg): ?>
@@ -46,19 +45,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="POST" autocomplete="off" class="item-form" data-validate>
+        <form method="POST" autocomplete="off" class="form" data-validate>
             <div class="form-group">
-                <label for="category">Category Name*</label>
+                <label for="category">Category Name *</label>
                 <div class="autocomplete-wrapper">
-                    <input type="text" name="category" id="category" required placeholder="Enter category name"
-                           data-autocomplete="categoryList" data-type="category">
+                    <input type="text" name="category" id="category" placeholder="Start typing category..." required
+                        data-autocomplete="categoryList" data-type="category">
                     <ul id="categoryList" class="autocomplete-list"></ul>
                 </div>
             </div>
 
             <div class="form-group">
                 <label for="description">Description</label>
-                <textarea name="description" id="description" rows="4" placeholder="Enter category description"></textarea>
+                <textarea name="description" id="description" placeholder="Optional description..." rows="3"></textarea>
             </div>
 
             <div class="form-actions">
