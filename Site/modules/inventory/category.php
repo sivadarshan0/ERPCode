@@ -17,8 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = "❌ Category must be at least 3 characters.";
     } else {
         try {
-            $stmt = $conn->prepare("INSERT INTO category (Category, Description) VALUES (?, ?)");
-            $stmt->bind_param("ss", $category, $description);
+            $categoryCode = generateCode('cat', 'category', 'CategoryCode');
+            $stmt = $conn->prepare("INSERT INTO category (CategoryCode, Category, Description) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $categoryCode, $category, $description);
             if ($stmt->execute()) {
                 $msg = "✅ Category added successfully.";
             } else {
@@ -46,18 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" autocomplete="off" class="form" data-validate>
-            <div class="form-group">
-                <label for="category">Category Name *</label>
-                <div class="autocomplete-wrapper">
-                    <input type="text" name="category" id="category" placeholder="Start typing category..." required
-                        data-autocomplete="categoryList" data-type="category">
-                    <ul id="categoryList" class="autocomplete-list"></ul>
+            <div class="grid">
+                <div class="form-group">
+                    <label for="category">Category Name *</label>
+                    <div class="autocomplete-wrapper">
+                        <input type="text" name="category" id="category" placeholder="Start typing category..." required
+                            data-autocomplete="categoryList" data-type="category">
+                        <ul id="categoryList" class="autocomplete-list"></ul>
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea name="description" id="description" placeholder="Optional description..." rows="3"></textarea>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea name="description" id="description" rows="3" placeholder="Optional description..."></textarea>
+                </div>
             </div>
 
             <div class="form-actions">

@@ -424,3 +424,20 @@ input[type="text"], textarea {
     }
 }
 
+.grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+@media screen and (min-width: 600px) {
+    .grid {
+        flex-direction: row;
+    }
+
+    .grid .form-group {
+        flex: 1;
+    }
+}
+
+
