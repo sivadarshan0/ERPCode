@@ -535,5 +535,34 @@ textarea {
     color: #c62828;
 }
 
+.autocomplete-wrapper {
+    position: relative;
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    width: 100%;
+    background: white;
+    border: 1px solid #ccc;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+.autocomplete-list li {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.autocomplete-list li:hover {
+    background-color: #f1f1f1;
+}
+
 
 

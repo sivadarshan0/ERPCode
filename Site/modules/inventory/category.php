@@ -1,4 +1,6 @@
 <?php
+// File: modules/inventory/category.php
+
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/header.php';
@@ -16,10 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $categoryCode = generateCode('cat', 'category', 'CategoryCode', 4);
-
             $stmt = $conn->prepare("INSERT INTO category (CategoryCode, Category, Description) VALUES (?, ?, ?)");
             $stmt->bind_param("sss", $categoryCode, $category, $description);
-
             if ($stmt->execute()) {
                 $msg = "✅ Category $categoryCode added successfully.";
             } else {
@@ -36,8 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="container">
     <div class="card">
         <div class="card-header">
-            <h2>➕ Add New Category</h2>
-            <a href="/index.php" class="back-link">← Back to Home</a>
+            <h2>➕ Category Entry</h2>
+            <a href="/index.php" class="back-link">← Back</a>
         </div>
 
         <?php if ($msg): ?>
@@ -47,21 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" autocomplete="off" class="form" data-validate>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="category">Category Name *</label>
-                    <div class="autocomplete-wrapper">
-                        <input type="text" name="category" id="category" required
-                            placeholder="Start typing category..."
-                            data-autocomplete="categoryList" data-type="category">
-                        <ul id="categoryList" class="autocomplete-list"></ul>
-                    </div>
+            <div class="form-group">
+                <label for="category">Category Name *</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" name="category" id="category"
+                        placeholder="Start typing category name..." required
+                        data-autocomplete="categoryList" data-type="category">
+                    <ul id="categoryList" class="autocomplete-list"></ul>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea name="description" id="description" placeholder="Optional description..."></textarea>
-                </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea name="description" id="description" rows="3"
+                          placeholder="Enter description (optional)..."></textarea>
             </div>
 
             <div class="form-actions">
