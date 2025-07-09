@@ -1,12 +1,22 @@
 <?php
 // File: login.php
 
+// Error reporting - keep this at the very top
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 
-define('_IN_APP_', true);
-session_start();
+// Security constant definition
+if (!defined('_IN_APP_')) {
+    define('_IN_APP_', true);
+}
+
+// Start secure session
+session_start([
+    'cookie_httponly' => true,
+    'cookie_secure' => isset($_SERVER['HTTPS']),
+    'cookie_samesite' => 'Strict'
+]);
 
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/functions.php';
@@ -26,49 +36,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ip_address = $_SERVER['REMOTE_ADDR'];
 
     try {
-        $db = db();
-        
+        // Validate input
+        if (empty($username) || empty($password)) {
+            throw new Exception("Username and password are required");
+        }
+
         // Check if account is locked
         $locked_until = is_account_locked($username);
         if ($locked_until) {
-            $error = "Account temporarily locked. Try again after " . date('h:i A', strtotime($locked_until));
-        } else {
-            $user = get_user_by_username($username);
-            
-            if ($user && $user['is_active'] && password_verify($password, $user['password'])) {
-                // Successful login
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['last_activity'] = time();
+            throw new Exception("Account temporarily locked. Try again after " . date('h:i A', strtotime($locked_until)));
+        }
+
+        // Get user from database
+        $user = get_user_by_username($username);
+        if (!$user) {
+            throw new Exception("Invalid username or password");
+        }
+
+        // Verify account status
+        if (!$user['is_active']) {
+            throw new Exception("Account is inactive. Please contact administrator.");
+        }
+
+        // Verify password
+        if (!password_verify($password, $user['password'])) {
+            // Update failed attempt only if user exists
+            if (!empty($user['id'])) {
+                update_user_login($user['id'], false, $ip_address);
+                $remaining_attempts = 4 - (int)$user['failed_attempts'];
                 
-                // Regenerate session ID to prevent fixation
-                session_regenerate_id(true);
-                
-                // Update user login info
-                update_user_login($user['id'], true, $ip_address);
-                
-                // Redirect to dashboard
-                header('Location: index.php');
-                exit;
-            } else {
-                // Failed login
-                if ($user) {
-                    update_user_login($user['id'], false, $ip_address);
-                    $remaining_attempts = 4 - (int)$user['failed_attempts'];
-                    
-                    if ($remaining_attempts > 0) {
-                        $error = "Invalid credentials. {$remaining_attempts} attempts remaining.";
-                    } else {
-                        $error = "Account locked for 30 minutes due to too many failed attempts.";
-                    }
+                if ($remaining_attempts > 0) {
+                    throw new Exception("Invalid credentials. {$remaining_attempts} attempts remaining.");
                 } else {
-                    $error = "Invalid username or password";
+                    throw new Exception("Account locked for 30 minutes due to too many failed attempts.");
                 }
             }
+            throw new Exception("Invalid username or password");
         }
+
+        // Successful login
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['login_time'] = time();
+        $_SESSION['last_activity'] = time();
+        $_SESSION['ip_address'] = $ip_address;
+        
+        // Regenerate session ID to prevent fixation
+        session_regenerate_id(true);
+        
+        // Update user login info
+        update_user_login($user['id'], true, $ip_address);
+        
+        // Set secure session cookie
+        setcookie(
+            session_name(),
+            session_id(),
+            [
+                'expires' => time() + 86400,
+                'path' => '/',
+                'domain' => $_SERVER['HTTP_HOST'],
+                'secure' => isset($_SERVER['HTTPS']),
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]
+        );
+        
+        // Redirect to dashboard
+        header('Location: index.php');
+        exit;
+
     } catch (Exception $e) {
-        error_log('Login error: ' . $e->getMessage());
-        $error = "A system error occurred. Please try again later.";
+        error_log('Login error: ' . $e->getMessage() . ' - IP: ' . $ip_address);
+        $error = $e->getMessage();
     }
 }
 
@@ -87,17 +126,20 @@ ob_start();
                 <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             
-            <form method="POST" action="login.php" autocomplete="off">
+            <form method="POST" action="login.php" autocomplete="off" novalidate>
                 <div class="mb-3">
                     <label for="username" class="form-label">Username</label>
                     <input type="text" class="form-control" id="username" name="username" 
-                           value="<?php echo htmlspecialchars($username); ?>" required autofocus>
+                           value="<?php echo htmlspecialchars($username); ?>" required autofocus
+                           pattern="[a-zA-Z0-9_]{3,20}" title="3-20 alphanumeric characters">
                 </div>
                 
                 <div class="mb-3">
                     <label for="password" class="form-label">Password</label>
                     <div class="input-group">
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <input type="password" class="form-control" id="password" name="password" required
+                               minlength="8" pattern="^(?=.*[A-Za-z])(?=.*\d).{8,}$" 
+                               title="At least 8 characters with 1 letter and 1 number">
                         <button class="btn btn-outline-secondary toggle-password" type="button">
                             <i class="bi bi-eye"></i>
                         </button>

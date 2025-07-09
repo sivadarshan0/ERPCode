@@ -68,6 +68,4 @@ function db() {
     return DB::getInstance()->getConnection();
 }
 
-// Define constant to check in other files
-define('_IN_APP_', true);
 ?>
