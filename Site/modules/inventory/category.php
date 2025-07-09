@@ -1,6 +1,4 @@
 <?php
-// File: /modules/inventory/category.php
-
 require_once __DIR__ . '/../../includes/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/header.php';
@@ -17,11 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = "❌ Category must be at least 3 characters.";
     } else {
         try {
-            $categoryCode = generateCode('cat', 'category', 'CategoryCode');
+            $categoryCode = generateCode('cat', 'category', 'CategoryCode', 4);
+
             $stmt = $conn->prepare("INSERT INTO category (CategoryCode, Category, Description) VALUES (?, ?, ?)");
             $stmt->bind_param("sss", $categoryCode, $category, $description);
+
             if ($stmt->execute()) {
-                $msg = "✅ Category added successfully.";
+                $msg = "✅ Category $categoryCode added successfully.";
             } else {
                 $msg = "❌ Error: " . $conn->error;
             }
@@ -47,11 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" autocomplete="off" class="form" data-validate>
-            <div class="grid">
+            <div class="form-grid">
                 <div class="form-group">
                     <label for="category">Category Name *</label>
                     <div class="autocomplete-wrapper">
-                        <input type="text" name="category" id="category" placeholder="Start typing category..." required
+                        <input type="text" name="category" id="category" required
+                            placeholder="Start typing category..."
                             data-autocomplete="categoryList" data-type="category">
                         <ul id="categoryList" class="autocomplete-list"></ul>
                     </div>
@@ -59,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="form-group">
                     <label for="description">Description</label>
-                    <textarea name="description" id="description" rows="3" placeholder="Optional description..."></textarea>
+                    <textarea name="description" id="description" placeholder="Optional description..."></textarea>
                 </div>
             </div>
 
