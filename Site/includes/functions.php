@@ -17,37 +17,78 @@ function is_account_locked($username) {
 
 function get_user_by_username($username) {
     $db = db();
+    
+    // Prepare the statement
     $stmt = $db->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    return $stmt->fetch();
+    if (!$stmt) {
+        error_log("Database prepare error: " . $db->error);
+        return null; // Return null instead of false for better type consistency
+    }
+    
+    // Bind and execute
+    $stmt->bind_param("s", $username);
+    if (!$stmt->execute()) {
+        error_log("Database execute error: " . $stmt->error);
+        return null;
+    }
+    
+    // Get result
+    $result = $stmt->get_result();
+    if (!$result) {
+        error_log("Database get_result error: " . $db->error);
+        return null;
+    }
+    
+    // Fetch user data
+    $user = $result->fetch_assoc();
+    
+    // Explicitly return null if no user found
+    return $user ? $user : null;
 }
 
 function update_user_login($user_id, $success, $ip_address) {
+    // Validate user_id exists and is numeric
+    if (!is_numeric($user_id) || $user_id <= 0) {
+        error_log("Invalid user_id in update_user_login: $user_id");
+        return false;
+    }
+
     $db = db();
     
-    if ($success) {
-        // Successful login
-        $db->prepare("UPDATE users SET last_login = NOW(), failed_attempts = 0, locked_until = NULL WHERE id = ?")
-           ->execute([$user_id]);
-    } else {
-        // Failed login
-        $db->prepare("UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?")
-           ->execute([$user_id]);
-        
-        // Check if we need to lock the account
-        $stmt = $db->prepare("SELECT failed_attempts FROM users WHERE id = ?");
-        $stmt->execute([$user_id]);
-        $user = $stmt->fetch();
-        
-        if ($user['failed_attempts'] >= 5) {
-            $lock_time = date('Y-m-d H:i:s', strtotime('+30 minutes'));
-            $db->prepare("UPDATE users SET locked_until = ? WHERE id = ?")
-               ->execute([$lock_time, $user_id]);
+    try {
+        if ($success) {
+            $stmt = $db->prepare("UPDATE users SET last_login = NOW(), failed_attempts = 0, locked_until = NULL WHERE id = ?");
+        } else {
+            $stmt = $db->prepare("UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?");
         }
+        
+        $stmt->bind_param("i", $user_id);
+        $stmt->execute();
+        
+        // Only check for lock if it was a failed attempt
+        if (!$success) {
+            $stmt = $db->prepare("SELECT failed_attempts FROM users WHERE id = ?");
+            $stmt->bind_param("i", $user_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $user = $result->fetch_assoc();
+            
+            if ($user && $user['failed_attempts'] >= 5) {
+                $lock_time = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+                $stmt = $db->prepare("UPDATE users SET locked_until = ? WHERE id = ?");
+                $stmt->bind_param("si", $lock_time, $user_id);
+                $stmt->execute();
+            }
+        }
+        
+        // Log the attempt
+        log_login_attempt($user_id, $ip_address, $success);
+        
+        return true;
+    } catch (Exception $e) {
+        error_log("Error in update_user_login: " . $e->getMessage());
+        return false;
     }
-    
-    // Log the attempt
-    log_login_attempt($user_id, $ip_address, $success);
 }
 
 function log_login_attempt($user_id, $ip_address, $success) {
