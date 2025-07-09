@@ -2,9 +2,9 @@
 // File: /var/www/html/login.php
 
 // Error reporting at the very top
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+//error_reporting(E_ALL);
+//ini_set('display_errors', 1);
+//ini_set('display_startup_errors', 1);
 
 // Security constant definition
 if (!defined('_IN_APP_')) {
