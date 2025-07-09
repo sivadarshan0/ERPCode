@@ -1,22 +1,92 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #f5f5f5;
+/* File: assets/css/main.css */ 
+
+/* Login Page Styles */
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    padding: 20px;
 }
-.sidebar {
-  background: #0077cc;
-  padding: 1rem;
-  color: white;
+
+.login-container {
+    width: 100%;
+    max-width: 400px;
 }
-.main-content {
-  margin-left: 200px;
-  padding: 1rem;
+
+.login-container .card {
+    border: none;
+    border-radius: 10px;
+    overflow: hidden;
 }
+
+.toggle-password {
+    cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .login-container {
+        padding: 0 15px;
+    }
+    
+    .login-container .card-body {
+        padding: 1.5rem !important;
+    }
+}
+
+/* Header Styles */
+.navbar-brand {
+    font-weight: 600;
+}
+
+.navbar-brand i {
+    margin-right: 8px;
+}
+
+/* Footer Styles */
+.footer {
+    background-color: #f8f9fa !important;
+}
+
+.footer a {
+    text-decoration: none;
+}
+
+.footer .list-inline-item:not(:last-child) {
+    margin-right: 1rem;
+}
+
+/* Dark mode support */
+[data-bs-theme="dark"] .navbar-dark {
+    background-color: #212529 !important;
+}
+
+[data-bs-theme="dark"] .footer {
+    background-color: #212529 !important;
+    border-top-color: #495057 !important;
+}
+
+/* Sidebar compatibility */
+main {
+    padding-top: 1rem;
+    padding-bottom: 3rem;
+}
+
+/* Mobile optimizations */
 @media (max-width: 768px) {
-  .sidebar {
-    display: none;
-  }
-  .main-content {
-    margin-left: 0;
-  }
+    .navbar-collapse {
+        padding-top: 1rem;
+    }
+    
+    .dropdown-menu {
+        position: static !important;
+    }
+    
+    main {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
 }

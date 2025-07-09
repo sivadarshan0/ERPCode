@@ -1,0 +1,21 @@
+<Files "db.php">
+    Require all denied
+</Files>
+
+# Additional security (optional)
+<FilesMatch "\.(php|inc)$">
+    # For Apache 2.4+
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    # For Apache 2.2
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Allow specific includes
+<FilesMatch "^(header|footer|functions)\.php$">
+    Require all granted
+</FilesMatch>
