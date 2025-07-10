@@ -1,5 +1,4 @@
 <?php
-
 // File: /modules/customer/entry_customer.php
 
 // Start session at the very beginning (no spaces before this!)
@@ -95,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  email, first_order_date, description,
                  created_at, created_by, updated_at, updated_by) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssssss", 
+            $stmt->bind_param("sssssssssssss", 
                 $customer_id, $phone, $name, $address, $city, $postal_code,
                 $email, $first_order_date, $description,
                 $current_time, $current_user_id, $current_time, $current_user_id);
