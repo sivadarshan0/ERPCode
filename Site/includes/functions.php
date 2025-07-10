@@ -118,4 +118,70 @@ function require_login() {
     
     $_SESSION['last_activity'] = time();
 }
+
+/**
+ * Generate sequential IDs with prefix (e.g., CUS00001)
+ */
+function generate_sequence_id($sequence_name) {
+
+    
+    $db = db();
+    $db->begin_transaction();
+    
+    try {
+        // Lock and retrieve sequence
+        $stmt = $db->prepare("SELECT prefix, next_value, digit_length 
+                            FROM system_sequences 
+                            WHERE sequence_name = ? FOR UPDATE");
+        $stmt->bind_param("s", $sequence_name);
+        $stmt->execute();
+        $seq = $stmt->get_result()->fetch_assoc();
+        
+        if (!$seq) {
+            throw new Exception("Sequence '$sequence_name' not found");
+        }
+        
+        // Format ID
+        $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
+        
+        // Increment sequence
+        $update = $db->prepare("UPDATE system_sequences 
+                              SET next_value = next_value + 1,
+                                  last_used_at = NOW(),
+                                  last_used_by = ?
+                              WHERE sequence_name = ?");
+        $update->bind_param("is", $_SESSION['user_id'], $sequence_name);
+        $update->execute();
+        
+        $db->commit();
+        return $new_id;
+    } catch (Exception $e) {
+        $db->rollback();
+        error_log("Sequence generation failed: " . $e->getMessage());
+        throw new Exception("Could not generate ID");
+    }
+}
+
+/**
+ * Get customer by ID
+ */
+function get_customer($customer_id) {
+    $db = db();
+    $stmt = $db->prepare("SELECT * FROM customers WHERE customer_id = ?");
+    $stmt->bind_param("s", $customer_id);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc();
+}
+
+/**
+ * Search customers by phone
+ */
+function search_customers_by_phone($phone) {
+    $db = db();
+    $stmt = $db->prepare("SELECT customer_id, name, phone FROM customers WHERE phone LIKE ? LIMIT 10");
+    $search_term = "%$phone%";
+    $stmt->bind_param("s", $search_term);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
 ?>
