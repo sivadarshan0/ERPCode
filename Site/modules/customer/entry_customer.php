@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             try {
                 // Get and lock the sequence
-                $seq_stmt = $db->prepare("SELECT next_value FROM system_sequence 
+                $seq_stmt = $db->prepare("SELECT next_value FROM system_sequences 
                                         WHERE sequence_name = 'customer_id' FOR UPDATE");
                 $seq_stmt->execute();
                 $seq_result = $seq_stmt->get_result();
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $customer_id = 'CUS' . str_pad($next_value, 5, '0', STR_PAD_LEFT);
                 
                 // Update sequence
-                $update_seq = $db->prepare("UPDATE system_sequence 
+                $update_seq = $db->prepare("UPDATE system_sequences 
                                           SET next_value = next_value + 1,
                                               last_used_at = ?,
                                               last_used_by = ?
