@@ -1,28 +1,21 @@
 <?php
+
 // File: /modules/customer/entry_customer.php
 
-// Start session at the very beginning (no spaces before this!)
 session_start();
-
-// Enable error reporting
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// Define application constant
 define('_IN_APP_', true);
 
-// Include necessary files
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['login_redirect'] = $_SERVER['REQUEST_URI'];
     header('Location: /login.php');
     exit;
 }
 
-// Initialize variables
 $customer = [
     'customer_id' => '',
     'phone' => '',
@@ -38,7 +31,6 @@ $is_edit = false;
 $message = '';
 $message_type = '';
 
-// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $db = db();
@@ -59,17 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Phone and name are required");
         }
         
-        // Check for duplicate phone only if it's a new customer or phone number is being changed
-        if (empty($customer_id)) {
-            $stmt = $db->prepare("SELECT customer_id FROM customers WHERE phone = ?");
-            $stmt->bind_param("s", $phone);
-            $stmt->execute();
-            if ($stmt->get_result()->num_rows > 0) {
-                throw new Exception("Phone number already exists");
-            }
+        // Check for duplicate phone
+        $check_stmt = $db->prepare("SELECT customer_id FROM customers WHERE phone = ?" . 
+                                  ($customer_id ? " AND customer_id != ?" : ""));
+        if ($customer_id) {
+            $check_stmt->bind_param("ss", $phone, $customer_id);
+        } else {
+            $check_stmt->bind_param("s", $phone);
+        }
+        $check_stmt->execute();
+        if ($check_stmt->get_result()->num_rows > 0) {
+            throw new Exception("Phone number already exists");
         }
         
-        // Prepare data
         $current_user_id = $_SESSION['user_id'];
         $current_time = date('Y-m-d H:i:s');
         
@@ -86,19 +80,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_time, $current_user_id, $customer_id);
             $action = 'updated';
         } else {
-            // Create new customer
-            $customer_id = 'CUS' . str_pad(rand(1000, 9999), 5, '0', STR_PAD_LEFT);
+            // Create new customer - using sequence table
+            $db->begin_transaction();
             
-            $stmt = $db->prepare("INSERT INTO customers 
-                (customer_id, phone, name, address, city, postal_code,
-                 email, first_order_date, description,
-                 created_at, created_by, updated_at, updated_by) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssssssssss", 
-                $customer_id, $phone, $name, $address, $city, $postal_code,
-                $email, $first_order_date, $description,
-                $current_time, $current_user_id, $current_time, $current_user_id);
-            $action = 'created';
+            try {
+                // Get and lock the sequence
+                $seq_stmt = $db->prepare("SELECT next_value FROM system_sequence 
+                                        WHERE sequence_name = 'customer_id' FOR UPDATE");
+                $seq_stmt->execute();
+                $seq_result = $seq_stmt->get_result();
+                
+                if ($seq_result->num_rows === 0) {
+                    throw new Exception("Customer ID sequence not configured");
+                }
+                
+                $sequence = $seq_result->fetch_assoc();
+                $next_value = $sequence['next_value'];
+                
+                // Generate customer ID
+                $customer_id = 'CUS' . str_pad($next_value, 5, '0', STR_PAD_LEFT);
+                
+                // Update sequence
+                $update_seq = $db->prepare("UPDATE system_sequence 
+                                          SET next_value = next_value + 1,
+                                              last_used_at = ?,
+                                              last_used_by = ?
+                                          WHERE sequence_name = 'customer_id'");
+                $update_seq->bind_param("ss", $current_time, $current_user_id);
+                $update_seq->execute();
+                
+                // Create customer
+                $stmt = $db->prepare("INSERT INTO customers 
+                    (customer_id, phone, name, address, city, postal_code,
+                     email, first_order_date, description,
+                     created_at, created_by, updated_at, updated_by) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("sssssssssssss", 
+                    $customer_id, $phone, $name, $address, $city, $postal_code,
+                    $email, $first_order_date, $description,
+                    $current_time, $current_user_id, $current_time, $current_user_id);
+                $action = 'created';
+                
+                if ($stmt->execute()) {
+                    $db->commit();
+                } else {
+                    throw new Exception("Failed to create customer: " . $db->error);
+                }
+            } catch (Exception $e) {
+                $db->rollback();
+                throw $e;
+            }
         }
         
         if ($stmt->execute()) {
@@ -112,7 +143,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $message = "Error: " . $e->getMessage();
         $message_type = 'danger';
-        // Preserve submitted values
         $customer = [
             'customer_id' => $_POST['customer_id'] ?? '',
             'phone' => $_POST['phone'] ?? '',
@@ -128,9 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Include header
 require_once __DIR__ . '/../../includes/header.php';
 ?>
+
+<!-- Rest of your HTML form remains exactly the same -->
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
