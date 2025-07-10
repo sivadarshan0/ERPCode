@@ -3,7 +3,7 @@
 // File: modules/customer/entry_customer.php
 
 error_log("Accessing entry_customer.php");
-die("Direct access test - remove this line after testing");
+
 
 // Error reporting at the very top
 error_reporting(E_ALL);
