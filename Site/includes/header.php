@@ -44,13 +44,23 @@ $logged_in = isset($_SESSION['user_id']);
                         <li class="nav-item">
                             <a class="nav-link" href="/index.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
                         </li>
+
+                        <!-- Merged and Enhanced Customers Dropdown -->
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-people"></i> Customers
+                            <a class="nav-link dropdown-toggle" href="#" id="customersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-people-fill"></i> Customers
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="/modules/customer/entry_customer.php">Add Customer</a></li>
-                                <li><a class="dropdown-item" href="#">View Customers</a></li>
+                            <ul class="dropdown-menu" aria-labelledby="customersDropdown">
+                                <li><a class="dropdown-item" href="/modules/customer/entry_customer.php">
+                                    <i class="bi bi-plus-circle"></i> New Customer
+                                </a></li>
+                                <li><a class="dropdown-item" href="/modules/customer/list_customers.php">
+                                    <i class="bi bi-list-ul"></i> View Customers
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="bi bi-graph-up"></i> Reports
+                                </a></li>
                             </ul>
                         </li>
                     <?php endif; ?>

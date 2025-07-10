@@ -1,6 +1,6 @@
 // File: assets/js/app.js
 
-// Utility Functions (add these at the top)
+// Utility Functions
 function escapeHtml(unsafe) {
     return unsafe?.toString()?.replace(/&/g, "&amp;")
                  .replace(/</g, "&lt;")
@@ -30,7 +30,6 @@ function showAlert(message, type) {
     const container = document.querySelector('main') || document.body;
     container.prepend(alertDiv);
     
-    // Auto-dismiss after 5 seconds
     setTimeout(() => {
         const bsAlert = new bootstrap.Alert(alertDiv);
         bsAlert.close();
@@ -44,9 +43,8 @@ function initCustomerEntry() {
     const phoneResults = document.getElementById('phoneResults');
     const customerForm = document.getElementById('customerForm');
 
-    if (!phoneInput) return; // Exit if not on customer entry page
+    if (!phoneInput) return;
 
-    // Phone lookup functionality
     function doPhoneLookup() {
         const phone = phoneInput.value.trim();
         if (phone.length < 3) {
@@ -90,7 +88,6 @@ function initCustomerEntry() {
             });
     }
 
-    // Event listeners
     if (phoneLookupBtn) {
         phoneLookupBtn.addEventListener('click', doPhoneLookup);
     }
@@ -99,14 +96,12 @@ function initCustomerEntry() {
         phoneInput.addEventListener('input', debounce(doPhoneLookup, 500));
     }
 
-    // Hide results when clicking elsewhere
     document.addEventListener('click', function(e) {
         if (phoneResults && !phoneResults.contains(e.target) && e.target !== phoneInput && e.target !== phoneLookupBtn) {
             phoneResults.classList.add('d-none');
         }
     });
 
-    // Form submission handling
     if (customerForm) {
         customerForm.addEventListener('submit', function() {
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -115,10 +110,7 @@ function initCustomerEntry() {
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
             }
         });
-    }
-
-    // Bootstrap form validation
-    if (customerForm) {
+        
         customerForm.addEventListener('submit', function(event) {
             if (!this.checkValidity()) {
                 event.preventDefault();
@@ -129,9 +121,27 @@ function initCustomerEntry() {
     }
 }
 
-// Login Page Functionality (your existing code)
-document.addEventListener('DOMContentLoaded', function() {
-    // Password visibility toggle
+// Navigation Memory
+function setupNavigationMemory() {
+    document.querySelectorAll('.customer-edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            localStorage.setItem('lastCustomerPage', window.location.href);
+        });
+    });
+
+    if (window.location.pathname.includes('entry_customer.php') && window.location.search.includes('customer_id')) {
+        const backBtn = document.getElementById('backToList');
+        if (backBtn) {
+            const lastPage = localStorage.getItem('lastCustomerPage');
+            if (lastPage) {
+                backBtn.href = lastPage;
+            }
+        }
+    }
+}
+
+// Login Page Functionality
+function initLoginPage() {
     const togglePassword = document.querySelector('.toggle-password');
     const passwordInput = document.getElementById('password');
     
@@ -144,13 +154,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Auto-focus username field
     const usernameField = document.getElementById('username');
     if (usernameField) {
         usernameField.focus();
     }
+}
+
+// Main DOM Loaded Handler
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize page-specific functionality
+    initLoginPage();
+    initCustomerEntry();
+    setupNavigationMemory();
     
-    // Auto-hide alerts after 5 seconds
+    // Auto-hide alerts
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
@@ -159,9 +176,4 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => alert.remove(), 500);
         }, 5000);
     });
-    
-    // Initialize customer entry if on that page
-    if (document.getElementById('customerForm')) {
-        initCustomerEntry();
-    }
 });
