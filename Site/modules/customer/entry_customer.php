@@ -1,4 +1,7 @@
 <?php
+
+// File: /modules/customer/entry_customer.php
+
 // Start session at the very beginning (no spaces before this!)
 session_start();
 
@@ -57,12 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Phone and name are required");
         }
         
-        // Check for duplicate phone
-        $stmt = $db->prepare("SELECT customer_id FROM customers WHERE phone = ? AND customer_id != ?");
-        $stmt->bind_param("ss", $phone, $customer_id);
-        $stmt->execute();
-        if ($stmt->get_result()->num_rows > 0) {
-            throw new Exception("Phone number already exists");
+        // Check for duplicate phone only if it's a new customer or phone number is being changed
+        if (empty($customer_id)) {
+            $stmt = $db->prepare("SELECT customer_id FROM customers WHERE phone = ?");
+            $stmt->bind_param("s", $phone);
+            $stmt->execute();
+            if ($stmt->get_result()->num_rows > 0) {
+                throw new Exception("Phone number already exists");
+            }
         }
         
         // Prepare data
@@ -76,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 email = ?, first_order_date = ?, description = ?,
                 updated_at = ?, updated_by = ?
                 WHERE customer_id = ?");
-            $stmt->bind_param("sssssssssss", 
+            $stmt->bind_param("ssssssssss", 
                 $phone, $name, $address, $city, $postal_code,
                 $email, $first_order_date, $description,
                 $current_time, $current_user_id, $customer_id);
@@ -90,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  email, first_order_date, description,
                  created_at, created_by, updated_at, updated_by) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssssis", 
+            $stmt->bind_param("ssssssssssss", 
                 $customer_id, $phone, $name, $address, $city, $postal_code,
                 $email, $first_order_date, $description,
                 $current_time, $current_user_id, $current_time, $current_user_id);
