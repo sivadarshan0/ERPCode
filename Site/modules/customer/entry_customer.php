@@ -1,32 +1,26 @@
 <?php
-// ─── Initialization ────────────────────────────────
+// Start session at the very beginning (no spaces before this!)
 session_start();
 
+// Enable error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Define application constant
 define('_IN_APP_', true);
 
+// Include necessary files
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Debugging - Log session (optional, remove in production)
-error_log("Accessing entry_customer.php. Session: " . print_r($_SESSION, true));
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    $_SESSION['login_redirect'] = $_SERVER['REQUEST_URI'];
+    header('Location: /login.php');
+    exit;
+}
 
-// ─── Error Reporting (for dev) ──────────────────────
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-
-// ─── Authentication ────────────────────────────────
-require_login();
-
-// ─── Page Meta ──────────────────────────────────────
-$page_title = "Customer Entry";
-$breadcrumbs = [
-    'Dashboard' => '/index.php',
-    'Customers' => '/modules/customer/list_customers.php',
-    'Entry' => ''
-];
-
-// ─── Defaults ───────────────────────────────────────
+// Initialize variables
 $customer = [
     'customer_id' => '',
     'phone' => '',
@@ -36,22 +30,18 @@ $customer = [
     'postal_code' => '',
     'email' => '',
     'first_order_date' => '',
-    'description' => '',
-    'created_at' => '',
-    'created_by' => '',
-    'updated_at' => '',
-    'updated_by' => ''
+    'description' => ''
 ];
 $is_edit = false;
 $message = '';
 $message_type = '';
 
-// ─── Handle POST (Save Customer) ────────────────────
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $db = db();
-        $db->begin_transaction();
-
+        
+        // Sanitize inputs
         $phone = trim($_POST['phone'] ?? '');
         $name = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
@@ -61,53 +51,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $first_order_date = trim($_POST['first_order_date'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $customer_id = $_POST['customer_id'] ?? null;
-
+        
+        // Validate required fields
         if (empty($phone) || empty($name)) {
             throw new Exception("Phone and name are required");
         }
-
-        if (!preg_match('/^[0-9]{10,15}$/', $phone)) {
-            throw new Exception("Invalid phone number format (10-15 digits)");
-        }
-
+        
+        // Check for duplicate phone
         $stmt = $db->prepare("SELECT customer_id FROM customers WHERE phone = ? AND customer_id != ?");
         $stmt->bind_param("ss", $phone, $customer_id);
         $stmt->execute();
         if ($stmt->get_result()->num_rows > 0) {
             throw new Exception("Phone number already exists");
         }
-
+        
+        // Prepare data
         $current_user_id = $_SESSION['user_id'];
         $current_time = date('Y-m-d H:i:s');
-
+        
         if ($customer_id) {
+            // Update existing customer
             $stmt = $db->prepare("UPDATE customers SET 
                 phone = ?, name = ?, address = ?, city = ?, postal_code = ?,
                 email = ?, first_order_date = ?, description = ?,
                 updated_at = ?, updated_by = ?
                 WHERE customer_id = ?");
-            $stmt->bind_param("sssssssssss",
+            $stmt->bind_param("sssssssssss", 
                 $phone, $name, $address, $city, $postal_code,
                 $email, $first_order_date, $description,
                 $current_time, $current_user_id, $customer_id);
             $action = 'updated';
         } else {
-            $customer_id = generate_sequence_id('customer_id');
+            // Create new customer
+            $customer_id = 'CUS' . str_pad(rand(1000, 9999), 5, '0', STR_PAD_LEFT);
+            
             $stmt = $db->prepare("INSERT INTO customers 
                 (customer_id, phone, name, address, city, postal_code,
                  email, first_order_date, description,
                  created_at, created_by, updated_at, updated_by) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssssssssss",
+            $stmt->bind_param("ssssssssssis", 
                 $customer_id, $phone, $name, $address, $city, $postal_code,
                 $email, $first_order_date, $description,
                 $current_time, $current_user_id, $current_time, $current_user_id);
             $action = 'created';
         }
-
+        
         if ($stmt->execute()) {
-            $db->commit();
-            $message = "✅ Customer $customer_id successfully $action!";
+            $message = "Customer successfully $action!";
             $message_type = 'success';
             $customer = get_customer($customer_id);
             $is_edit = true;
@@ -115,9 +106,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Database error: " . $db->error);
         }
     } catch (Exception $e) {
-        $db->rollback();
-        $message = "❌ Error: " . $e->getMessage();
+        $message = "Error: " . $e->getMessage();
         $message_type = 'danger';
+        // Preserve submitted values
         $customer = [
             'customer_id' => $_POST['customer_id'] ?? '',
             'phone' => $_POST['phone'] ?? '',
@@ -133,15 +124,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ─── Handle Phone Lookup (AJAX) ─────────────────────
-if (isset($_GET['phone_lookup'])) {
-    header('Content-Type: application/json');
-    try {
-        echo json_encode(search_customers_by_phone($_GET['phone_lookup']));
-    } catch (Exception $e) {
-        echo json_encode(['error' => $e->getMessage()]);
-    }
-    exit;
-}
+// Include header
+require_once __DIR__ . '/../../includes/header.php';
+?>
 
-/
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><?= $is_edit ? 'Edit' : 'Create' ?> Customer</h1>
+        <?php if ($is_edit): ?>
+        <span class="badge bg-primary"><?= htmlspecialchars($customer['customer_id']) ?></span>
+        <?php endif; ?>
+    </div>
+
+    <?php if ($message): ?>
+    <div class="alert alert-<?= $message_type ?> alert-dismissible fade show">
+        <?= htmlspecialchars($message) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <?php endif; ?>
+
+    <form method="POST" class="needs-validation" novalidate>
+        <input type="hidden" name="customer_id" value="<?= htmlspecialchars($customer['customer_id']) ?>">
+        
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="phone" class="form-label">Phone Number *</label>
+                <input type="tel" class="form-control" id="phone" name="phone" 
+                       value="<?= htmlspecialchars($customer['phone']) ?>" 
+                       pattern="[0-9]{10,15}" required>
+                <div class="invalid-feedback">Please enter a valid phone number (10-15 digits)</div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="name" class="form-label">Full Name *</label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       value="<?= htmlspecialchars($customer['name']) ?>" required>
+                <div class="invalid-feedback">Please enter the customer name</div>
+            </div>
+            
+            <div class="col-12">
+                <label for="address" class="form-label">Address</label>
+                <input type="text" class="form-control" id="address" name="address" 
+                       value="<?= htmlspecialchars($customer['address']) ?>">
+            </div>
+            
+            <div class="col-md-6">
+                <label for="city" class="form-label">City</label>
+                <input type="text" class="form-control" id="city" name="city" 
+                       value="<?= htmlspecialchars($customer['city']) ?>">
+            </div>
+            
+            <div class="col-md-6">
+                <label for="postal_code" class="form-label">Postal Code</label>
+                <input type="text" class="form-control" id="postal_code" name="postal_code" 
+                       value="<?= htmlspecialchars($customer['postal_code']) ?>">
+            </div>
+            
+            <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" 
+                       value="<?= htmlspecialchars($customer['email']) ?>">
+            </div>
+            
+            <div class="col-md-6">
+                <label for="first_order_date" class="form-label">First Order Date</label>
+                <input type="date" class="form-control" id="first_order_date" name="first_order_date" 
+                       value="<?= htmlspecialchars($customer['first_order_date']) ?>">
+            </div>
+            
+            <div class="col-12">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3"><?= 
+                    htmlspecialchars($customer['description']) 
+                ?></textarea>
+            </div>
+            
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-save"></i> <?= $is_edit ? 'Update' : 'Create' ?> Customer
+                </button>
+                <a href="list_customers.php" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                <?php if ($is_edit): ?>
+                <a href="entry_customer.php" class="btn btn-outline-success">
+                    <i class="bi bi-plus"></i> New Customer
+                </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </form>
+</main>
+
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
