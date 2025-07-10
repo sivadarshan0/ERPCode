@@ -104,7 +104,7 @@ function is_logged_in() {
 function require_login() {
     if (!is_logged_in()) {
         $_SESSION['login_redirect'] = $_SERVER['REQUEST_URI'];
-        header('Location: /login.php');
+        header('Location: login.php');
         exit;
     }
     
@@ -112,7 +112,7 @@ function require_login() {
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
         session_unset();
         session_destroy();
-        header('Location: login.php?timeout=1');
+        header('Location: /login.php?timeout=1');
         exit;
     }
     
