@@ -36,10 +36,9 @@ function showAlert(message, type) {
     }, 5000);
 }
 
-// Customer Entry Functions
+// Customer Entry Functions - MODIFIED FOR LIVE SEARCH
 function initCustomerEntry() {
     const phoneInput = document.getElementById('phone');
-    const phoneLookupBtn = document.getElementById('phoneLookupBtn');
     const phoneResults = document.getElementById('phoneResults');
     const customerForm = document.getElementById('customerForm');
 
@@ -53,26 +52,26 @@ function initCustomerEntry() {
         }
         
         fetch(`/modules/customer/entry_customer.php?phone_lookup=${encodeURIComponent(phone)}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => {
-                if (data.error) {
-                    showAlert(data.error, 'danger');
-                    return;
-                }
-                
                 phoneResults.innerHTML = '';
                 
                 if (data.length > 0) {
                     data.forEach(customer => {
                         const item = document.createElement('button');
                         item.type = 'button';
-                        item.className = 'list-group-item list-group-item-action';
+                        item.className = 'list-group-item list-group-item-action py-2';
                         item.innerHTML = `
-                            <strong>${escapeHtml(customer.name)}</strong><br>
-                            <small>${escapeHtml(customer.phone)}</small>
-                            <span class="float-end badge bg-primary">${escapeHtml(customer.customer_id)}</span>
+                            <div class="d-flex justify-content-between">
+                                <span><strong>${escapeHtml(customer.name)}</strong><br>
+                                <small class="text-muted">${escapeHtml(customer.phone)}</small></span>
+                                <span class="badge bg-primary align-self-center">${escapeHtml(customer.customer_id)}</span>
+                            </div>
                         `;
-                        item.addEventListener('click', function() {
+                        item.addEventListener('click', () => {
                             window.location.href = `entry_customer.php?customer_id=${customer.customer_id}`;
                         });
                         phoneResults.appendChild(item);
@@ -83,25 +82,22 @@ function initCustomerEntry() {
                 }
             })
             .catch(error => {
-                showAlert('Error searching customers', 'danger');
-                console.error('Error:', error);
+                console.error('Search error:', error);
+                phoneResults.classList.add('d-none');
             });
     }
 
-    if (phoneLookupBtn) {
-        phoneLookupBtn.addEventListener('click', doPhoneLookup);
-    }
-
-    if (phoneInput) {
-        phoneInput.addEventListener('input', debounce(doPhoneLookup, 500));
-    }
-
-    document.addEventListener('click', function(e) {
-        if (phoneResults && !phoneResults.contains(e.target) && e.target !== phoneInput && e.target !== phoneLookupBtn) {
+    // Live search on input (removed button-related code)
+    phoneInput.addEventListener('input', debounce(doPhoneLookup, 300));
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!phoneResults.contains(e.target) && e.target !== phoneInput) {
             phoneResults.classList.add('d-none');
         }
     });
 
+    // Form submission handling (unchanged)
     if (customerForm) {
         customerForm.addEventListener('submit', function() {
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -121,7 +117,7 @@ function initCustomerEntry() {
     }
 }
 
-// Navigation Memory
+// Navigation Memory (unchanged)
 function setupNavigationMemory() {
     document.querySelectorAll('.customer-edit-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -140,7 +136,7 @@ function setupNavigationMemory() {
     }
 }
 
-// Login Page Functionality
+// Login Page Functionality (unchanged)
 function initLoginPage() {
     const togglePassword = document.querySelector('.toggle-password');
     const passwordInput = document.getElementById('password');
@@ -160,11 +156,13 @@ function initLoginPage() {
     }
 }
 
-// Main DOM Loaded Handler
+// Main DOM Loaded Handler (modified initialization order)
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize page-specific functionality
+    if (document.getElementById('phone')) {
+        initCustomerEntry(); // Initialize first if on customer entry page
+    }
     initLoginPage();
-    initCustomerEntry();
     setupNavigationMemory();
     
     // Auto-hide alerts

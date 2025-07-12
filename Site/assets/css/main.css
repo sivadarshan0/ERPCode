@@ -90,3 +90,12 @@ main {
         padding-right: 0.5rem;
     }
 }
+
+#phoneResults {
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.175);
+}
+#phoneResults button:hover {
+    background-color: #f8f9fa;
+}

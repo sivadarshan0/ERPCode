@@ -1,5 +1,4 @@
 <?php
-
 // File: /modules/customer/entry_customer.php
 
 session_start();
@@ -10,25 +9,17 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-$functions_path = __DIR__ . '/../../includes/functions.php';
-if (!file_exists($functions_path)) {
-    die("ERROR: Cannot find functions.php at: " . $functions_path);
-}
-require_once $functions_path;
-
-// Handle phone lookup AJAX request
+// Handle live search AJAX request
 if (isset($_GET['phone_lookup'])) {
     $phone = trim($_GET['phone_lookup']);
     if (strlen($phone) >= 3) {
         $results = search_customers_by_phone($phone);
         header('Content-Type: application/json');
         echo json_encode($results);
-        exit;
     } else {
-        header('Content-Type: application/json');
         echo json_encode([]);
-        exit;
     }
+    exit;
 }
 
 if (!isset($_SESSION['user_id'])) {
@@ -182,8 +173,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<!-- Rest of your HTML form remains exactly the same -->
-
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2"><?= $is_edit ? 'Edit' : 'Create' ?> Customer</h1>
@@ -205,18 +194,13 @@ require_once __DIR__ . '/../../includes/header.php';
         <div class="row g-3">
             <div class="col-md-6">
                 <label for="phone" class="form-label">Phone Number *</label>
-                <div class="input-group">
-                    <input type="tel" class="form-control" id="phone" name="phone" 
-                        value="<?= htmlspecialchars($customer['phone']) ?>" 
-                        pattern="[0-9]{10,15}" required>
-                    <button class="btn btn-outline-secondary" type="button" id="phoneLookupBtn">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
+                <input type="tel" class="form-control" id="phone" name="phone" 
+                       value="<?= htmlspecialchars($customer['phone']) ?>" 
+                       pattern="[0-9]{10,15}" required>
                 <div class="invalid-feedback">Please enter a valid phone number (10-15 digits)</div>
-                <!-- Search results will appear here -->
-                <div id="phoneResults" class="list-group mt-2 d-none" style="position: absolute; z-index: 1000; width: 100%;"></div>
-                </div>
+                <!-- Search results dropdown -->
+                <div id="phoneResults" class="list-group mt-1 d-none" style="position: absolute; z-index: 1000; width: 100%; max-height: 300px; overflow-y: auto;"></div>
+            </div>
             
             <div class="col-md-6">
                 <label for="name" class="form-label">Full Name *</label>
@@ -278,5 +262,59 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
     </form>
 </main>
+
+<script>
+// Live search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.getElementById('phone');
+    const phoneResults = document.getElementById('phoneResults');
+
+    if (!phoneInput) return;
+
+    phoneInput.addEventListener('input', function() {
+        const phone = this.value.trim();
+        
+        if (phone.length < 3) {
+            phoneResults.classList.add('d-none');
+            return;
+        }
+
+        fetch(`/modules/customer/entry_customer.php?phone_lookup=${encodeURIComponent(phone)}`)
+            .then(response => response.json())
+            .then(data => {
+                phoneResults.innerHTML = '';
+                
+                if (data.length > 0) {
+                    data.forEach(customer => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'list-group-item list-group-item-action py-2';
+                        item.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <span><strong>${customer.name}</strong><br>
+                                <small class="text-muted">${customer.phone}</small></span>
+                                <span class="badge bg-primary align-self-center">${customer.customer_id}</span>
+                            </div>
+                        `;
+                        item.addEventListener('click', () => {
+                            window.location.href = `entry_customer.php?customer_id=${customer.customer_id}`;
+                        });
+                        phoneResults.appendChild(item);
+                    });
+                    phoneResults.classList.remove('d-none');
+                } else {
+                    phoneResults.classList.add('d-none');
+                }
+            });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (e.target !== phoneInput && !phoneResults.contains(e.target)) {
+            phoneResults.classList.add('d-none');
+        }
+    });
+});
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
