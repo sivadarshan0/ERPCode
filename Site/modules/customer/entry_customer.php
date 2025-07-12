@@ -2,6 +2,20 @@
 
 // File: /modules/customer/entry_customer.php
 
+session_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+define('_IN_APP_', true);
+
+require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/functions.php';
+
+$functions_path = __DIR__ . '/../../includes/functions.php';
+if (!file_exists($functions_path)) {
+    die("ERROR: Cannot find functions.php at: " . $functions_path);
+}
+require_once $functions_path;
+
 // Handle phone lookup AJAX request
 if (isset($_GET['phone_lookup'])) {
     $phone = trim($_GET['phone_lookup']);
@@ -16,14 +30,6 @@ if (isset($_GET['phone_lookup'])) {
         exit;
     }
 }
-
-session_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-define('_IN_APP_', true);
-
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../../includes/functions.php';
 
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['login_redirect'] = $_SERVER['REQUEST_URI'];
