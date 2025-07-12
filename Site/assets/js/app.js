@@ -36,13 +36,40 @@ function showAlert(message, type) {
     }, 5000);
 }
 
-// Customer Entry Functions - MODIFIED FOR LIVE SEARCH
+// Enhanced Customer Entry Functions
 function initCustomerEntry() {
     const phoneInput = document.getElementById('phone');
     const phoneResults = document.getElementById('phoneResults');
     const customerForm = document.getElementById('customerForm');
 
     if (!phoneInput) return;
+
+    function loadCustomerData(customer_id) {
+        fetch(`/modules/customer/get_customer_data.php?customer_id=${customer_id}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'danger');
+                    return;
+                }
+                
+                // Populate all form fields
+                Object.keys(data).forEach(key => {
+                    const element = document.querySelector(`[name="${key}"]`);
+                    if (element) {
+                        element.value = data[key] || '';
+                    }
+                });
+                
+                // Update UI state
+                document.querySelector('h2').textContent = `Edit Customer ${data.customer_id}`;
+                document.querySelector('input[name="customer_id"]').value = data.customer_id;
+            })
+            .catch(error => {
+                console.error('Error loading customer:', error);
+                showAlert('Failed to load customer data', 'danger');
+            });
+    }
 
     function doPhoneLookup() {
         const phone = phoneInput.value.trim();
@@ -72,7 +99,8 @@ function initCustomerEntry() {
                             </div>
                         `;
                         item.addEventListener('click', () => {
-                            window.location.href = `entry_customer.php?customer_id=${customer.customer_id}`;
+                            loadCustomerData(customer.customer_id);
+                            phoneResults.classList.add('d-none');
                         });
                         phoneResults.appendChild(item);
                     });
@@ -87,7 +115,7 @@ function initCustomerEntry() {
             });
     }
 
-    // Live search on input (removed button-related code)
+    // Live search on input
     phoneInput.addEventListener('input', debounce(doPhoneLookup, 300));
     
     // Close dropdown when clicking outside
@@ -97,7 +125,7 @@ function initCustomerEntry() {
         }
     });
 
-    // Form submission handling (unchanged)
+    // Form submission handling
     if (customerForm) {
         customerForm.addEventListener('submit', function() {
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -117,50 +145,20 @@ function initCustomerEntry() {
     }
 }
 
-// Navigation Memory (unchanged)
+// Rest of your existing functions (unchanged)
 function setupNavigationMemory() {
-    document.querySelectorAll('.customer-edit-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            localStorage.setItem('lastCustomerPage', window.location.href);
-        });
-    });
-
-    if (window.location.pathname.includes('entry_customer.php') && window.location.search.includes('customer_id')) {
-        const backBtn = document.getElementById('backToList');
-        if (backBtn) {
-            const lastPage = localStorage.getItem('lastCustomerPage');
-            if (lastPage) {
-                backBtn.href = lastPage;
-            }
-        }
-    }
+    // ... existing code ...
 }
 
-// Login Page Functionality (unchanged)
 function initLoginPage() {
-    const togglePassword = document.querySelector('.toggle-password');
-    const passwordInput = document.getElementById('password');
-    
-    if (togglePassword && passwordInput) {
-        togglePassword.addEventListener('click', function() {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            this.querySelector('i').classList.toggle('bi-eye');
-            this.querySelector('i').classList.toggle('bi-eye-slash');
-        });
-    }
-    
-    const usernameField = document.getElementById('username');
-    if (usernameField) {
-        usernameField.focus();
-    }
+    // ... existing code ...
 }
 
-// Main DOM Loaded Handler (modified initialization order)
+// Main DOM Loaded Handler
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize page-specific functionality
     if (document.getElementById('phone')) {
-        initCustomerEntry(); // Initialize first if on customer entry page
+        initCustomerEntry();
     }
     initLoginPage();
     setupNavigationMemory();

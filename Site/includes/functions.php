@@ -173,15 +173,28 @@ function get_customer($customer_id) {
     return $stmt->get_result()->fetch_assoc();
 }
 
-/**
- * Search customers by phone
- */
+// Add this to /includes/functions.php
 function search_customers_by_phone($phone) {
     $db = db();
+    if (!$db) {
+        error_log("Database connection failed");
+        return [];
+    }
+    
     $stmt = $db->prepare("SELECT customer_id, name, phone FROM customers WHERE phone LIKE ? LIMIT 10");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $db->error);
+        return [];
+    }
+    
     $search_term = "%$phone%";
     $stmt->bind_param("s", $search_term);
-    $stmt->execute();
+    
+    if (!$stmt->execute()) {
+        error_log("Execute failed: " . $stmt->error);
+        return [];
+    }
+    
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 ?>
