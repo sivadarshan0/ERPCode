@@ -2,6 +2,21 @@
 
 // File: /modules/customer/entry_customer.php
 
+// Handle phone lookup AJAX request
+if (isset($_GET['phone_lookup'])) {
+    $phone = trim($_GET['phone_lookup']);
+    if (strlen($phone) >= 3) {
+        $results = search_customers_by_phone($phone);
+        header('Content-Type: application/json');
+        echo json_encode($results);
+        exit;
+    } else {
+        header('Content-Type: application/json');
+        echo json_encode([]);
+        exit;
+    }
+}
+
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -184,11 +199,18 @@ require_once __DIR__ . '/../../includes/header.php';
         <div class="row g-3">
             <div class="col-md-6">
                 <label for="phone" class="form-label">Phone Number *</label>
-                <input type="tel" class="form-control" id="phone" name="phone" 
-                       value="<?= htmlspecialchars($customer['phone']) ?>" 
-                       pattern="[0-9]{10,15}" required>
+                <div class="input-group">
+                    <input type="tel" class="form-control" id="phone" name="phone" 
+                        value="<?= htmlspecialchars($customer['phone']) ?>" 
+                        pattern="[0-9]{10,15}" required>
+                    <button class="btn btn-outline-secondary" type="button" id="phoneLookupBtn">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
                 <div class="invalid-feedback">Please enter a valid phone number (10-15 digits)</div>
-            </div>
+                <!-- Search results will appear here -->
+                <div id="phoneResults" class="list-group mt-2 d-none" style="position: absolute; z-index: 1000; width: 100%;"></div>
+                </div>
             
             <div class="col-md-6">
                 <label for="name" class="form-label">Full Name *</label>
