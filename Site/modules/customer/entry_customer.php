@@ -196,7 +196,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <div class="col-12">
             <button class="btn btn-primary" type="submit"><?= $is_edit ? 'Update' : 'Create' ?> Customer</button>
-            <a href="list_customers.php" class="btn btn-outline-secondary">Back</a>
+            <a href="/index.php" class="btn btn-outline-secondary">Back</a>
             <?php if ($is_edit): ?>
                 <a href="entry_customer.php" class="btn btn-outline-success">+ New Customer</a>
             <?php endif; ?>
