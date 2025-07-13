@@ -2,7 +2,17 @@
 define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
-require_login();
+
+session_start();
+header('Content-Type: application/json');
+error_log("Session contents: " . print_r($_SESSION, true));
+
+session_start();
+if (empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
 
 $db = db();
 
