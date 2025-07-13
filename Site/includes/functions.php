@@ -3,20 +3,7 @@
 
 defined('_IN_APP_') or die('Unauthorized access');
 
-// ───── Improved database connection ─────
-function db() {
-    static $db = null;
-    if ($db === null) {
-        require_once __DIR__ . '/../config/db.php';
-        $db = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-        if ($db->connect_error) {
-            error_log("Database connection failed: " . $db->connect_error);
-            return false;
-        }
-        $db->set_charset("utf8mb4");
-    }
-    return $db;
-}
+require_once __DIR__ . '/../config/db.php';
 
 // ───── Auth-related functions ─────
 function is_account_locked($username) {
