@@ -54,6 +54,7 @@ if (isset($_GET['customer_id'])) {
 
 $message = '';
 $message_type = '';
+$clear_form = false;
 
 // ───── Handle POST (Create / Update) ─────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -101,13 +102,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("sssssssssssss", $customer_id, $phone, $name, $address, $city, $postal_code, $email, $first_order_date, $description, $current_time, $current_user_id, $current_time, $current_user_id);
             $action = 'created';
+            $clear_form = true; // Set flag to clear form after successful creation
         }
 
         if ($stmt->execute()) {
             $message = "✅ Customer successfully $action.";
             $message_type = 'success';
-            $customer = get_customer($customer_id);
-            $is_edit = true;
+            
+            if ($clear_form) {
+                // Clear the form by resetting customer array for new entries
+                $customer = [
+                    'customer_id' => '',
+                    'phone' => '',
+                    'name' => '',
+                    'address' => '',
+                    'city' => '',
+                    'postal_code' => '',
+                    'email' => '',
+                    'first_order_date' => '',
+                    'description' => ''
+                ];
+                $is_edit = false;
+            } else {
+                $customer = get_customer($customer_id);
+                $is_edit = true;
+            }
         } else {
             throw new Exception("❌ Failed to save customer: " . $db->error);
         }

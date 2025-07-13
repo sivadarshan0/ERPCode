@@ -165,13 +165,14 @@ function search_customers_by_phone($phone) {
         return [];
     }
 
-    $stmt = $db->prepare("SELECT customer_id, name, phone FROM customers WHERE phone LIKE ? LIMIT 10");
+    $search_term = "%$phone%";
+    $stmt = $db->prepare("SELECT customer_id, name, phone FROM customers WHERE phone LIKE ? ORDER BY name LIMIT 10");
+    
     if (!$stmt) {
         error_log("Prepare failed: " . $db->error);
         return [];
     }
 
-    $search_term = "%$phone%";
     $stmt->bind_param("s", $search_term);
 
     if (!$stmt->execute()) {
