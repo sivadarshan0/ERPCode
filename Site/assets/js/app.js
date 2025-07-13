@@ -3,22 +3,22 @@
 // ───── Utility Functions ─────
 function escapeHtml(unsafe) {
     return unsafe?.toString()?.replace(/&/g, "&amp;")
-                 .replace(/</g, "&lt;")
-                 .replace(/>/g, "&gt;")
-                 .replace(/"/g, "&quot;")
-                 .replace(/'/g, "&#039;") || '';
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;") || '';
 }
 
 function debounce(func, wait) {
     let timeout;
-    return function() {
+    return function () {
         const context = this, args = arguments;
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), wait);
     };
 }
 
-function showAlert(message, type) {
+function showAlert(message, type = 'danger') {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
     alertDiv.role = 'alert';
@@ -46,9 +46,17 @@ function initCustomerEntry() {
 
     // Load customer data into form
     function loadCustomerData(customer_id) {
-        fetch(`/modules/customer/get_customer_data.php?customer_id=${customer_id}`)
-            .then(response => response.json())
+        console.log('[loadCustomerData] Fetching for ID:', customer_id);
+
+        fetch(`/modules/customer/get_customer_data.php?customer_id=${encodeURIComponent(customer_id)}`)
+            .then(response => {
+                console.log('[loadCustomerData] HTTP status:', response.status);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            })
             .then(data => {
+                console.log('[loadCustomerData] Response JSON:', data);
+
                 if (data.error) {
                     showAlert(data.error, 'danger');
                     return;
@@ -66,7 +74,7 @@ function initCustomerEntry() {
                 if (hiddenId) hiddenId.value = data.customer_id;
             })
             .catch(error => {
-                console.error('Error loading customer:', error);
+                console.error('[loadCustomerData] Error:', error);
                 showAlert('Failed to load customer data', 'danger');
             });
     }
@@ -81,7 +89,7 @@ function initCustomerEntry() {
 
         fetch(`/modules/customer/entry_customer.php?phone_lookup=${encodeURIComponent(phone)}`)
             .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) throw new Error('Phone search failed');
                 return response.json();
             })
             .then(data => {
@@ -100,6 +108,7 @@ function initCustomerEntry() {
                             </div>
                         `;
                         item.addEventListener('click', () => {
+                            console.log('[PhoneLookup] Selected customer:', customer.customer_id);
                             loadCustomerData(customer.customer_id);
                             phoneResults.classList.add('d-none');
                         });
@@ -111,7 +120,7 @@ function initCustomerEntry() {
                 }
             })
             .catch(error => {
-                console.error('Search error:', error);
+                console.error('[doPhoneLookup] Error:', error);
                 phoneResults.classList.add('d-none');
             });
     }
@@ -126,7 +135,7 @@ function initCustomerEntry() {
 
     // Form validation + loading spinner
     if (customerForm) {
-        customerForm.addEventListener('submit', function(event) {
+        customerForm.addEventListener('submit', function (event) {
             const submitBtn = this.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
@@ -153,7 +162,7 @@ function initLoginPage() {
 }
 
 // ───── DOM Ready ─────
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('phone')) {
         initCustomerEntry();
     }

@@ -1,6 +1,6 @@
 // File: assets/js/app.js
 
-// Utility Functions
+// ───── Utility Functions ─────
 function escapeHtml(unsafe) {
     return unsafe?.toString()?.replace(/&/g, "&amp;")
                  .replace(/</g, "&lt;")
@@ -26,17 +26,17 @@ function showAlert(message, type) {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     `;
-    
+
     const container = document.querySelector('main') || document.body;
     container.prepend(alertDiv);
-    
+
     setTimeout(() => {
         const bsAlert = new bootstrap.Alert(alertDiv);
         bsAlert.close();
     }, 5000);
 }
 
-// Enhanced Customer Entry Functions
+// ───── Enhanced Customer Entry Handler ─────
 function initCustomerEntry() {
     const phoneInput = document.getElementById('phone');
     const phoneResults = document.getElementById('phoneResults');
@@ -44,6 +44,7 @@ function initCustomerEntry() {
 
     if (!phoneInput) return;
 
+    // Load customer data into form
     function loadCustomerData(customer_id) {
         fetch(`/modules/customer/get_customer_data.php?customer_id=${customer_id}`)
             .then(response => response.json())
@@ -52,18 +53,17 @@ function initCustomerEntry() {
                     showAlert(data.error, 'danger');
                     return;
                 }
-                
-                // Populate all form fields
+
                 Object.keys(data).forEach(key => {
                     const element = document.querySelector(`[name="${key}"]`);
-                    if (element) {
-                        element.value = data[key] || '';
-                    }
+                    if (element) element.value = data[key] || '';
                 });
-                
-                // Update UI state
-                document.querySelector('h2').textContent = `Edit Customer ${data.customer_id}`;
-                document.querySelector('input[name="customer_id"]').value = data.customer_id;
+
+                const header = document.querySelector('h2');
+                if (header) header.textContent = `Edit Customer ${data.customer_id}`;
+
+                const hiddenId = document.querySelector('input[name="customer_id"]');
+                if (hiddenId) hiddenId.value = data.customer_id;
             })
             .catch(error => {
                 console.error('Error loading customer:', error);
@@ -71,13 +71,14 @@ function initCustomerEntry() {
             });
     }
 
+    // Live phone number search
     function doPhoneLookup() {
         const phone = phoneInput.value.trim();
         if (phone.length < 3) {
             phoneResults.classList.add('d-none');
             return;
         }
-        
+
         fetch(`/modules/customer/entry_customer.php?phone_lookup=${encodeURIComponent(phone)}`)
             .then(response => {
                 if (!response.ok) throw new Error('Network response was not ok');
@@ -85,7 +86,7 @@ function initCustomerEntry() {
             })
             .then(data => {
                 phoneResults.innerHTML = '';
-                
+
                 if (data.length > 0) {
                     data.forEach(customer => {
                         const item = document.createElement('button');
@@ -115,55 +116,52 @@ function initCustomerEntry() {
             });
     }
 
-    // Live search on input
     phoneInput.addEventListener('input', debounce(doPhoneLookup, 300));
-    
-    // Close dropdown when clicking outside
+
     document.addEventListener('click', (e) => {
         if (!phoneResults.contains(e.target) && e.target !== phoneInput) {
             phoneResults.classList.add('d-none');
         }
     });
 
-    // Form submission handling
+    // Form validation + loading spinner
     if (customerForm) {
-        customerForm.addEventListener('submit', function() {
+        customerForm.addEventListener('submit', function(event) {
             const submitBtn = this.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
             }
-        });
-        
-        customerForm.addEventListener('submit', function(event) {
+
             if (!this.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
             }
+
             this.classList.add('was-validated');
         }, false);
     }
 }
 
-// Rest of your existing functions (unchanged)
+// ───── Optional: Navigation & Login page handlers ─────
 function setupNavigationMemory() {
-    // ... existing code ...
+    // Placeholder for nav memory (if implemented)
 }
 
 function initLoginPage() {
-    // ... existing code ...
+    // Placeholder for login enhancements (if implemented)
 }
 
-// Main DOM Loaded Handler
+// ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize page-specific functionality
     if (document.getElementById('phone')) {
         initCustomerEntry();
     }
+
     initLoginPage();
     setupNavigationMemory();
-    
-    // Auto-hide alerts
+
+    // Auto-hide bootstrap alerts
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
