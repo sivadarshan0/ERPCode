@@ -31,7 +31,7 @@ $logged_in = isset($_SESSION['user_id']);
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">
-                <i class="bi bi-box-seam"></i> AppName
+                <i class="bi bi-box-seam"></i> ERP System
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">

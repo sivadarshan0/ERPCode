@@ -8,7 +8,7 @@
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-6 text-center text-md-start">
-                    <span class="text-muted">&copy; <?php echo date('Y'); ?> My Company. All rights reserved.</span>
+                    <span class="text-muted">&copy; <?php echo date('Y'); ?> My ERP System. All rights reserved.</span>
                 </div>
                 <div class="col-md-6 text-center text-md-end">
                     <ul class="list-inline mb-0">
