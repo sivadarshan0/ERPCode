@@ -3,6 +3,7 @@
 // File: /modules/customer/list_customers.php
 
 define('_IN_APP_', true);
+session_start(); // This must be first!
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_login();
