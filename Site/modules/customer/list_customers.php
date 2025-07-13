@@ -47,6 +47,13 @@ $total_pages = ceil($total / $per_page);
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
+                            <th><input type="text" class="form-control form-control-sm live-search" data-column="customer_id" placeholder="Search ID"></th>
+                            <th><input type="text" class="form-control form-control-sm live-search" data-column="name" placeholder="Search Name"></th>
+                            <th><input type="text" class="form-control form-control-sm live-search" data-column="phone" placeholder="Search Phone"></th>
+                            <th><input type="text" class="form-control form-control-sm live-search" data-column="city" placeholder="Search City"></th>
+                            <th></th>
+                        </tr>
+                        <tr>
                             <th>ID</th>
                             <th>Name</th>
                             <th>Phone</th>
@@ -71,6 +78,7 @@ $total_pages = ceil($total / $per_page);
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <script src="/assets/js/app.js"></script>
             </div>
 
             <!-- Pagination -->

@@ -180,3 +180,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const inputs = document.querySelectorAll(".live-search");
+
+    inputs.forEach(input => {
+        input.addEventListener("input", () => {
+            const params = new URLSearchParams();
+            inputs.forEach(inp => {
+                if (inp.value.trim()) {
+                    params.set(inp.dataset.column, inp.value.trim());
+                }
+            });
+
+            fetch("/modules/customer/search_customers.php?" + params.toString())
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.querySelector("table tbody");
+                    tbody.innerHTML = "";
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No results found</td></tr>`;
+                        return;
+                    }
+
+                    data.forEach(cust => {
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td>${cust.customer_id}</td>
+                            <td>${cust.name}</td>
+                            <td>${cust.phone}</td>
+                            <td>${cust.city}</td>
+                            <td>
+                                <a href="entry_customer.php?customer_id=${cust.customer_id}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        });
+    });
+});
+
