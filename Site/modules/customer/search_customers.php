@@ -21,6 +21,8 @@ $filters = [
     'name'        => $_GET['name'] ?? '',
     'phone'       => $_GET['phone'] ?? '',
     'city'        => $_GET['city'] ?? '',
+    'district'    => $_GET['district'] ?? '',
+    'known_by'        => $_GET['known_by'] ?? '',
 ];
 
 $where = [];
@@ -37,7 +39,7 @@ foreach ($filters as $column => $value) {
 
 $where_sql = $where ? "WHERE " . implode(' AND ', $where) : "";
 
-$sql = "SELECT customer_id, name, phone, city FROM customers $where_sql ORDER BY created_at DESC LIMIT 50";
+$sql = "SELECT customer_id, name, phone, city, district, known_by FROM customers $where_sql ORDER BY created_at DESC LIMIT 50";
 
 $stmt = $db->prepare($sql);
 if (!empty($params)) {
