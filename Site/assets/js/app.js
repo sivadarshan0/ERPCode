@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     tbody.innerHTML = "";
 
                     if (data.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No results found</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No results found</td></tr>`;
                         return;
                     }
 
@@ -211,8 +211,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             <td>${cust.name}</td>
                             <td>${cust.phone}</td>
                             <td>${cust.city}</td>
-                            <td>${cust.district || ''}</td>
-                            <td>${cust.known_by ? `<span class="badge ${getKnownByBadgeClass(cust.known_by)}">${cust.known_by}</span>` : ''}</td>
                             <td>
                                 <a href="entry_customer.php?customer_id=${cust.customer_id}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i> Edit
@@ -224,16 +222,5 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
         });
     });
-
-    // Add this helper function
-    function getKnownByBadgeClass(knownBy) {
-        const classes = {
-            'Instagram': 'bg-instagram',
-            'Facebook': 'bg-facebook',
-            'SearchEngine': 'bg-info',
-            'Friends': 'bg-success',
-            'Other': 'bg-secondary'
-        };
-        return classes[knownBy] || 'bg-secondary';
-    }
 });
+
