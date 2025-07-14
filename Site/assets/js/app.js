@@ -211,6 +211,8 @@ document.addEventListener("DOMContentLoaded", function () {
                             <td>${cust.name}</td>
                             <td>${cust.phone}</td>
                             <td>${cust.city}</td>
+                            <td>${cust.district}</td>
+                            <td>${cust.known_by}</td>
                             <td>
                                 <a href="entry_customer.php?customer_id=${cust.customer_id}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i> Edit
