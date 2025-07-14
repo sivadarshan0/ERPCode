@@ -1,5 +1,4 @@
 <?php
-
 // File: /modules/customer/get_customer_data.php
 
 header('Content-Type: application/json');
@@ -20,4 +19,12 @@ if (!$customer) {
     exit;
 }
 
+/**
+ * Returns complete customer data including:
+ * - customer_id, phone, name, address, city, district, postal_code
+ * - email, first_order_date, description, profile
+ * - known_by (source: Instagram/Facebook/SearchEngine/Friends/Other)
+ * - created_at, created_by, created_by_name
+ * - updated_at, updated_by, updated_by_name
+ */
 echo json_encode($customer);

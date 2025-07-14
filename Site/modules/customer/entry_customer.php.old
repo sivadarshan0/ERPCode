@@ -9,7 +9,7 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// ───── Handle AJAX live search ─────
+// Handle AJAX live search
 if (isset($_GET['phone_lookup'])) {
     header('Content-Type: application/json');
     try {
@@ -21,14 +21,27 @@ if (isset($_GET['phone_lookup'])) {
     exit;
 }
 
-// ───── Ensure logged in ─────
+// Ensure logged in
 if (!isset($_SESSION['user_id'])) {
     $_SESSION['login_redirect'] = $_SERVER['REQUEST_URI'];
     header('Location: /login.php');
     exit;
 }
 
-// ───── Load customer if editing ─────
+// Load customer if editing
+$customer = [
+    'customer_id' => '',
+    'phone' => '',
+    'name' => '',
+    'address' => '',
+    'city' => '',
+    'postal_code' => '',
+    'email' => '',
+    'first_order_date' => '',
+    'description' => ''
+];
+$is_edit = false;
+
 if (isset($_GET['customer_id'])) {
     $customer = get_customer($_GET['customer_id']);
     if (!$customer) {
@@ -37,26 +50,13 @@ if (isset($_GET['customer_id'])) {
         exit;
     }
     $is_edit = true;
-} else {
-    $customer = [
-        'customer_id' => '',
-        'phone' => '',
-        'name' => '',
-        'address' => '',
-        'city' => '',
-        'postal_code' => '',
-        'email' => '',
-        'first_order_date' => '',
-        'description' => ''
-    ];
-    $is_edit = false;
 }
 
 $message = '';
 $message_type = '';
 $clear_form = false;
 
-// ───── Handle POST (Create / Update) ─────
+// Handle POST (Create / Update)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $db = db();
@@ -96,13 +96,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("sssssssssss", $phone, $name, $address, $city, $postal_code, $email, $first_order_date, $description, $current_time, $current_user_id, $customer_id);
             $action = 'updated';
         } else {
-            // Create customer with sequence
+            // Create customer
             $customer_id = generate_sequence_id('customer_id');
             $stmt = $db->prepare("INSERT INTO customers (customer_id, phone, name, address, city, postal_code, email, first_order_date, description, created_at, created_by, updated_at, updated_by)
                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $stmt->bind_param("sssssssssssss", $customer_id, $phone, $name, $address, $city, $postal_code, $email, $first_order_date, $description, $current_time, $current_user_id, $current_time, $current_user_id);
             $action = 'created';
-            $clear_form = true; // Set flag to clear form after successful creation
+            $clear_form = true;
         }
 
         if ($stmt->execute()) {
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = 'success';
             
             if ($clear_form) {
-                // Clear the form by resetting customer array for new entries
+                // Clear form for new entries
                 $customer = [
                     'customer_id' => '',
                     'phone' => '',
@@ -133,12 +133,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
-        $customer = $_POST; // Refill form fields
+        $customer = $_POST;
         $is_edit = !empty($_POST['customer_id']);
     }
 }
 
-// ───── Render HTML ─────
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -149,7 +148,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="alert alert-<?= $message_type ?>"><?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
 
-    <form method="POST" class="row g-3 needs-validation" novalidate>
+    <form method="POST" class="row g-3 needs-validation" novalidate id="customerForm">
         <input type="hidden" name="customer_id" value="<?= htmlspecialchars($customer['customer_id']) ?>">
 
         <div class="col-md-6 position-relative">
@@ -197,7 +196,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <div class="col-12">
             <button class="btn btn-primary" type="submit"><?= $is_edit ? 'Update' : 'Create' ?> Customer</button>
-            <a href="list_customers.php" class="btn btn-outline-secondary">Back</a>
+            <a href="/index.php" class="btn btn-outline-secondary">Back</a>
             <?php if ($is_edit): ?>
                 <a href="entry_customer.php" class="btn btn-outline-success">+ New Customer</a>
             <?php endif; ?>
@@ -206,27 +205,50 @@ require_once __DIR__ . '/../../includes/header.php';
 </main>
 
 <script>
-// Escape HTML
-function escapeHtml(text) {
-    return text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-}
-
-// Debounce
-function debounce(func, delay) {
-    let timeout;
-    return function (...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
-    };
-}
-
 document.addEventListener('DOMContentLoaded', function () {
     const phoneInput = document.getElementById('phone');
     const phoneResults = document.getElementById('phoneResults');
+    const form = document.getElementById('customerForm');
 
     if (!phoneInput) return;
 
-    function doPhoneLookup() {
+    // Escape HTML
+    const escapeHtml = text => text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+    // Debounce
+    const debounce = (func, delay) => {
+        let timeout;
+        return (...args) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    };
+
+    // Update UI for edit mode
+    const setEditMode = (customerId, customerName) => {
+        const header = document.querySelector('main.container h2');
+        const submitBtn = document.querySelector('button[type="submit"]');
+        
+        if (header && submitBtn) {
+            header.innerHTML = `Edit Customer <span class='badge bg-primary'>${escapeHtml(customerId)}</span>`;
+            submitBtn.textContent = 'Update Customer';
+            
+            // Show + New Customer button if not present
+            if (!document.querySelector('a.btn-outline-success')) {
+                const backBtn = document.querySelector('a.btn-outline-secondary');
+                if (backBtn) {
+                    const newBtn = document.createElement('a');
+                    newBtn.href = 'entry_customer.php';
+                    newBtn.className = 'btn btn-outline-success ms-2';
+                    newBtn.textContent = '+ New Customer';
+                    backBtn.insertAdjacentElement('afterend', newBtn);
+                }
+            }
+        }
+    };
+
+    // Phone lookup
+    const doPhoneLookup = debounce(() => {
         const phone = phoneInput.value.trim();
         if (phone.length < 3) {
             phoneResults.classList.add('d-none');
@@ -242,23 +264,40 @@ document.addEventListener('DOMContentLoaded', function () {
                         const item = document.createElement('button');
                         item.type = 'button';
                         item.className = 'list-group-item list-group-item-action';
-                        item.innerHTML = `<strong>${escapeHtml(c.name)}</strong><br><small>${escapeHtml(c.phone)}</small><span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
-                        item.onclick = () => window.location.href = `entry_customer.php?customer_id=${c.customer_id}`;
+                        item.innerHTML = `<strong>${escapeHtml(c.name)}</strong><br>
+                                         <small>${escapeHtml(c.phone)}</small>
+                                         <span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
+                        item.onclick = () => {
+                            setEditMode(c.customer_id, c.name);
+                            window.location.href = `entry_customer.php?customer_id=${c.customer_id}`;
+                        };
                         phoneResults.appendChild(item);
                     });
                     phoneResults.classList.remove('d-none');
                 } else {
                     phoneResults.classList.add('d-none');
                 }
-            }).catch(() => phoneResults.classList.add('d-none'));
-    }
+            })
+            .catch(() => phoneResults.classList.add('d-none'));
+    }, 300);
 
-    phoneInput.addEventListener('input', debounce(doPhoneLookup, 300));
+    phoneInput.addEventListener('input', doPhoneLookup);
     document.addEventListener('click', e => {
         if (!phoneResults.contains(e.target) && e.target !== phoneInput) {
             phoneResults.classList.add('d-none');
         }
     });
+
+    // Initialize form validation
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    }
 });
 </script>
 

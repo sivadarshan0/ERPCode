@@ -35,10 +35,13 @@ $customer = [
     'name' => '',
     'address' => '',
     'city' => '',
+    'district' => '',
     'postal_code' => '',
+    'known_by' => '',
     'email' => '',
     'first_order_date' => '',
-    'description' => ''
+    'description' => '',
+    'profile' => ''
 ];
 $is_edit = false;
 
@@ -65,10 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = trim($_POST['name'] ?? '');
         $address = trim($_POST['address'] ?? '');
         $city = trim($_POST['city'] ?? '');
+        $district = trim($_POST['district'] ?? '');
         $postal_code = trim($_POST['postal_code'] ?? '');
+        $known_by = trim($_POST['known_by'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $first_order_date = trim($_POST['first_order_date'] ?? '');
         $description = trim($_POST['description'] ?? '');
+        $profile = trim($_POST['profile'] ?? '');
         $customer_id = $_POST['customer_id'] ?? null;
 
         if (empty($phone) || empty($name)) {
@@ -92,15 +98,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($customer_id) {
             // Update customer
-            $stmt = $db->prepare("UPDATE customers SET phone=?, name=?, address=?, city=?, postal_code=?, email=?, first_order_date=?, description=?, updated_at=?, updated_by=? WHERE customer_id=?");
-            $stmt->bind_param("sssssssssss", $phone, $name, $address, $city, $postal_code, $email, $first_order_date, $description, $current_time, $current_user_id, $customer_id);
+            $stmt = $db->prepare("UPDATE customers SET phone=?, name=?, address=?, city=?, district=?, postal_code=?, known_by=?, email=?, first_order_date=?, description=?, profile=?, updated_at=?, updated_by=? WHERE customer_id=?");
+            $stmt->bind_param("ssssssssssssss", $phone, $name, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_time, $current_user_id, $customer_id);
             $action = 'updated';
         } else {
             // Create customer
             $customer_id = generate_sequence_id('customer_id');
-            $stmt = $db->prepare("INSERT INTO customers (customer_id, phone, name, address, city, postal_code, email, first_order_date, description, created_at, created_by, updated_at, updated_by)
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssssssssss", $customer_id, $phone, $name, $address, $city, $postal_code, $email, $first_order_date, $description, $current_time, $current_user_id, $current_time, $current_user_id);
+            $stmt = $db->prepare("INSERT INTO customers (customer_id, phone, name, address, city, district, postal_code, known_by, email, first_order_date, description, profile, created_at, created_by, updated_at, updated_by)
+                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssssssssssssss", $customer_id, $phone, $name, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_time, $current_user_id, $current_time, $current_user_id);
             $action = 'created';
             $clear_form = true;
         }
@@ -117,10 +123,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'name' => '',
                     'address' => '',
                     'city' => '',
+                    'district' => '',
                     'postal_code' => '',
+                    'known_by' => '',
                     'email' => '',
                     'first_order_date' => '',
-                    'description' => ''
+                    'description' => '',
+                    'profile' => ''
                 ];
                 $is_edit = false;
             } else {
@@ -175,8 +184,25 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
 
         <div class="col-md-4">
+            <label for="district" class="form-label">District</label>
+            <input type="text" class="form-control" name="district" value="<?= htmlspecialchars($customer['district']) ?>">
+        </div>
+
+        <div class="col-md-4">
             <label for="postal_code" class="form-label">Postal Code</label>
             <input type="text" class="form-control" name="postal_code" value="<?= htmlspecialchars($customer['postal_code']) ?>">
+        </div>
+
+        <div class="col-md-4">
+            <label for="known_by" class="form-label">How did they find us?</label>
+            <select class="form-select" name="known_by">
+                <option value="">-- Select --</option>
+                <option value="Instagram" <?= $customer['known_by'] === 'Instagram' ? 'selected' : '' ?>>Instagram</option>
+                <option value="Facebook" <?= $customer['known_by'] === 'Facebook' ? 'selected' : '' ?>>Facebook</option>
+                <option value="SearchEngine" <?= $customer['known_by'] === 'SearchEngine' ? 'selected' : '' ?>>Search Engine</option>
+                <option value="Friends" <?= $customer['known_by'] === 'Friends' ? 'selected' : '' ?>>Friends/Family</option>
+                <option value="Other" <?= $customer['known_by'] === 'Other' ? 'selected' : '' ?>>Other</option>
+            </select>
         </div>
 
         <div class="col-md-4">
@@ -184,7 +210,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <input type="email" class="form-control" name="email" value="<?= htmlspecialchars($customer['email']) ?>">
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <label for="first_order_date" class="form-label">First Order Date</label>
             <input type="date" class="form-control" name="first_order_date" value="<?= htmlspecialchars($customer['first_order_date']) ?>">
         </div>
@@ -192,6 +218,11 @@ require_once __DIR__ . '/../../includes/header.php';
         <div class="col-12">
             <label for="description" class="form-label">Description</label>
             <textarea class="form-control" name="description"><?= htmlspecialchars($customer['description']) ?></textarea>
+        </div>
+
+        <div class="col-12">
+            <label for="profile" class="form-label">Profile Notes</label>
+            <textarea class="form-control" name="profile"><?= htmlspecialchars($customer['profile']) ?></textarea>
         </div>
 
         <div class="col-12">
