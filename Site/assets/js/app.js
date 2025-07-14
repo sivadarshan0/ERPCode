@@ -152,77 +152,107 @@ function initCustomerEntry() {
     }
 }
 
-// ───── Optional: Navigation & Login page handlers ─────
-function setupNavigationMemory() {
-    // Placeholder for nav memory (if implemented)
-}
+// ───── Table Live Search Functionality ─────
+function initLiveSearch() {
+    const inputs = document.querySelectorAll(".live-search");
+    if (inputs.length === 0) return;
 
-function initLoginPage() {
-    // Placeholder for login enhancements (if implemented)
+    function getSourceBadgeClass(source) {
+        if (!source) return '';
+        switch(source.toLowerCase()) {
+            case 'instagram': return 'bg-instagram';
+            case 'facebook': return 'bg-facebook';
+            case 'searchengine': return 'bg-info';
+            case 'friends': return 'bg-success';
+            default: return 'bg-secondary';
+        }
+    }
+
+    const debouncedSearch = debounce(() => {
+        const params = new URLSearchParams();
+        inputs.forEach(inp => {
+            if (inp.value.trim()) {
+                params.set(inp.dataset.column, inp.value.trim());
+            }
+        });
+
+        // Also include the select filter
+        const sourceFilter = document.querySelector(".live-search-select");
+        if (sourceFilter && sourceFilter.value) {
+            params.set(sourceFilter.dataset.column, sourceFilter.value);
+        }
+
+        fetch("/modules/customer/search_customers.php?" + params.toString())
+            .then(res => {
+                if (!res.ok) throw new Error('Search failed');
+                return res.json();
+            })
+            .then(data => {
+                const tbody = document.querySelector("table tbody");
+                tbody.innerHTML = "";
+
+                if (data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No results found</td></tr>`;
+                    return;
+                }
+
+                data.forEach(cust => {
+                    const badgeClass = getSourceBadgeClass(cust.known_by);
+                    const sourceBadge = cust.known_by 
+                        ? `<span class="badge ${badgeClass}">${escapeHtml(cust.known_by)}</span>`
+                        : '';
+
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${escapeHtml(cust.customer_id)}</td>
+                        <td>${escapeHtml(cust.name)}</td>
+                        <td>${escapeHtml(cust.phone)}</td>
+                        <td>${escapeHtml(cust.city || '')}</td>
+                        <td>${escapeHtml(cust.district || '')}</td>
+                        <td>${sourceBadge}</td>
+                        <td>
+                            <a href="entry_customer.php?customer_id=${cust.customer_id}" 
+                               class="btn btn-sm btn-outline-primary customer-edit-btn">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[LiveSearch] Error:', error);
+                showAlert('Search failed. Please try again.', 'danger');
+            });
+    }, 300);
+
+    inputs.forEach(input => {
+        input.addEventListener("input", debouncedSearch);
+    });
+
+    const sourceFilter = document.querySelector(".live-search-select");
+    if (sourceFilter) {
+        sourceFilter.addEventListener("change", debouncedSearch);
+    }
 }
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
+    // Initialize modules based on page content
     if (document.getElementById('phone')) {
         initCustomerEntry();
     }
 
-    initLoginPage();
-    setupNavigationMemory();
+    if (document.querySelector('.live-search')) {
+        initLiveSearch();
+    }
 
     // Auto-hide bootstrap alerts
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
-            alert.style.transition = 'opacity 0.5s ease';
-            alert.style.opacity = '0';
-            setTimeout(() => alert.remove(), 500);
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
         }, 5000);
     });
 });
-
-document.addEventListener("DOMContentLoaded", function () {
-    const inputs = document.querySelectorAll(".live-search");
-
-    inputs.forEach(input => {
-        input.addEventListener("input", () => {
-            const params = new URLSearchParams();
-            inputs.forEach(inp => {
-                if (inp.value.trim()) {
-                    params.set(inp.dataset.column, inp.value.trim());
-                }
-            });
-
-            fetch("/modules/customer/search_customers.php?" + params.toString())
-                .then(res => res.json())
-                .then(data => {
-                    const tbody = document.querySelector("table tbody");
-                    tbody.innerHTML = "";
-
-                    if (data.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No results found</td></tr>`;
-                        return;
-                    }
-
-                    data.forEach(cust => {
-                        const tr = document.createElement("tr");
-                        tr.innerHTML = `
-                            <td>${cust.customer_id}</td>
-                            <td>${cust.name}</td>
-                            <td>${cust.phone}</td>
-                            <td>${cust.city}</td>
-                            <td>${cust.district}</td>
-                            <td>${cust.known_by}</td>
-                            <td>
-                                <a href="entry_customer.php?customer_id=${cust.customer_id}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-pencil"></i> Edit
-                                </a>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                });
-        });
-    });
-});
-
