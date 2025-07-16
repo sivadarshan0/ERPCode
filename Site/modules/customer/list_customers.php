@@ -51,15 +51,7 @@ $total_pages = ceil($total / $per_page);
                             <th><input type="text" class="form-control form-control-sm live-search" data-column="phone" placeholder="Search Phone"></th>
                             <th><input type="text" class="form-control form-control-sm live-search" data-column="city" placeholder="Search City"></th>
                             <th><input type="text" class="form-control form-control-sm live-search" data-column="district" placeholder="Search District"></th>
-                            <th>
-                                <select class="form-select form-select-sm live-search-select" data-column="known_by">
-                                    <option value="">All Sources</option>
-                                    <option value="Instagram">Instagram</option>
-                                    <option value="Facebook">Facebook</option>
-                                    <option value="SearchEngine">Search Engine</option>
-                                    <option value="Friends">Friends/Family</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                            <th><input type="text" class="form-control form-control-sm live-search" data-column="known_by" placeholder="Search Source"></th>
                             </th>
                             <th></th>
                         </tr>
@@ -80,20 +72,8 @@ $total_pages = ceil($total / $per_page);
                             <td><?= htmlspecialchars($customer['name']) ?></td>
                             <td><?= htmlspecialchars($customer['phone']) ?></td>
                             <td><?= htmlspecialchars($customer['city']) ?></td>
-                            <td><?= htmlspecialchars($customer['district'] ?? '') ?></td>
-                            <td>
-                                <?php 
-                                $known_by = $customer['known_by'] ?? '';
-                                $badge_class = match($known_by) {
-                                    'Instagram' => 'bg-instagram',
-                                    'Facebook' => 'bg-facebook',
-                                    'SearchEngine' => 'bg-info',
-                                    'Friends' => 'bg-success',
-                                    default => 'bg-secondary'
-                                };
-                                if (!empty($known_by)): ?>
-                                    <span class="badge <?= $badge_class ?>"><?= htmlspecialchars($known_by) ?></span>
-                                <?php endif; ?>
+                            <td><?= htmlspecialchars($customer['district']) ?></td>
+                            <td><?= htmlspecialchars($customer['known_by']) ?></td>                
                             </td>
                             <td>
                                 <a href="entry_customer.php?customer_id=<?= $customer['customer_id'] ?>" 

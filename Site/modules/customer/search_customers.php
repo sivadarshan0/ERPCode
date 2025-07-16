@@ -22,7 +22,7 @@ $filters = [
     'phone'       => $_GET['phone'] ?? '',
     'city'        => $_GET['city'] ?? '',
     'district'    => $_GET['district'] ?? '',
-    'known_by'        => $_GET['known_by'] ?? '',
+    'known_by'    => $_GET['known_by'] ?? '',
 ];
 
 $where = [];
