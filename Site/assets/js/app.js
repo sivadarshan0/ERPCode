@@ -157,17 +157,6 @@ function initLiveSearch() {
     const inputs = document.querySelectorAll(".live-search");
     if (inputs.length === 0) return;
 
-    function getSourceBadgeClass(source) {
-        if (!source) return '';
-        switch(source.toLowerCase()) {
-            case 'instagram': return 'bg-instagram';
-            case 'facebook': return 'bg-facebook';
-            case 'searchengine': return 'bg-info';
-            case 'friends': return 'bg-success';
-            default: return 'bg-secondary';
-        }
-    }
-
     const debouncedSearch = debounce(() => {
         const params = new URLSearchParams();
         inputs.forEach(inp => {
@@ -209,7 +198,7 @@ function initLiveSearch() {
                         <td>${escapeHtml(cust.phone)}</td>
                         <td>${escapeHtml(cust.city || '')}</td>
                         <td>${escapeHtml(cust.district || '')}</td>
-                        <td>${sourceBadge}</td>
+                        <td>${escapeHtml(cust.known_by || '')}</td>
                         <td>
                             <a href="entry_customer.php?customer_id=${cust.customer_id}" 
                                class="btn btn-sm btn-outline-primary customer-edit-btn">
