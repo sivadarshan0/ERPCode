@@ -186,11 +186,6 @@ function initLiveSearch() {
                 }
 
                 data.forEach(cust => {
-                    const badgeClass = getSourceBadgeClass(cust.known_by);
-                    const sourceBadge = cust.known_by 
-                        ? `<span class="badge ${badgeClass}">${escapeHtml(cust.known_by)}</span>`
-                        : '';
-
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
                         <td>${escapeHtml(cust.customer_id)}</td>
