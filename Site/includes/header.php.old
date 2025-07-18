@@ -19,12 +19,8 @@ $logged_in = isset($_SESSION['user_id']);
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
-    <!-- Custom CSS with cache busting -->
-    <?php
-        $cssPath = __DIR__ . '/../assets/css/main.css';
-        $cssVersion = file_exists($cssPath) ? filemtime($cssPath) : time();
-    ?>
-    <link rel="stylesheet" href="/assets/css/main.css?v=<?= $cssVersion ?>">
+    <!-- Custom CSS -->
+    <link href="/assets/css/main.css" rel="stylesheet">
     
     <!-- Mobile-specific CSS -->
     <meta name="theme-color" content="#712cf9">
