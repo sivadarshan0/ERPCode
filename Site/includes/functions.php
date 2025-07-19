@@ -213,4 +213,19 @@ function search_customers_by_phone($phone) {
     $result = $stmt->get_result();
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
+
+function validate_customer_phone($phone, $exclude_id = null) {
+    $db = db();
+    $sql = "SELECT COUNT(*) FROM customers WHERE phone = ?";
+    $params = [$phone];
+    
+    if ($exclude_id) {
+        $sql .= " AND customer_id != ?";
+        $params[] = $exclude_id;
+    }
+    
+    $stmt = $db->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchColumn() == 0;
+}
 ?>
