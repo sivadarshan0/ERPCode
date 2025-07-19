@@ -113,19 +113,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $current_time = date('Y-m-d H:i:s');
 
         if ($customer_id) {
-            // Update existing customer
+            // Update existing customer - 14 parameters (13 fields + 1 WHERE clause)
             $stmt = $db->prepare("UPDATE customers SET 
                 phone=?, name=?, address=?, city=?, district=?, postal_code=?, 
                 known_by=?, email=?, first_order_date=?, description=?, profile=?, 
                 updated_at=?, updated_by=?, updated_by_name=?
                 WHERE customer_id=?");
-            $stmt->bind_param("ssssssssssssss", 
+            $stmt->bind_param("sssssssssssssss", 
                 $phone, $name, $address, $city, $district, $postal_code, 
                 $known_by, $email, $first_order_date, $description, $profile, 
                 $current_time, $current_user_id, $current_user_name, $customer_id);
             $action = 'updated';
         } else {
-            // Create new customer
+            // Create new customer - 15 parameters
             $customer_id = generate_sequence_id('customer_id');
             $stmt = $db->prepare("INSERT INTO customers (
                 customer_id, phone, name, address, city, district, postal_code, 
