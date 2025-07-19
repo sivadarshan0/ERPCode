@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $customer_id = generate_sequence_id('customer_id');
             $stmt = $db->prepare("INSERT INTO customers (customer_id, phone, name, address, city, district, postal_code, known_by, email, first_order_date, description, profile, created_at, created_by, updated_at, updated_by)
                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssssssssssss", $customer_id, $phone, $name, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_time, $current_user_id, $current_time, $current_user_id);
+            $stmt->bind_param("ssssssssssssssss", $customer_id, $phone, $name, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_time, $current_user_id, $current_time, $current_user_id);
             $action = 'created';
             $clear_form = true;
         }
