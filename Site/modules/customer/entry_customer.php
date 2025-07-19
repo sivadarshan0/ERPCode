@@ -28,6 +28,18 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Get current user info for created_by_name and updated_by_name
+$current_user_id = $_SESSION['user_id'];
+$current_user_name = 'Unknown';
+$user_stmt = $db->prepare("SELECT username FROM users WHERE id = ?");
+$user_stmt->bind_param("i", $current_user_id);
+$user_stmt->execute();
+$user_stmt->bind_result($username);
+if ($user_stmt->fetch()) {
+    $current_user_name = $username;
+}
+$user_stmt->close();
+
 // Load customer if editing
 $customer = [
     'customer_id' => '',
@@ -41,7 +53,9 @@ $customer = [
     'email' => '',
     'first_order_date' => '',
     'description' => '',
-    'profile' => ''
+    'profile' => '',
+    'created_by_name' => $current_user_name,
+    'updated_by_name' => null
 ];
 $is_edit = false;
 
@@ -93,20 +107,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception("Phone number already exists");
         }
 
-        $current_user_id = $_SESSION['user_id'];
         $current_time = date('Y-m-d H:i:s');
 
         if ($customer_id) {
-            // Update customer
-            $stmt = $db->prepare("UPDATE customers SET phone=?, name=?, address=?, city=?, district=?, postal_code=?, known_by=?, email=?, first_order_date=?, description=?, profile=?, updated_at=?, updated_by=? WHERE customer_id=?");
-            $stmt->bind_param("ssssssssssssss", $phone, $name, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_time, $current_user_id, $customer_id);
+            // Update existing customer
+            $stmt = $db->prepare("UPDATE customers SET 
+                phone=?, name=?, address=?, city=?, district=?, postal_code=?, 
+                known_by=?, email=?, first_order_date=?, description=?, profile=?, 
+                updated_at=?, updated_by=?, updated_by_name=?
+                WHERE customer_id=?");
+            $stmt->bind_param("ssssssssssssss", 
+                $phone, $name, $address, $city, $district, $postal_code, 
+                $known_by, $email, $first_order_date, $description, $profile, 
+                $current_time, $current_user_id, $current_user_name, $customer_id);
             $action = 'updated';
         } else {
-            // Create customer
+            // Create new customer
             $customer_id = generate_sequence_id('customer_id');
-            $stmt = $db->prepare("INSERT INTO customers (customer_id, phone, name, address, city, district, postal_code, known_by, email, first_order_date, description, profile, created_at, created_by, updated_at, updated_by)
-                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssssssssss", $customer_id, $phone, $name, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_time, $current_user_id, $current_time, $current_user_id);
+            $stmt = $db->prepare("INSERT INTO customers (
+                customer_id, phone, name, address, city, district, postal_code, 
+                known_by, email, first_order_date, description, profile, 
+                created_at, created_by, created_by_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssssssssssss", 
+                $customer_id, $phone, $name, $address, $city, $district, $postal_code, 
+                $known_by, $email, $first_order_date, $description, $profile, 
+                $current_time, $current_user_id, $current_user_name);
             $action = 'created';
             $clear_form = true;
         }
@@ -129,7 +155,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'email' => '',
                     'first_order_date' => '',
                     'description' => '',
-                    'profile' => ''
+                    'profile' => '',
+                    'created_by_name' => $current_user_name,
+                    'updated_by_name' => null
                 ];
                 $is_edit = false;
             } else {
