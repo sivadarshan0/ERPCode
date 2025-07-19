@@ -9,6 +9,9 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// Initialize database connection
+$db = db();
+
 // Handle AJAX live search
 if (isset($_GET['phone_lookup'])) {
     header('Content-Type: application/json');
