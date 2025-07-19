@@ -9,8 +9,11 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Initialize database connection
+// Initialize database connection first
 $db = db();
+if (!$db) {
+    die("Database connection failed");
+}
 
 // Handle AJAX live search
 if (isset($_GET['phone_lookup'])) {
@@ -31,17 +34,21 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Get current user info for created_by_name and updated_by_name
+// Get current user info
 $current_user_id = $_SESSION['user_id'];
 $current_user_name = 'Unknown';
+
+// Safely get username
 $user_stmt = $db->prepare("SELECT username FROM users WHERE id = ?");
-$user_stmt->bind_param("i", $current_user_id);
-$user_stmt->execute();
-$user_stmt->bind_result($username);
-if ($user_stmt->fetch()) {
-    $current_user_name = $username;
+if ($user_stmt) {
+    $user_stmt->bind_param("i", $current_user_id);
+    $user_stmt->execute();
+    $user_stmt->bind_result($username);
+    if ($user_stmt->fetch()) {
+        $current_user_name = $username;
+    }
+    $user_stmt->close();
 }
-$user_stmt->close();
 
 // Load customer if editing
 $customer = [
@@ -63,13 +70,15 @@ $customer = [
 $is_edit = false;
 
 if (isset($_GET['customer_id'])) {
-    $customer = get_customer($_GET['customer_id']);
-    if (!$customer) {
+    $customer_data = get_customer($_GET['customer_id']);
+    if ($customer_data) {
+        $customer = array_merge($customer, $customer_data);
+        $is_edit = true;
+    } else {
         $_SESSION['error_message'] = "Customer not found";
         header("Location: list_customers.php");
         exit;
     }
-    $is_edit = true;
 }
 
 $message = '';
@@ -79,10 +88,39 @@ $clear_form = false;
 // Handle POST (Create / Update)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $db = db();
-
+        // Validate required fields
         $phone = trim($_POST['phone'] ?? '');
         $name = trim($_POST['name'] ?? '');
+        if (empty($phone) || empty($name)) {
+            throw new Exception("Phone and name are required");
+        }
+
+        // Check for duplicate phone
+        $check_sql = "SELECT customer_id FROM customers WHERE phone = ?";
+        if (!empty($_POST['customer_id'])) {
+            $check_sql .= " AND customer_id != ?";
+        }
+        
+        $check_stmt = $db->prepare($check_sql);
+        if (!$check_stmt) {
+            throw new Exception("Database error: " . $db->error);
+        }
+
+        if (!empty($_POST['customer_id'])) {
+            $check_stmt->bind_param("ss", $phone, $_POST['customer_id']);
+        } else {
+            $check_stmt->bind_param("s", $phone);
+        }
+        
+        $check_stmt->execute();
+        if ($check_stmt->get_result()->num_rows > 0) {
+            throw new Exception("Phone number already exists");
+        }
+        $check_stmt->close();
+
+        // Prepare data
+        $current_time = date('Y-m-d H:i:s');
+        $customer_id = $_POST['customer_id'] ?? generate_sequence_id('customer_id');
         $address = trim($_POST['address'] ?? '');
         $city = trim($_POST['city'] ?? '');
         $district = trim($_POST['district'] ?? '');
@@ -92,47 +130,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $first_order_date = trim($_POST['first_order_date'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $profile = trim($_POST['profile'] ?? '');
-        $customer_id = $_POST['customer_id'] ?? null;
 
-        if (empty($phone) || empty($name)) {
-            throw new Exception("Phone and name are required");
-        }
-
-        // Check for duplicate phone
-        $check_stmt = $db->prepare("SELECT customer_id FROM customers WHERE phone = ?" . ($customer_id ? " AND customer_id != ?" : ""));
-        if ($customer_id) {
-            $check_stmt->bind_param("ss", $phone, $customer_id);
-        } else {
-            $check_stmt->bind_param("s", $phone);
-        }
-        $check_stmt->execute();
-        if ($check_stmt->get_result()->num_rows > 0) {
-            throw new Exception("Phone number already exists");
-        }
-
-        $current_time = date('Y-m-d H:i:s');
-
-        if ($customer_id) {
-            // Update existing customer - 14 parameters (13 fields + 1 WHERE clause)
+        if ($is_edit) {
+            // Update existing customer
             $stmt = $db->prepare("UPDATE customers SET 
                 phone=?, name=?, address=?, city=?, district=?, postal_code=?, 
                 known_by=?, email=?, first_order_date=?, description=?, profile=?, 
                 updated_at=?, updated_by=?, updated_by_name=?
                 WHERE customer_id=?");
+                
+            if (!$stmt) {
+                throw new Exception("Database error: " . $db->error);
+            }
+            
             $stmt->bind_param("sssssssssssssss", 
                 $phone, $name, $address, $city, $district, $postal_code, 
                 $known_by, $email, $first_order_date, $description, $profile, 
                 $current_time, $current_user_id, $current_user_name, $customer_id);
             $action = 'updated';
         } else {
-            // Create new customer - 15 parameters
-            $customer_id = generate_sequence_id('customer_id');
+            // Create new customer
             $stmt = $db->prepare("INSERT INTO customers (
                 customer_id, phone, name, address, city, district, postal_code, 
                 known_by, email, first_order_date, description, profile, 
                 created_at, created_by, created_by_name
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssssssssss", 
+            
+            if (!$stmt) {
+                throw new Exception("Database error: " . $db->error);
+            }
+            
+            $stmt->bind_param("sssssssssssssss", 
                 $customer_id, $phone, $name, $address, $city, $district, $postal_code, 
                 $known_by, $email, $first_order_date, $description, $profile, 
                 $current_time, $current_user_id, $current_user_name);
@@ -145,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message_type = 'success';
             
             if ($clear_form) {
-                // Clear form for new entries
+                // Reset form for new entries
                 $customer = [
                     'customer_id' => '',
                     'phone' => '',
@@ -164,16 +192,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
                 $is_edit = false;
             } else {
+                // Reload updated customer data
                 $customer = get_customer($customer_id);
                 $is_edit = true;
             }
         } else {
-            throw new Exception("❌ Failed to save customer: " . $db->error);
+            throw new Exception("❌ Failed to save customer: " . $stmt->error);
         }
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
-        $customer = $_POST;
+        // Preserve submitted data
+        $customer = array_merge($customer, $_POST);
         $is_edit = !empty($_POST['customer_id']);
     }
 }
