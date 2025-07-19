@@ -151,6 +151,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Create new customer
             $customer_id = generate_sequence_id('customer_id');
+
+            // Add this:
+            $check = $db->prepare("SELECT customer_id FROM customers WHERE customer_id = ?");
+            $check->bind_param("s", $customer_id);
+            $check->execute();
+            if ($check->get_result()->num_rows > 0) {
+                throw new Exception("Generated customer ID already exists - system error");
+            }
+
             if (!$customer_id) {
                 throw new Exception("Failed to generate customer ID");
             }

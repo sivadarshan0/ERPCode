@@ -113,7 +113,10 @@ function generate_sequence_id($sequence_name) {
     $db->begin_transaction();
 
     try {
-        $stmt = $db->prepare("SELECT prefix, next_value, digit_length FROM system_sequences WHERE sequence_name = ? FOR UPDATE");
+        // Get current sequence with lock
+        $stmt = $db->prepare("SELECT prefix, next_value, digit_length 
+                            FROM system_sequences 
+                            WHERE sequence_name = ? FOR UPDATE");
         $stmt->bind_param("s", $sequence_name);
         $stmt->execute();
         $seq = $stmt->get_result()->fetch_assoc();
@@ -122,10 +125,37 @@ function generate_sequence_id($sequence_name) {
             throw new Exception("Sequence '$sequence_name' not found");
         }
 
+        // Generate the ID
         $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
 
-        $update = $db->prepare("UPDATE system_sequences SET next_value = next_value + 1, last_used_at = NOW(), last_used_by = ? WHERE sequence_name = ?");
-        $update->bind_param("is", $_SESSION['user_id'], $sequence_name);
+        // Verify this ID doesn't already exist
+        $check = $db->prepare("SELECT customer_id FROM customers WHERE customer_id = ?");
+        $check->bind_param("s", $new_id);
+        $check->execute();
+        
+        if ($check->get_result()->num_rows > 0) {
+            // If ID exists, find the next available
+            $find = $db->prepare("SELECT MAX(CAST(SUBSTRING(customer_id, 4) AS UNSIGNED) 
+                                 FROM customers 
+                                 WHERE customer_id LIKE 'CUS%'");
+            $find->execute();
+            $max_used = $find->get_result()->fetch_row()[0];
+            $next_val = $max_used + 1;
+            $new_id = $seq['prefix'] . str_pad($next_val, $seq['digit_length'], '0', STR_PAD_LEFT);
+            
+            // Update sequence to this value + 1
+            $update_val = $next_val + 1;
+        } else {
+            $update_val = $seq['next_value'] + 1;
+        }
+
+        // Update sequence
+        $update = $db->prepare("UPDATE system_sequences 
+                               SET next_value = ?, 
+                                   last_used_at = NOW(), 
+                                   last_used_by = ? 
+                               WHERE sequence_name = ?");
+        $update->bind_param("iss", $update_val, $_SESSION['user_id'], $sequence_name);
         $update->execute();
 
         $db->commit();
