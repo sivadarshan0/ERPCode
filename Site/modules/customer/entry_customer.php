@@ -9,7 +9,7 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Initialize database connection first
+// Initialize database connection
 $db = db();
 if (!$db) {
     die("Database connection failed");
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Prepare data
         $current_time = date('Y-m-d H:i:s');
-        $customer_id = $_POST['customer_id'] ?? generate_sequence_id('customer_id');
+        $customer_id = $_POST['customer_id'] ?? null;
         $address = trim($_POST['address'] ?? '');
         $city = trim($_POST['city'] ?? '');
         $district = trim($_POST['district'] ?? '');
@@ -150,20 +150,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $action = 'updated';
         } else {
             // Create new customer
+            $customer_id = generate_sequence_id('customer_id');
+            if (!$customer_id) {
+                throw new Exception("Failed to generate customer ID");
+            }
+
             $stmt = $db->prepare("INSERT INTO customers (
                 customer_id, phone, name, address, city, district, postal_code, 
                 known_by, email, first_order_date, description, profile, 
-                created_at, created_by, created_by_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                created_at, created_by, created_by_name,
+                updated_at, updated_by, updated_by_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             
             if (!$stmt) {
                 throw new Exception("Database error: " . $db->error);
             }
             
-            $stmt->bind_param("sssssssssssssss", 
+            $null = null;
+            $stmt->bind_param("ssssssssssssssssss", 
                 $customer_id, $phone, $name, $address, $city, $district, $postal_code, 
                 $known_by, $email, $first_order_date, $description, $profile, 
-                $current_time, $current_user_id, $current_user_name);
+                $current_time, $current_user_id, $current_user_name,
+                $null, $null, $null);
             $action = 'created';
             $clear_form = true;
         }
@@ -219,6 +227,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <?php endif; ?>
 
     <form method="POST" class="row g-3 needs-validation" novalidate id="customerForm">
+
         <input type="hidden" name="customer_id" value="<?= htmlspecialchars($customer['customer_id']) ?>">
 
         <div class="col-md-6 position-relative">
