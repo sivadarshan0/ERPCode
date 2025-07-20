@@ -378,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                          <small>${escapeHtml(c.phone)}</small>
                                          <span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
                         item.onclick = () => {
-                            setEditMode(c.customer_id, c.name);
+                            //setEditMode(c.customer_id, c.name);
                             window.location.href = `entry_customer.php?customer_id=${c.customer_id}`;
                         };
                         phoneResults.appendChild(item);
