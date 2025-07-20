@@ -1,0 +1,17 @@
+==================================================
+Date - 2025/07/20 
+
+Login - OK
+UI Design - OK
+Manin page - OK
+Customer entry - OK
+Live search on customer entry - OK
+Update existing customer - OK
+Search existing customer - OK
+Live search on existing customer - OK 
+
+Full backup - available 
+
+#. Require improvement 
+Customer ID is not updating as per swquence 
+====================================================
