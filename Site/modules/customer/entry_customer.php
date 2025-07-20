@@ -1,4 +1,5 @@
 <?php
+
 // File: /modules/customer/entry_customer.php
 
 session_start();
