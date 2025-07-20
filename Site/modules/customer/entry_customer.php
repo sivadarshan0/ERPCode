@@ -378,7 +378,21 @@ document.addEventListener('DOMContentLoaded', function () {
                                          <span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
                         item.onclick = () => {
                             setEditMode(c.customer_id, c.name);
-                            window.location.href = `entry_customer.php?customer_id=${c.customer_id}`;
+                            document.querySelector('input[name="customer_id"]').value = c.customer_id;
+                            document.getElementById('name').value = c.name || '';
+                            document.querySelector('input[name="address"]').value = c.address || '';
+                            document.querySelector('input[name="city"]').value = c.city || '';
+                            document.querySelector('input[name="district"]').value = c.district || '';
+                            document.querySelector('input[name="postal_code"]').value = c.postal_code || '';
+                            document.querySelector('select[name="known_by"]').value = c.known_by || '';
+                            document.querySelector('input[name="email"]').value = c.email || '';
+                            document.querySelector('input[name="first_order_date"]').value = c.first_order_date || '';
+                            document.querySelector('textarea[name="description"]').value = c.description || '';
+                            document.querySelector('textarea[name="profile"]').value = c.profile || '';
+    
+                            phoneResults.classList.add('d-none');
+                        };
+
                         };
                         phoneResults.appendChild(item);
                     });
