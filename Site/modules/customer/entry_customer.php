@@ -229,6 +229,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <main class="container mt-4">
     <h2><?= $is_edit ? 'Edit' : 'New' ?> Customer <?= $is_edit ? "<span class='badge bg-primary'>{$customer['customer_id']}</span>" : '' ?></h2>
+        <p><strong>Mode:</strong> <?= $is_edit ? 'EDIT' : 'CREATE' ?></p>
 
     <?php if ($message): ?>
     <div class="alert alert-<?= $message_type ?>"><?= htmlspecialchars($message) ?></div>
