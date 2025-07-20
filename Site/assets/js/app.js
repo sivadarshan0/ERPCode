@@ -109,8 +109,7 @@ function initCustomerEntry() {
                         `;
                         item.addEventListener('click', () => {
                             console.log('[PhoneLookup] Selected customer:', customer.customer_id);
-                            loadCustomerData(customer.customer_id);
-                            phoneResults.classList.add('d-none');
+                            window.location.href = `entry_customer.php?customer_id=${encodeURIComponent(customer.customer_id)}`;
                         });
                         phoneResults.appendChild(item);
                     });
