@@ -157,17 +157,6 @@ function initLiveSearch() {
     const inputs = document.querySelectorAll(".live-search");
     if (inputs.length === 0) return;
 
-    function getSourceBadgeClass(source) {
-        if (!source) return '';
-        switch(source.toLowerCase()) {
-            case 'instagram': return 'bg-instagram';
-            case 'facebook': return 'bg-facebook';
-            case 'searchengine': return 'bg-info';
-            case 'friends': return 'bg-success';
-            default: return 'bg-secondary';
-        }
-    }
-
     const debouncedSearch = debounce(() => {
         const params = new URLSearchParams();
         inputs.forEach(inp => {
@@ -197,11 +186,6 @@ function initLiveSearch() {
                 }
 
                 data.forEach(cust => {
-                    const badgeClass = getSourceBadgeClass(cust.known_by);
-                    const sourceBadge = cust.known_by 
-                        ? `<span class="badge ${badgeClass}">${escapeHtml(cust.known_by)}</span>`
-                        : '';
-
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
                         <td>${escapeHtml(cust.customer_id)}</td>

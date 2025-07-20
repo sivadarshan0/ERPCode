@@ -1,4 +1,7 @@
 <?php
+
+// File: Site/modules/customer/search_customers.php 
+
 define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';

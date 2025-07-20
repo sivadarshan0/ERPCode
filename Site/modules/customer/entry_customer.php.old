@@ -133,20 +133,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($is_edit) {
             // Update existing customer
+
             $stmt = $db->prepare("UPDATE customers SET 
                 phone=?, name=?, address=?, city=?, district=?, postal_code=?, 
                 known_by=?, email=?, first_order_date=?, description=?, profile=?, 
-                updated_at=?, updated_by=?, updated_by_name=?
+                updated_at=NOW(), updated_by=?, updated_by_name=?
                 WHERE customer_id=?");
-                
-            if (!$stmt) {
-                throw new Exception("Database error: " . $db->error);
-            }
-            
-            $stmt->bind_param("sssssssssssssss", 
-                $phone, $name, $address, $city, $district, $postal_code, 
-                $known_by, $email, $first_order_date, $description, $profile, 
-                $current_time, $current_user_id, $current_user_name, $customer_id);
+
+            $stmt->bind_param("ssssssssssssss", 
+                $phone, $name, $address, $city, $district, $postal_code,
+                $known_by, $email, $first_order_date, $description, $profile,
+                $current_user_id, $current_user_name, $customer_id);
+
             $action = 'updated';
         } else {
             // Create new customer
