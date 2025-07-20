@@ -379,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                          <span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
                         item.onclick = () => {
                             //setEditMode(c.customer_id, c.name);
+                            console.log("Selected Customer ID:", c.customer_id);  // Add this line
                             window.location.href = `/modules/customer/entry_customer.php?customer_id=${c.customer_id}`;
                         };
                         phoneResults.appendChild(item);
