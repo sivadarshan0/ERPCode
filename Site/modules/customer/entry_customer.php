@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // Update UI for edit mode
-    const setEditMode = (customerId, customerName) => {
+        const setEditMode = (customerId, customerName) => {
         const header = document.querySelector('main.container h2');
         const submitBtn = document.querySelector('button[type="submit"]');
         
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                          <span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
                         item.onclick = () => {
                             //setEditMode(c.customer_id, c.name);
-                            console.log("Selected Customer ID:", c.customer_id);  // Add this line
+                            console.log("[Redirect] Editing customer:", c.customer_id);
                             window.location.href = `/modules/customer/entry_customer.php?customer_id=${c.customer_id}`;
                         };
                         phoneResults.appendChild(item);
