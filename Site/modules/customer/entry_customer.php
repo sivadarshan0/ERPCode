@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         item.onclick = () => {
                             //setEditMode(c.customer_id, c.name);
                             console.log("[Redirect] Editing customer:", c.customer_id);
-                            window.location.href = `/modules/customer/entry_customer.php?customer_id=${c.customer_id}`;
+                            window.location.href = `entry_customer.php?customer_id=${c.customer_id}`;
                         };
                         phoneResults.appendChild(item);
                     });
