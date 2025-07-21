@@ -11,7 +11,7 @@ BACKUP_FILE="$BACKUP_DIR/DBBackup_$DATE.sql"
 mkdir -p "$BACKUP_DIR"
 
 # ─── PERFORM BACKUP ───────────────────────────
-sudo mysqldump -u "$DB_USER" -p"$DB_PASS" --all-databases --routines --events --triggers > "$BACKUP_FILE"
+mysqldump -u "$DB_USER" -p"$DB_PASS" --all-databases --routines --events --triggers > "$BACKUP_FILE"
 
 # ─── COMPRESS BACKUP FILE ─────────────────────
 gzip "$BACKUP_FILE"
