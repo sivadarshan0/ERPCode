@@ -74,7 +74,7 @@ INSERT INTO `customers` VALUES
 ('CUS00006','0777654321','Anupriya','Main road','Rathota','Colombo','06012','Instagram','anupriya@abc.com','2025-07-02','Test record','Insta','2025-07-13 11:02:23',1,'admin','2025-07-19 10:08:50',1,'admin'),
 ('CUS00007','1234567890','dsdfg','afvadf','dfvdvdf','dvdvadfva','1234','SearchEngine','abc@xyz.com','2025-07-14','vsdas','sgaerqg','2025-07-19 18:52:29',1,'admin',NULL,NULL,NULL),
 ('CUS00008','0766123456','vjannjnj','ndjnsdkcvjn','jnkdnckn','Kandy','08111','SearchEngine','ABC@123','2025-07-18','SFQWFQWEF','sdfsvsdvqwe','2025-07-19 17:24:24',1,'admin',NULL,NULL,NULL),
-('CUS00009','0777771111','fgergwe','gerwter','adfgsd','sdfaerfa','09111','SearchEngine','abc@xyz.com','2025-07-14','dfgae Update 20250720 2325','New update','2025-07-19 18:16:18',1,'admin','2025-07-20 17:55:54',1,'admin'),
+('CUS00009','0777771111','fgergwe','gerwter','adfgsd','sdfaerfa','09111','SearchEngine','abc@xyz.com','2025-07-14','dfgae Update 20250720 2325','New update 20250723 1955','2025-07-19 18:16:18',1,'admin','2025-07-22 14:26:07',1,'admin'),
 ('CUS00010','0222222222','sdfgqr','svaedgaerb dafgeg','efgwe','dvedge','2222','Facebook','cnf@cbd.com','2025-07-14','adfwfeqwfqwf','sdfqwdfqw','2025-07-19 19:10:17',1,'admin',NULL,NULL,NULL),
 ('CUS00011','0333333333','dfshs','aegehsh','fsdsdg','dfgsdgsd','04444','Friends','bda@ghg.com','2025-07-14','dfgdfgad','dgadgd','2025-07-20 04:09:34',1,'admin',NULL,NULL,NULL),
 ('CUS00012','0444444444','dfgdfger','fadfgadfvge','fvadfva','dvdfv','88888','Other','abc@bnd.com','2025-07-08','wfqwfqwf','sdfaswfdqw','2025-07-20 11:02:12',1,'admin',NULL,NULL,NULL),
@@ -128,7 +128,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -213,7 +213,8 @@ INSERT INTO `user_login_audit` VALUES
 (73,1,'2025-07-20 18:41:24','10.0.7.124',1),
 (74,1,'2025-07-20 19:33:41','10.0.7.124',1),
 (75,1,'2025-07-20 23:17:54','10.0.7.125',1),
-(76,1,'2025-07-20 23:25:18','10.0.7.125',1);
+(76,1,'2025-07-20 23:25:18','10.0.7.125',1),
+(77,1,'2025-07-22 19:55:14','10.0.6.102',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -278,7 +279,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-07-20 23:25:18','2025-07-20 17:55:18',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-07-22 19:55:14','2025-07-22 14:25:14',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2437,4 +2438,4 @@ USE `mysql`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-22 19:07:39
+-- Dump completed on 2025-07-22 20:05:03
