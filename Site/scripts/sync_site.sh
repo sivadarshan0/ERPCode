@@ -33,3 +33,6 @@ echo "🚚 Syncing $SITE_DIR to $TARGET_DIR..."
 sudo rsync -av --delete "${EXCLUDES[@]}" "$SITE_DIR/" "$TARGET_DIR/"
 
 echo "✅ Sync complete at $(date)"
+
+# ─── 3. Make script executable ──────
+sudo chmod +x "/var/www/html/*"
