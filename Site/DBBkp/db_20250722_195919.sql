@@ -68,15 +68,17 @@ LOCK TABLES `customers` WRITE;
 INSERT INTO `customers` VALUES
 ('CUS00001','0771060853','Siva','Kotahena street, Colombo 13','Kotahena','Colombo','01300','Instagram','sivadarshan@gmail.com','2025-07-06','Test updated','Insta','2025-07-10 15:09:08',1,'admin','2025-07-19 10:09:56',1,'admin'),
 ('CUS00002','0768406545','Thivya','Kotahena','Colombo 13','Colombo','01400','Instagram','thivya@abc.com','2025-07-08','Test 2','Insta','2025-07-10 15:10:45',1,'admin','2025-07-19 10:09:43',1,'admin'),
-('CUS00003','0773100853','Agarvin','Jaffna street','Jaffna','Colombo','02100','Instagram','agarvin@abc.com','2025-07-09','Update entry 4','Insta','2025-07-13 01:36:13',1,'admin','2025-07-19 10:09:28',1,'admin'),
-('CUS00004','0772190853','Aathi','Chullipurm east','Chullipuram','Colombo','02110','Instagram','aathi@abc.com','2025-07-06','Update entry','Instagram','2025-07-13 01:45:02',1,'admin','2025-07-19 09:56:22',1,'admin'),
-('CUS00005','0777123456','Latha','Main street, Kandy','Kandy','Colombo','08100','Instagram','latha@abc.com','2025-07-01','Test customer','Insta','2025-07-13 10:25:32',1,'admin','2025-07-19 10:09:05',1,'admin'),
+('CUS00003','0773100853','Agarvin','Jaffna street','Jaffna','Colombo','02100','Instagram','agarvin@abc.com','2025-07-09','Update entry 20250720 1900','Insta','2025-07-13 01:36:13',1,'admin','2025-07-20 13:31:05',1,'admin'),
+('CUS00004','0772190853','Aathi','Chullipurm east','Chullipuram','Colombo','02110','Instagram','aathi@abc.com','2025-07-06','Update entry 20250720 1943','Instagram','2025-07-13 01:45:02',1,'admin','2025-07-20 14:13:57',1,'admin'),
+('CUS00005','0777123456','Latha','Main street, Kandy','Kandy','Colombo','08100','Instagram','latha@abc.com','2025-07-01','Test customer First update','Insta','2025-07-13 10:25:32',1,'admin','2025-07-20 10:59:40',1,'admin'),
 ('CUS00006','0777654321','Anupriya','Main road','Rathota','Colombo','06012','Instagram','anupriya@abc.com','2025-07-02','Test record','Insta','2025-07-13 11:02:23',1,'admin','2025-07-19 10:08:50',1,'admin'),
 ('CUS00007','1234567890','dsdfg','afvadf','dfvdvdf','dvdvadfva','1234','SearchEngine','abc@xyz.com','2025-07-14','vsdas','sgaerqg','2025-07-19 18:52:29',1,'admin',NULL,NULL,NULL),
 ('CUS00008','0766123456','vjannjnj','ndjnsdkcvjn','jnkdnckn','Kandy','08111','SearchEngine','ABC@123','2025-07-18','SFQWFQWEF','sdfsvsdvqwe','2025-07-19 17:24:24',1,'admin',NULL,NULL,NULL),
-('CUS00009','0777771111','fgergwe','gerwter','adfgsd','sdfaerfa','09111','SearchEngine','abc@xyz.com','2025-07-14','dfgae','New update','2025-07-19 18:16:18',1,'admin','2025-07-20 04:08:20',1,'admin'),
+('CUS00009','0777771111','fgergwe','gerwter','adfgsd','sdfaerfa','09111','SearchEngine','abc@xyz.com','2025-07-14','dfgae Update 20250720 2325','New update 20250723 1955','2025-07-19 18:16:18',1,'admin','2025-07-22 14:26:07',1,'admin'),
 ('CUS00010','0222222222','sdfgqr','svaedgaerb dafgeg','efgwe','dvedge','2222','Facebook','cnf@cbd.com','2025-07-14','adfwfeqwfqwf','sdfqwdfqw','2025-07-19 19:10:17',1,'admin',NULL,NULL,NULL),
-('CUS00017','0333333333','dfshs','aegehsh','fsdsdg','dfgsdgsd','04444','Friends','bda@ghg.com','2025-07-14','dfgdfgad','dgadgd','2025-07-20 04:09:34',1,'admin',NULL,NULL,NULL);
+('CUS00011','0333333333','dfshs','aegehsh','fsdsdg','dfgsdgsd','04444','Friends','bda@ghg.com','2025-07-14','dfgdfgad','dgadgd','2025-07-20 04:09:34',1,'admin',NULL,NULL,NULL),
+('CUS00012','0444444444','dfgdfger','fadfgadfvge','fvadfva','dvdfv','88888','Other','abc@bnd.com','2025-07-08','wfqwfqwf','sdfaswfdqw','2025-07-20 11:02:12',1,'admin',NULL,NULL,NULL),
+('CUS00013','0987654321','bhvkjdfk','fbga;kdj;ak','Galle','Galle','09876','Friends','abc@dbc.com','2025-07-15','kg;LH;GOAHER 20250720 2327','ADJNGAKN','2025-07-20 17:57:20',1,'admin','2025-07-20 17:58:01',1,'admin');
 /*!40000 ALTER TABLE `customers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -106,7 +108,7 @@ CREATE TABLE `system_sequences` (
 LOCK TABLES `system_sequences` WRITE;
 /*!40000 ALTER TABLE `system_sequences` DISABLE KEYS */;
 INSERT INTO `system_sequences` VALUES
-('customer_id','CUS',18,5,'Customer IDs','2025-07-20 04:09:34','1');
+('customer_id','CUS',14,5,'Customer IDs','2025-07-20 17:57:20','1');
 /*!40000 ALTER TABLE `system_sequences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -126,7 +128,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -200,7 +202,19 @@ INSERT INTO `user_login_audit` VALUES
 (62,1,'2025-07-20 01:24:35','10.0.7.124',1),
 (63,1,'2025-07-20 09:32:22','10.0.7.133',1),
 (64,1,'2025-07-20 09:34:16','10.0.7.133',1),
-(65,1,'2025-07-20 09:37:29','10.0.7.133',1);
+(65,1,'2025-07-20 09:37:29','10.0.7.133',1),
+(66,1,'2025-07-20 16:28:58','10.0.7.124',1),
+(67,1,'2025-07-20 17:04:11','10.0.7.124',1),
+(68,1,'2025-07-20 17:18:45','10.0.7.124',1),
+(69,1,'2025-07-20 17:32:37','10.0.7.124',1),
+(70,1,'2025-07-20 18:19:21','10.0.7.124',1),
+(71,1,'2025-07-20 18:33:07','10.0.7.124',1),
+(72,1,'2025-07-20 18:36:50','10.0.7.124',1),
+(73,1,'2025-07-20 18:41:24','10.0.7.124',1),
+(74,1,'2025-07-20 19:33:41','10.0.7.124',1),
+(75,1,'2025-07-20 23:17:54','10.0.7.125',1),
+(76,1,'2025-07-20 23:25:18','10.0.7.125',1),
+(77,1,'2025-07-22 19:55:14','10.0.6.102',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -265,7 +279,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-07-20 09:37:29','2025-07-20 04:07:29',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-07-22 19:55:14','2025-07-22 14:25:14',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2424,4 +2438,4 @@ USE `mysql`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-20 15:36:24
+-- Dump completed on 2025-07-22 19:59:19
