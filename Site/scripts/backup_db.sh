@@ -1,39 +1,40 @@
 #!/bin/bash
-# backup_db.sh
 
-# ─── CONFIGURATION ─────────────────────────────
+# ─── Configurable Variables ─────────────────────
 DB_USER="root"
-DB_PASS=""  # Leave empty if using sudo (socket auth)
-BACKUP_DIR="/var/www/html/DBBkp"
-DATE=$(date +"%Y-%m-%d_%H-%M-%S")
-BACKUP_FILE="$BACKUP_DIR/DBBackup_$DATE.sql"
-REPO_DIR=~/ERPCode
+DB_PASS="your_db_password"       # Replace with your actual password
+BACKUP_DIR="/home/admin/ERPCode/Site/DBBkp"
+LOG_SOURCE="/var/www/html/logs"
+LOG_DEST="/home/admin/ERPCode/Site/logs"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+DB_FILE="$BACKUP_DIR/db_$TIMESTAMP.sql"
 
-# ─── CREATE BACKUP DIRECTORY IF NEEDED ────────
+# ─── 1. Ensure destination folders exist ────────
 mkdir -p "$BACKUP_DIR"
+mkdir -p "$LOG_DEST"
 
-# ─── DUMP DATABASE ─────────────────────────────
-# Use sudo if root requires socket authentication
-sudo mysqldump --all-databases --routines --events --triggers > "$BACKUP_FILE"
+# ─── 2. Dump full database ──────────────────────
+echo "🛢️  Backing up database to $DB_FILE"
+mysqldump -u "$DB_USER" -p"$DB_PASS" --all-databases > "$DB_FILE"
 
-# ─── COMPRESS BACKUP FILE ─────────────────────
-gzip "$BACKUP_FILE"
-echo "✅ Backup completed: $BACKUP_FILE.gz"
-
-# ─── COPY TO GIT REPO IF NEEDED ───────────────
-if [ "$BACKUP_DIR" != "$REPO_DIR/Site/DBBkp" ]; then
-    mkdir -p "$REPO_DIR/Site/DBBkp"
-    cp "$BACKUP_FILE.gz" "$REPO_DIR/Site/DBBkp/"
+if [ $? -eq 0 ]; then
+  echo "✅ Database backup complete."
+else
+  echo "❌ Database backup failed."
+  exit 1
 fi
 
-# ─── GIT COMMIT & PUSH ────────────────────────
-cd ~/ERPCode || exit
+# ─── 3. Copy log files ──────────────────────────
+echo "📂 Copying logs from $LOG_SOURCE to $LOG_DEST..."
+cp -r "$LOG_SOURCE/"* "$LOG_DEST/"
 
-# Stage backup folder
-git add Site/DBBkp
+echo "✅ Log copy complete."
 
-# Commit with timestamp
-git commit -m "Auto-commit: Added DB backup on $(date +'%Y-%m-%d %H:%M:%S')" || echo "No DB changes to commit."
+# ─── 4. Git status reminder ─────────────────────
+echo "📝 You can now add, commit, and push DBBkp and logs via Git."
 
-# Push to GitHub
+# ─── 5. Auto Commit to Git ──────────────────────
+cd /home/admin/ERPCode || exit
+git add Site/DBBkp/ Site/logs/
+git commit -m "🔄 Auto backup: $TIMESTAMP"
 git push origin main
