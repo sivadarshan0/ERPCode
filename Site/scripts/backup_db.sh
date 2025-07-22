@@ -27,7 +27,7 @@ if [ "$BACKUP_DIR" != "$REPO_DIR/Site/DBBkp" ]; then
 fi
 
 # ─── GIT COMMIT & PUSH ────────────────────────
-cd "$REPO_DIR" || exit
+cd ~/ERPCode || exit
 
 # Stage backup folder
 git add Site/DBBkp
