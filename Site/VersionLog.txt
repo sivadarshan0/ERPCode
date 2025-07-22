@@ -3,8 +3,10 @@ Date - 2025/07/21
 
 In this version entry_customer.php live search customer update has been fixed.
 
-Full backup - Pending 
+Full backup - available
 
+# Require improvement 
+Need to create user management page
 
 ==================================================
 Date - 2025/07/20 
