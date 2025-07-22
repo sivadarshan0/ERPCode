@@ -42,6 +42,7 @@ echo "📝 You can now add, commit, and push DBBkp and logs via Git."
 
 # ─── 6. Auto Commit to Git ──────────────────────
 cd /home/admin/ERPCode || exit
+git pull origin main --rebase
 git add Site/DBBkp/ Site/logs/
 git commit -m "🔄 Auto backup: $TIMESTAMP"
 git push origin main
