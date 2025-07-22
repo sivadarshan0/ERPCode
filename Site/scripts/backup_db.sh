@@ -30,10 +30,17 @@ cp -r "$LOG_SOURCE/"* "$LOG_DEST/"
 
 echo "✅ Log copy complete."
 
-# ─── 4. Git status reminder ─────────────────────
+# ─── 4. Cleanup old backups ─────────────────────
+MAX_BACKUPS=7
+echo "🧹 Keeping only the last $MAX_BACKUPS backups in $BACKUP_DIR..."
+cd "$BACKUP_DIR" || exit 1
+ls -1t *.sql | tail -n +$((MAX_BACKUPS + 1)) | xargs -r rm --
+echo "🗑️  Old backups cleaned up."
+
+# ─── 5. Git status reminder ─────────────────────
 echo "📝 You can now add, commit, and push DBBkp and logs via Git."
 
-# ─── 5. Auto Commit to Git ──────────────────────
+# ─── 6. Auto Commit to Git ──────────────────────
 cd /home/admin/ERPCode || exit
 git add Site/DBBkp/ Site/logs/
 git commit -m "🔄 Auto backup: $TIMESTAMP"
