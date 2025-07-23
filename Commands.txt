@@ -57,7 +57,7 @@ EXIT;
 sudo nmcli connection show
 sudo nmcli device wifi rescan
 sudo nmcli device wifi list
-sudo nmcli device wifi connect "TP-LINK_EC3E" password "771060853"
+sudo nmcli device wifi connect "iPhone" password "C0nn3ctM3"
 sudo nmcli -f NAME,TYPE,AUTOCONNECT,AUTOCONNECT-PRIORITY connection show
 sudo nmcli connection modify "TP-LINK_EC3E" connection.autoconnect-priority 5
 sudo nmcli connection modify "preconfigured" connection.autoconnect-priority 10
@@ -71,7 +71,7 @@ sudo tail -50 /var/log/apache2/error.log
 
 -----------------------------------------------------
 
-
+ssh admin@172.20.10.5 (iPhone)
 
 
 #Set ownership to Apache (www-data) 
