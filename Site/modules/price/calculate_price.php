@@ -1,65 +1,72 @@
 <?php
 // File: calculate_price.php
 
-error_reporting(E_ALL);
 ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="style.css">
   <title>Price Calculator – Live Rates</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;margin:0;padding:20px}
-    .container{max-width:420px;margin:auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.05)}
-    h2{text-align:center;margin-top:0}
-    label{display:block;margin-top:15px;font-size:.9rem}
-    input,select{width:100%;padding:10px;margin-top:4px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;font-size:1rem}
-    button{width:100%;padding:12px;margin-top:10px;background:#007bff;border:none;border-radius:6px;color:#fff;font-size:1rem;cursor:pointer}
-    button:hover{background:#0069d9}
-    #result{margin-top:20px;font-weight:bold;text-align:center;font-size:1.1rem}
-    .small{font-size:.8rem;color:#555;margin-top:2px}
-    .refresh-btn{background:#28a745}
-    .refresh-btn:hover{background:#218838}
-  </style>
+  <link rel="stylesheet" href="/assets/css/main.css">
 </head>
 <body>
-  <a href="/index.php" class="back-link">← Back to Main Menu</a>
-  <div class="container">
+
+<a href="/index.php" style="display:inline-block; margin: 1rem; color: #3498db; text-decoration: none;">← Back to Main Menu</a>
+
+<div class="login-container">
+  <div class="login-box calc-container">
     <h2>Price Calculator</h2>
 
-    <label for="cost">Cost (in selected currency)</label>
-    <input type="number" step="0.01" id="cost" placeholder="Enter cost">
+    <div class="form-group">
+      <label for="cost">Cost (in selected currency)</label>
+      <input type="number" step="0.01" id="cost" placeholder="Enter cost">
+    </div>
 
-    <label for="currency">Currency</label>
-    <select id="currency" onchange="updateRate()">
-      <option value="USD">USD</option>
-      <option value="EUR">EUR</option>
-      <option value="GBP">GBP</option>
-      <option value="INR" selected>INR</option>
-    </select>
+    <div class="form-group">
+      <label for="currency">Currency</label>
+      <select id="currency" onchange="updateRate()">
+        <option value="USD">USD</option>
+        <option value="EUR">EUR</option>
+        <option value="GBP">GBP</option>
+        <option value="INR" selected>INR</option>
+      </select>
+    </div>
 
-    <button type="button" onclick="updateRate(true)" class="refresh-btn">🔄 Refresh Rate</button>
+    <div class="form-group">
+      <button type="button" onclick="updateRate(true)" class="refresh-btn">🔄 Refresh Rate</button>
+    </div>
 
-    <label for="rate">Exchange Rate (1 unit → LKR)</label>
-    <input type="number" step="0.0001" id="rate" placeholder="Fetching…" readonly>
-    <div class="small" id="rateStatus"></div>
+    <div class="form-group">
+      <label for="rate">Exchange Rate (1 unit → LKR)</label>
+      <input type="number" step="0.0001" id="rate" placeholder="Fetching…" readonly>
+      <div class="small" id="rateStatus"></div>
+    </div>
 
-    <label for="weight">Weight (grams)</label>
-    <input type="number" step="1" id="weight" placeholder="Enter weight in grams">
+    <div class="form-group">
+      <label for="weight">Weight (grams)</label>
+      <input type="number" step="1" id="weight" placeholder="Enter weight in grams">
+    </div>
 
-    <label for="courier">Courier Charges (LKR / kg)</label>
-    <input type="number" step="0.01" id="courier" placeholder="Enter courier charges per kg">
+    <div class="form-group">
+      <label for="courier">Courier Charges (LKR/kg)</label>
+      <input type="number" step="0.01" id="courier" placeholder="Enter courier charges per kg">
+    </div>
 
-    <label for="profit">Profit Margin (%)</label>
-    <input type="number" step="0.01" id="profit" placeholder="Enter profit margin">
+    <div class="form-group">
+      <label for="profit">Profit Margin (%)</label>
+      <input type="number" step="0.01" id="profit" placeholder="Enter profit margin">
+    </div>
 
     <button onclick="calculate()">Calculate</button>
 
     <div id="result"></div>
   </div>
+</div>
 
 <script>
 const fallbackRates = {USD: 300, EUR: 325, GBP: 375, INR: 3.75};
@@ -67,21 +74,15 @@ const apiKey = '2dceae62011fd1aa98c40c89';
 const rateField = document.getElementById('rate');
 const status = document.getElementById('rateStatus');
 
-// Cache Key Format: rate_INR or rate_USD
 function getCacheKey(currency) {
   return `rate_${currency}`;
 }
 
-// Save rate to localStorage with timestamp
 function cacheRate(currency, rate) {
-  const data = {
-    value: rate,
-    timestamp: Date.now()
-  };
+  const data = { value: rate, timestamp: Date.now() };
   localStorage.setItem(getCacheKey(currency), JSON.stringify(data));
 }
 
-// Retrieve cached rate (if less than 12 hours old)
 function getCachedRate(currency) {
   const raw = localStorage.getItem(getCacheKey(currency));
   if (!raw) return null;
@@ -123,7 +124,6 @@ async function updateRate(forceRefresh = false) {
     }
   }
 
-  // Always attempt live fetch in background
   const liveRate = await fetchRate(currency);
   if (liveRate !== null) {
     rateField.value = liveRate.toFixed(4);
