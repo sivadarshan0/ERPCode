@@ -26,7 +26,7 @@ ini_set('display_errors', 1);
   </style>
 </head>
 <body>
-  <a href="index.php" class="back-link">← Back to Main Menu</a>
+  <a href="/index.php" class="back-link">← Back to Main Menu</a>
   <div class="container">
     <h2>Price Calculator</h2>
 
