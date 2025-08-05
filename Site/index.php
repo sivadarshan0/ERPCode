@@ -54,15 +54,15 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Card 2: Price Calculator -->
+                <!-- Card 2: Price Calculator (Corrected Layout) -->
                 <div class="col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <!-- "Pricing Tools" title removed to elevate the button -->
-                            <div class="d-grid gap-2 mt-auto">
+                        <div class="card-body">
+                            <h5 class="card-title">Pricing Tools</h5>
+                            <div class="d-grid gap-2">
                                 <a href="/modules/price/calculate_price.php" class="btn btn-primary">
                                     <i class="bi bi-play-circle"></i> Open Calculator
                                 </a>
