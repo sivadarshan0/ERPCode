@@ -57,13 +57,13 @@ require_once __DIR__ . '/includes/header.php';
                 <!-- Card 2: Price Calculator -->
                 <div class="col-md-6 mb-4">
                     <div class="card h-100">
-                        <div class="card-header bg-info text-white">
+                        <div class="card-header bg-primary text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
                         </div>
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">Pricing Tools</h5>
+                            <!-- "Pricing Tools" title removed to elevate the button -->
                             <div class="d-grid gap-2 mt-auto">
-                                <a href="/modules/price/calculate_price.php" class="btn btn-info text-white">
+                                <a href="/modules/price/calculate_price.php" class="btn btn-primary">
                                     <i class="bi bi-play-circle"></i> Open Calculator
                                 </a>
                             </div>
@@ -71,9 +71,7 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-            </div> <!-- This is the closing tag for the single "row" div -->
-
-            <!-- You can add another <div class="row"> here for more cards -->
+            </div> <!-- End of the row -->
 
         </main>
     </div>
