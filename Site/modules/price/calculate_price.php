@@ -1,9 +1,11 @@
 <?php
 // File: calculate_price.php
 
+session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+define('_IN_APP_', true);
 
 require_once __DIR__ . '/../../includes/header.php';
 
