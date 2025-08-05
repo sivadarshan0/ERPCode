@@ -33,46 +33,47 @@ require_once __DIR__ . '/includes/header.php';
 
             <!-- Main Dashboard Cards -->
             <div class="row mt-4">
-                <!-- Customer Management Card -->
-                <div class="col-md-6">
-                    <div class="card">
+
+                <!-- Card 1: Customer Management -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-people-fill"></i> Customer Management
                         </div>
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                             <h5 class="card-title">Quick Actions</h5>
-                            <div class="d-grid gap-2">
+                            <div class="d-grid gap-2 mt-auto">
                                 <a href="/modules/customer/entry_customer.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Add New Customer
-                                a>
+                                </a>
                                 <a href="/modules/customer/list_customers.php" class="btn btn-primary">
                                     <i class="bi bi-search"></i> Find Customer
-                                a>
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Price Calculator Card -->
-                <div class="col-md-6">
-                    <div class="card">
+                <!-- Card 2: Price Calculator -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
                         <div class="card-header bg-info text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
                         </div>
-                        <div class="card-body">
+                        <div class="card-body d-flex flex-column">
                             <h5 class="card-title">Pricing Tools</h5>
-                            <div class="d-grid gap-2">
-                                <a href="/modules/price/calculate_price.php" class="btn btn-info">
+                            <div class="d-grid gap-2 mt-auto">
+                                <a href="/modules/price/calculate_price.php" class="btn btn-info text-white">
                                     <i class="bi bi-play-circle"></i> Open Calculator
                                 </a>
-                                <!-- You can add other related links here if needed -->
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Add other dashboard sections as needed -->
+            </div> <!-- This is the closing tag for the single "row" div -->
+
+            <!-- You can add another <div class="row"> here for more cards -->
 
         </main>
     </div>
