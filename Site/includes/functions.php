@@ -6,12 +6,15 @@ defined('_IN_APP_') or die('Unauthorized access');
 require_once __DIR__ . '/../config/db.php';
 
 // ───── Auth-related functions ─────
+
 function is_account_locked($username) {
     $db = db();
     $stmt = $db->prepare("SELECT locked_until FROM users WHERE username = ?");
-    $stmt->execute([$username]);
-    $user = $stmt->fetch();
-    
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+
     if ($user && $user['locked_until'] && strtotime($user['locked_until']) > time()) {
         return $user['locked_until'];
     }
@@ -56,17 +59,17 @@ function update_user_login($user_id, $success, $ip_address) {
         $stmt->execute();
 
         if (!$success) {
-            $stmt = $db->prepare("SELECT failed_attempts FROM users WHERE id = ?");
-            $stmt->bind_param("i", $user_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
+            $stmt_check = $db->prepare("SELECT failed_attempts FROM users WHERE id = ?");
+            $stmt_check->bind_param("i", $user_id);
+            $stmt_check->execute();
+            $result = $stmt_check->get_result();
             $user = $result->fetch_assoc();
             
             if ($user && $user['failed_attempts'] >= 5) {
                 $lock_time = date('Y-m-d H:i:s', strtotime('+30 minutes'));
-                $stmt = $db->prepare("UPDATE users SET locked_until = ? WHERE id = ?");
-                $stmt->bind_param("si", $lock_time, $user_id);
-                $stmt->execute();
+                $stmt_lock = $db->prepare("UPDATE users SET locked_until = ? WHERE id = ?");
+                $stmt_lock->bind_param("si", $lock_time, $user_id);
+                $stmt_lock->execute();
             }
         }
 
@@ -82,10 +85,12 @@ function update_user_login($user_id, $success, $ip_address) {
 function log_login_attempt($user_id, $ip_address, $success) {
     $db = db();
     $stmt = $db->prepare("INSERT INTO user_login_audit (user_id, login_time, ip_address, success) VALUES (?, NOW(), ?, ?)");
-    $stmt->execute([$user_id, $ip_address, (int)$success]);
+    $stmt->bind_param("isi", $user_id, $ip_address, $success);
+    $stmt->execute();
 }
 
 // ───── Session handling ─────
+
 function is_logged_in() {
     return isset($_SESSION['user_id']);
 }
@@ -97,7 +102,7 @@ function require_login() {
         exit;
     }
 
-    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) { // 30-minute timeout
         session_unset();
         session_destroy();
         header('Location: /login.php?timeout=1');
@@ -107,67 +112,83 @@ function require_login() {
     $_SESSION['last_activity'] = time();
 }
 
-// ───── Sequence ID Generator ─────
-function generate_sequence_id($sequence_name) {
+// ───── Sequence ID Generator (Robust & Generic Version) ─────
+
+/**
+ * Generates a unique, sequential ID from the system_sequences table.
+ * This function is safe, generic, and handles potential sequence desynchronization.
+ *
+ * @param string $sequence_name The name of the sequence (e.g., 'customer_id', 'category_id').
+ * @param string $table The database table where the ID will be used (e.g., 'customers', 'categories').
+ * @param string $column The column in that table that holds the ID (e.g., 'customer_id', 'category_id').
+ * @return string The newly generated unique ID.
+ * @throws Exception If the sequence is not found or ID generation fails.
+ */
+function generate_sequence_id($sequence_name, $table, $column) {
     $db = db();
     $db->begin_transaction();
 
     try {
-        // Get current sequence with lock
-        $stmt = $db->prepare("SELECT prefix, next_value, digit_length 
-                            FROM system_sequences 
-                            WHERE sequence_name = ? FOR UPDATE");
+        // Step 1: Lock the sequence row to prevent race conditions and get its details.
+        $stmt = $db->prepare("SELECT prefix, next_value, digit_length FROM system_sequences WHERE sequence_name = ? FOR UPDATE");
         $stmt->bind_param("s", $sequence_name);
         $stmt->execute();
         $seq = $stmt->get_result()->fetch_assoc();
 
         if (!$seq) {
-            throw new Exception("Sequence '$sequence_name' not found");
+            throw new Exception("Sequence '$sequence_name' not found in system_sequences.");
         }
 
-        // Generate the ID
         $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
+        $next_value_for_update = $seq['next_value'] + 1;
 
-        // Verify this ID doesn't already exist
-        $check = $db->prepare("SELECT customer_id FROM customers WHERE customer_id = ?");
-        $check->bind_param("s", $new_id);
-        $check->execute();
+        // Step 2: SAFETY CHECK. Verify the generated ID doesn't already exist in the target table.
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
+            throw new Exception("Invalid table or column name provided for sequence check.");
+        }
         
-        if ($check->get_result()->num_rows > 0) {
-            // If ID exists, find the next available
-            $find = $db->prepare("SELECT MAX(CAST(SUBSTRING(customer_id, 4) AS UNSIGNED) 
-                                 FROM customers 
-                                 WHERE customer_id LIKE 'CUS%'");
-            $find->execute();
-            $max_used = $find->get_result()->fetch_row()[0];
-            $next_val = $max_used + 1;
-            $new_id = $seq['prefix'] . str_pad($next_val, $seq['digit_length'], '0', STR_PAD_LEFT);
+        $check_sql = "SELECT `$column` FROM `$table` WHERE `$column` = ?";
+        $check_stmt = $db->prepare($check_sql);
+        $check_stmt->bind_param("s", $new_id);
+        $check_stmt->execute();
+
+        if ($check_stmt->get_result()->num_rows > 0) {
+            // ID is already in use! Recover by finding the actual max value.
+            error_log("SEQUENCE-RECOVERY: ID '$new_id' for '$sequence_name' already exists. Recalculating...");
             
-            // Update sequence to this value + 1
-            $update_val = $next_val + 1;
-        } else {
-            $update_val = $seq['next_value'] + 1;
+            $prefix_len = strlen($seq['prefix']);
+            $find_max_sql = "SELECT MAX(CAST(SUBSTRING(`$column`, " . ($prefix_len + 1) . ") AS UNSIGNED)) FROM `$table` WHERE `$column` LIKE ?";
+            $find_max_stmt = $db->prepare($find_max_sql);
+            $like_prefix = $seq['prefix'] . '%';
+            $find_max_stmt->bind_param("s", $like_prefix);
+            $find_max_stmt->execute();
+            $max_used = (int) $find_max_stmt->get_result()->fetch_row()[0];
+            
+            $recalculated_num = $max_used + 1;
+            $new_id = $seq['prefix'] . str_pad($recalculated_num, $seq['digit_length'], '0', STR_PAD_LEFT);
+            $next_value_for_update = $recalculated_num + 1;
         }
 
-        // Update sequence
-        $update = $db->prepare("UPDATE system_sequences 
-                               SET next_value = ?, 
-                                   last_used_at = NOW(), 
-                                   last_used_by = ? 
-                               WHERE sequence_name = ?");
-        $update->bind_param("iss", $update_val, $_SESSION['user_id'], $sequence_name);
+        // Step 3: Update the sequence table with the correct next value.
+        $update = $db->prepare("UPDATE system_sequences SET next_value = ?, last_used_at = NOW(), last_used_by = ? WHERE sequence_name = ?");
+        $user_id = $_SESSION['user_id'] ?? null;
+        $update->bind_param("iss", $next_value_for_update, $user_id, $sequence_name);
         $update->execute();
 
+        // Step 4: Commit the transaction.
         $db->commit();
+        
         return $new_id;
+
     } catch (Exception $e) {
         $db->rollback();
-        error_log("Sequence generation failed: " . $e->getMessage());
-        throw new Exception("Could not generate ID");
+        error_log("SEQUENCE-ERROR: " . $e->getMessage());
+        throw new Exception("Could not generate a unique ID. A system error occurred.");
     }
 }
 
 // ───── Customer-related functions ─────
+
 function get_customer($customer_id) {
     $db = db();
     if (!$db) return false;
@@ -217,16 +238,20 @@ function search_customers_by_phone($phone) {
 function validate_customer_phone($phone, $exclude_id = null) {
     $db = db();
     $sql = "SELECT COUNT(*) FROM customers WHERE phone = ?";
+    $types = "s";
     $params = [$phone];
     
     if ($exclude_id) {
         $sql .= " AND customer_id != ?";
+        $types .= "s";
         $params[] = $exclude_id;
     }
     
     $stmt = $db->prepare($sql);
-    $stmt->execute($params);
-    return $stmt->fetchColumn() == 0;
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $count = $stmt->get_result()->fetch_row()[0];
+    return $count == 0;
 }
 
 // ───── Category-related functions ─────
@@ -271,7 +296,6 @@ function search_categories_by_name($name) {
     }
 
     $search_term = "%$name%";
-    // Using c.name and c.description to be explicit
     $stmt = $db->prepare("SELECT c.category_id, c.name, c.description FROM categories c WHERE c.name LIKE ? ORDER BY c.name LIMIT 10");
     
     if (!$stmt) {
@@ -288,62 +312,6 @@ function search_categories_by_name($name) {
 
     $result = $stmt->get_result();
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-}
-
-// ───── Sequence ID Generator (IMPROVED VERSION) ─────
-
-/**
- * Generates a unique, sequential ID from the system_sequences table.
- * This is a more generic version that can handle different tables.
- *
- * @param string $sequence_name The name of the sequence (e.g., 'customer_id', 'category_id').
- * @param string $table The table where the ID will be used (e.g., 'customers', 'categories').
- * @param string $column The column in the table that holds the ID.
- * @return string The newly generated ID.
- * @throws Exception If the sequence is not found or ID generation fails.
- */
-function generate_sequence_id($sequence_name, $table, $column) {
-    $db = db();
-    $db->begin_transaction();
-
-    try {
-        // Step 1: Lock and retrieve the sequence details.
-        $stmt = $db->prepare("SELECT prefix, next_value, digit_length 
-                            FROM system_sequences 
-                            WHERE sequence_name = ? FOR UPDATE");
-        $stmt->bind_param("s", $sequence_name);
-        $stmt->execute();
-        $seq = $stmt->get_result()->fetch_assoc();
-
-        if (!$seq) {
-            throw new Exception("Sequence '$sequence_name' not found in system_sequences.");
-        }
-
-        // Step 2: Format the potential new ID.
-        $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
-        
-        // Step 3: Update the sequence's next_value.
-        // We increment immediately to reduce race conditions.
-        $update_val = $seq['next_value'] + 1;
-        $update = $db->prepare("UPDATE system_sequences 
-                               SET next_value = ?, 
-                                   last_used_at = NOW(), 
-                                   last_used_by = ? 
-                               WHERE sequence_name = ?");
-        $update->bind_param("iss", $update_val, $_SESSION['user_id'], $sequence_name);
-        $update->execute();
-        
-        // Step 4: Commit the transaction.
-        $db->commit();
-        
-        return $new_id;
-
-    } catch (Exception $e) {
-        $db->rollback();
-        error_log("Sequence generation failed for '$sequence_name': " . $e->getMessage());
-        // Re-throw to be caught by the calling script's try-catch block
-        throw new Exception("Could not generate a unique ID. Please try again.");
-    }
 }
 
 ?>
