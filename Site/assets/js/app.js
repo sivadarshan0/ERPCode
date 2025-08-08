@@ -219,23 +219,121 @@ function initLiveSearch() {
     }
 }
 
-// ───── DOM Ready ─────
+// ───── NEW: Category Entry Handler ─────
+function initCategoryEntry() {
+    const nameInput = document.getElementById('name');
+    const categoryResults = document.getElementById('categoryResults');
+    const categoryForm = document.getElementById('categoryForm');
+
+    if (!nameInput) return; // Exit if the required elements aren't on the page
+
+    // Live category name search
+    const doCategoryLookup = debounce(() => {
+        const name = nameInput.value.trim();
+        if (name.length < 2) {
+            categoryResults.classList.add('d-none');
+            return;
+        }
+
+        // The AJAX endpoint is the page itself, with a specific query parameter
+        fetch(`/modules/category/entry_category.php?category_lookup=${encodeURIComponent(name)}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Category search failed');
+                return response.json();
+            })
+            .then(data => {
+                categoryResults.innerHTML = '';
+
+                if (data.error) {
+                    console.error('Search Error:', data.error);
+                    categoryResults.classList.add('d-none');
+                    return;
+                }
+
+                if (data.length > 0) {
+                    data.forEach(category => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'list-group-item list-group-item-action py-2';
+                        item.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <span><strong>${escapeHtml(category.name)}</strong><br>
+                                <small class="text-muted">${escapeHtml(category.description || 'No description')}</small></span>
+                                <span class="badge bg-primary align-self-center">${escapeHtml(category.category_id)}</span>
+                            </div>
+                        `;
+                        item.addEventListener('click', () => {
+                            // Redirect to the edit page for the selected category
+                            window.location.href = `entry_category.php?category_id=${encodeURIComponent(category.category_id)}`;
+                        });
+                        categoryResults.appendChild(item);
+                    });
+                    categoryResults.classList.remove('d-none');
+                } else {
+                    categoryResults.classList.add('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('[doCategoryLookup] Error:', error);
+                categoryResults.classList.add('d-none');
+            });
+    }, 300);
+
+    nameInput.addEventListener('input', doCategoryLookup);
+
+    // Hide results when clicking elsewhere
+    document.addEventListener('click', (e) => {
+        if (!categoryResults.contains(e.target) && e.target !== nameInput) {
+            categoryResults.classList.add('d-none');
+        }
+    });
+
+    // Form validation + loading spinner on submit
+    if (categoryForm) {
+        categoryForm.addEventListener('submit', function (event) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            }
+
+            if (!this.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                // Re-enable button if validation fails client-side
+                if(submitBtn) {
+                   submitBtn.disabled = false;
+                   submitBtn.innerHTML = this.querySelector('input[name="category_id"]').value ? 'Update Category' : 'Create Category';
+                }
+            }
+            this.classList.add('was-validated');
+        }, false);
+    }
+}
+
+
+// ───── DOM Ready (UPDATED) ─────
 document.addEventListener('DOMContentLoaded', function () {
-    // Initialize modules based on page content
-    if (document.getElementById('phone')) {
+    // Initialize modules based on unique page elements
+    if (document.getElementById('customerForm')) {
         initCustomerEntry();
+    }
+    
+    // ADD THIS:
+    if (document.getElementById('categoryForm')) {
+        initCategoryEntry();
     }
 
     if (document.querySelector('.live-search')) {
         initLiveSearch();
     }
 
-    // Auto-hide bootstrap alerts
-    const alerts = document.querySelectorAll('.alert');
+    // Auto-hide bootstrap alerts (can be removed if using showAlert exclusively)
+    const alerts = document.querySelectorAll('.alert-dismissible');
     alerts.forEach(alert => {
         setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            if(bsAlert) bsAlert.close();
         }, 5000);
     });
 });

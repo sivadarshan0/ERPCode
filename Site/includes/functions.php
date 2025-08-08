@@ -228,4 +228,122 @@ function validate_customer_phone($phone, $exclude_id = null) {
     $stmt->execute($params);
     return $stmt->fetchColumn() == 0;
 }
+
+// ───── Category-related functions ─────
+
+/**
+ * Retrieves a single category from the database by its category_id.
+ *
+ * @param string $category_id The ID of the category to fetch.
+ * @return array|false The category data as an associative array, or false if not found.
+ */
+function get_category($category_id) {
+    $db = db();
+    if (!$db) return false;
+    
+    $stmt = $db->prepare("SELECT * FROM categories WHERE category_id = ?");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $db->error);
+        return false;
+    }
+
+    $stmt->bind_param("s", $category_id);
+    if (!$stmt->execute()) {
+        error_log("Execute failed: " . $stmt->error);
+        return false;
+    }
+
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_assoc() : false;
+}
+
+/**
+ * Searches for categories by name (case-insensitive).
+ *
+ * @param string $name The name to search for.
+ * @return array An array of matching categories.
+ */
+function search_categories_by_name($name) {
+    $db = db();
+    if (!$db) {
+        error_log("Database connection failed");
+        return [];
+    }
+
+    $search_term = "%$name%";
+    // Using c.name and c.description to be explicit
+    $stmt = $db->prepare("SELECT c.category_id, c.name, c.description FROM categories c WHERE c.name LIKE ? ORDER BY c.name LIMIT 10");
+    
+    if (!$stmt) {
+        error_log("Prepare failed: " . $db->error);
+        return [];
+    }
+
+    $stmt->bind_param("s", $search_term);
+
+    if (!$stmt->execute()) {
+        error_log("Execute failed: " . $stmt->error);
+        return [];
+    }
+
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+// ───── Sequence ID Generator (IMPROVED VERSION) ─────
+
+/**
+ * Generates a unique, sequential ID from the system_sequences table.
+ * This is a more generic version that can handle different tables.
+ *
+ * @param string $sequence_name The name of the sequence (e.g., 'customer_id', 'category_id').
+ * @param string $table The table where the ID will be used (e.g., 'customers', 'categories').
+ * @param string $column The column in the table that holds the ID.
+ * @return string The newly generated ID.
+ * @throws Exception If the sequence is not found or ID generation fails.
+ */
+function generate_sequence_id($sequence_name, $table, $column) {
+    $db = db();
+    $db->begin_transaction();
+
+    try {
+        // Step 1: Lock and retrieve the sequence details.
+        $stmt = $db->prepare("SELECT prefix, next_value, digit_length 
+                            FROM system_sequences 
+                            WHERE sequence_name = ? FOR UPDATE");
+        $stmt->bind_param("s", $sequence_name);
+        $stmt->execute();
+        $seq = $stmt->get_result()->fetch_assoc();
+
+        if (!$seq) {
+            throw new Exception("Sequence '$sequence_name' not found in system_sequences.");
+        }
+
+        // Step 2: Format the potential new ID.
+        $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
+        
+        // Step 3: Update the sequence's next_value.
+        // We increment immediately to reduce race conditions.
+        $update_val = $seq['next_value'] + 1;
+        $update = $db->prepare("UPDATE system_sequences 
+                               SET next_value = ?, 
+                                   last_used_at = NOW(), 
+                                   last_used_by = ? 
+                               WHERE sequence_name = ?");
+        $update->bind_param("iss", $update_val, $_SESSION['user_id'], $sequence_name);
+        $update->execute();
+        
+        // Step 4: Commit the transaction.
+        $db->commit();
+        
+        return $new_id;
+
+    } catch (Exception $e) {
+        $db->rollback();
+        error_log("Sequence generation failed for '$sequence_name': " . $e->getMessage());
+        // Re-throw to be caught by the calling script's try-catch block
+        throw new Exception("Could not generate a unique ID. Please try again.");
+    }
+}
+
 ?>
