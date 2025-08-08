@@ -22,8 +22,9 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <a href="/index.php" style="display:inline-block; margin: 1rem; color: #3498db; text-decoration: none;">← Back to Main Menu</a>
 
-<div class="login-container">
-  <div class="login-box calc-container">
+<div class="center-wrapper">
+  <div class="login-container">
+    <div class="login-box calc-container">
     <h2>Price Calculator</h2>
 
     <div class="form-group">
@@ -59,7 +60,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="form-group">
       <label for="courier">Courier Charges (LKR/kg)</label>
       <input type="number" step="0.01" id="courier" placeholder="Enter courier charges per kg">
-    </div>
+    </div>    
 
     <div class="form-group">
       <label for="profit">Profit Margin (%)</label>
@@ -69,6 +70,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <button onclick="calculate()">Calculate</button>
 
     <div id="result"></div>
+    </div>
   </div>
 </div>
 
