@@ -1,5 +1,5 @@
 <?php
-// File: /modules/inventory/entry_category.php
+// File: /modules/category/entry_category.php
 
 session_start();
 error_reporting(E_ALL);
@@ -15,7 +15,7 @@ if (!$db) {
     die("Database connection failed");
 }
 
-// Handle AJAX live search (powered by the new function in functions.php)
+// Handle AJAX live search (powered by functions.php)
 if (isset($_GET['category_lookup'])) {
     header('Content-Type: application/json');
     try {
@@ -37,7 +37,6 @@ $current_user_name = $_SESSION['username'] ?? 'Unknown'; // Assuming username is
 
 // Initialize default category structure
 $category = [
-    'id' => '',
     'category_id' => '',
     'name' => '',
     'description' => '',
@@ -71,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Check for duplicate category name
-        $check_stmt = $db->prepare("SELECT id FROM categories WHERE name = ? AND category_id != ?");
+        // THIS IS THE CORRECTED LINE: Changed "SELECT id" to "SELECT category_id"
+        $check_stmt = $db->prepare("SELECT category_id FROM categories WHERE name = ? AND category_id != ?");
         $posted_id = $_POST['category_id'] ?? '';
         $check_stmt->bind_param("ss", $name, $posted_id);
         $check_stmt->execute();
@@ -90,7 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         } else {
             // ----- CREATE new category -----
-            // Use the improved generic function
             $category_id = generate_sequence_id('category_id', 'categories', 'category_id');
 
             $stmt = $db->prepare("INSERT INTO categories (category_id, name, description, created_at, created_by, created_by_name) VALUES (?, ?, ?, NOW(), ?, ?)");
