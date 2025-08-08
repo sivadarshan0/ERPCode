@@ -182,3 +182,19 @@ main {
     text-align: left;
 }
 
+/* Center wrapper to align page content centrally */
+.center-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+    background-color: #f0f2f5;
+}
+
+/* Override login-container width inside center-wrapper */
+.center-wrapper .login-container {
+    width: 100%;
+    max-width: 420px;
+}
+
