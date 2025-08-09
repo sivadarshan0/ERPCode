@@ -314,4 +314,90 @@ function search_categories_by_name($name) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+// ---------------------------------------------
+// ----- Sub-Category-related functions -----
+// ---------------------------------------------
+
+/**
+ * Retrieves all parent categories for use in dropdowns.
+ *
+ * @return array An array of all categories.
+ */
+function get_all_categories() {
+    $db = db();
+    if (!$db) return [];
+    $result = $db->query("SELECT category_id, name FROM categories ORDER BY name ASC");
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+/**
+ * Retrieves a single sub-category from the database by its ID.
+ *
+ * @param string $category_sub_id The ID of the sub-category to fetch.
+ * @return array|false The sub-category data, or false if not found.
+ */
+function get_sub_category($category_sub_id) {
+    $db = db();
+    if (!$db) return false;
+    
+    $stmt = $db->prepare("SELECT * FROM categories_sub WHERE category_sub_id = ?");
+    if (!$stmt) {
+        error_log("Prepare failed: " . $db->error);
+        return false;
+    }
+
+    $stmt->bind_param("s", $category_sub_id);
+    if (!$stmt->execute()) {
+        error_log("Execute failed: " . $stmt->error);
+        return false;
+    }
+
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_assoc() : false;
+}
+
+/**
+ * Searches for sub-categories by name (case-insensitive).
+ *
+ * @param string $name The name to search for.
+ * @return array An array of matching sub-categories.
+ */
+function search_sub_categories_by_name($name) {
+    $db = db();
+    if (!$db) {
+        error_log("Database connection failed");
+        return [];
+    }
+
+    $search_term = "%$name%";
+    // Join with categories to show the parent category name in search results
+    $stmt = $db->prepare("
+        SELECT 
+            cs.category_sub_id, 
+            cs.name, 
+            cs.description,
+            c.name as parent_category_name
+        FROM categories_sub cs
+        JOIN categories c ON cs.category_id = c.category_id
+        WHERE cs.name LIKE ? 
+        ORDER BY cs.name 
+        LIMIT 10
+    ");
+    
+    if (!$stmt) {
+        error_log("Prepare failed: " . $db->error);
+        return [];
+    }
+
+    $stmt->bind_param("s", $search_term);
+
+    if (!$stmt->execute()) {
+        error_log("Execute failed: " . $stmt->error);
+        return [];
+    }
+
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
 ?>
