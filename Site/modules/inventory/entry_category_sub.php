@@ -100,7 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($is_edit_post) {
             // ----- UPDATE existing sub-category -----
             $stmt = $db->prepare("UPDATE categories_sub SET name = ?, category_id = ?, description = ?, updated_at = NOW(), updated_by = ?, updated_by_name = ? WHERE category_sub_id = ?");
-            $stmt->bind_param("sssisss", $name, $category_id, $description, $current_user_id, $current_user_name, $posted_id);
+            
+            // CORRECTED LINE: The type string "sssisss" was changed to "sssiss" to match the 6 placeholders.
+            $stmt->bind_param("sssiss", $name, $category_id, $description, $current_user_id, $current_user_name, $posted_id);
+            
             $action = 'updated';
 
         } else {
