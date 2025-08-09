@@ -9,6 +9,16 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// --- NEW: Flash message handling ---
+// Check for a success message from a previous action (create/update)
+$message = '';
+$message_type = '';
+if (isset($_SESSION['success_message'])) {
+    $message = $_SESSION['success_message'];
+    $message_type = 'success';
+    unset($_SESSION['success_message']); // Clear the message so it only shows once
+}
+
 // Initialize database connection
 $db = db();
 if (!$db) {
@@ -53,17 +63,15 @@ if (isset($_GET['category_id'])) {
         $is_edit = true;
     } else {
         $_SESSION['error_message'] = "Category not found.";
-        header("Location: /index.php"); // Or a category list page
+        header("Location: entry_category.php"); // Redirect to blank page if not found
         exit;
     }
 }
 
-$message = '';
-$message_type = '';
-
 // Handle POST request (Create or Update)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        $is_edit_post = !empty($_POST['category_id']);
         $name = trim($_POST['name'] ?? '');
         if (empty($name)) {
             throw new Exception("Category name is required.");
@@ -81,36 +89,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $description = trim($_POST['description'] ?? '');
         
-        if ($is_edit) {
+        if ($is_edit_post) {
             // ----- UPDATE existing category -----
             $stmt = $db->prepare("UPDATE categories SET name = ?, description = ?, updated_at = NOW(), updated_by = ?, updated_by_name = ? WHERE category_id = ?");
-            
-            // CORRECTED LINE: The type string "ssisss" was changed to "ssiss" to match the 5 placeholders
-            $stmt->bind_param("ssiss", $name, $description, $current_user_id, $current_user_name, $category['category_id']);
-            
+            $stmt->bind_param("ssiss", $name, $description, $current_user_id, $current_user_name, $posted_id);
             $action = 'updated';
 
         } else {
             // ----- CREATE new category -----
             $category_id = generate_sequence_id('category_id', 'categories', 'category_id');
-
             $stmt = $db->prepare("INSERT INTO categories (category_id, name, description, created_at, created_by, created_by_name) VALUES (?, ?, ?, NOW(), ?, ?)");
             $stmt->bind_param("sssis", $category_id, $name, $description, $current_user_id, $current_user_name);
             $action = 'created';
         }
 
         if ($stmt->execute()) {
-            $message = "✅ Category successfully $action.";
-            $message_type = 'success';
+            // --- UPDATED: Success Handling ---
+            // Store the feedback message in the session.
+            $_SESSION['success_message'] = "✅ Category successfully $action.";
             
-            // On successful creation, redirect to the new edit page to prevent re-submission
-            if ($action === 'created') {
-                header("Location: entry_category.php?category_id=$category_id&created=1");
-                exit;
-            }
-            
-            // Reload data after update
-            $category = get_category($category['category_id']);
+            // Redirect to the clean 'New Category' page. This clears the form.
+            header("Location: entry_category.php");
+            exit;
             
         } else {
             throw new Exception("Database error: Failed to save category.");
@@ -120,14 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message_type = 'danger';
         // Preserve user's submitted data on error
         $category = array_merge($category, $_POST);
+        // Ensure form stays in the correct mode (edit/create) on error
+        $is_edit = !empty($_POST['category_id']); 
     }
 }
 
-// Display a one-time message on successful creation
-if (isset($_GET['created']) && $_GET['created'] == 1) {
-    $message = "✅ Category successfully created.";
-    $message_type = 'success';
-}
+// The old '?created=1' check is no longer needed and has been removed.
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
