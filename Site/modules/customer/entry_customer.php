@@ -1,6 +1,6 @@
 <?php
 // File: /modules/customer/entry_customer.php
-// Revalidated and refactored for consistency and correctness.
+// Field order updated: Phone number now appears first.
 
 session_start();
 error_reporting(E_ALL);
@@ -108,7 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $db->prepare(
                 "UPDATE customers SET name=?, phone=?, address=?, city=?, district=?, postal_code=?, known_by=?, email=?, first_order_date=?, description=?, profile=?, updated_at=NOW(), updated_by=?, updated_by_name=? WHERE customer_id=?"
             );
-            // CORRECTED LINE: The type string now has 14 characters ("sssssssssssiss") to match the 14 placeholders.
             $stmt->bind_param("sssssssssssiss", $name, $phone, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_user_id, $current_user_name, $posted_id);
             $action = 'updated';
 
@@ -157,17 +156,19 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <input type="hidden" name="customer_id" value="<?= htmlspecialchars($customer['customer_id']) ?>">
         
-        <div class="col-md-6">
-            <label for="name" class="form-label">Full Name *</label>
-            <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($customer['name']) ?>" required>
-            <div class="invalid-feedback">Name is required.</div>
-        </div>
-
+        <!-- MODIFIED: Phone field is now first -->
         <div class="col-md-6 position-relative">
             <label for="phone" class="form-label">Phone *</label>
             <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars($customer['phone']) ?>" required>
             <div class="invalid-feedback">A unique phone number is required.</div>
             <div id="phoneResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
+        </div>
+        
+        <!-- MODIFIED: Name field is now second -->
+        <div class="col-md-6">
+            <label for="name" class="form-label">Full Name *</label>
+            <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($customer['name']) ?>" required>
+            <div class="invalid-feedback">Name is required.</div>
         </div>
 
         <div class="col-12">
