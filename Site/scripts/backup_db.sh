@@ -1,48 +1,62 @@
 #!/bin/bash
 
-# ─── Configurable Variables ─────────────────────
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
+# ─── Configurable Variables ───────────────────────────────────────────────────
 DB_USER="root"
-DB_PASS="your_db_password"       # Replace with your actual password
-BACKUP_DIR="/home/admin/ERPCode/Site/DBBkp"
-LOG_SOURCE="/var/www/html/logs"
-LOG_DEST="/home/admin/ERPCode/Site/logs"
+DB_PASS="toor"       # Your actual password
+SITE_REPO_DIR="/home/admin/ERPCode/Site"
+BACKUP_DIR="$SITE_REPO_DIR/DBBkp"
+LOG_SOURCE_DIR="/var/www/html/logs"
+LOG_DEST_DIR="$SITE_REPO_DIR/logs"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 DB_FILE="$BACKUP_DIR/db_$TIMESTAMP.sql"
+MAX_BACKUPS=7
 
-# ─── 1. Ensure destination folders exist ────────
+# ─── 1. Ensure destination folders exist ───────────────────────────────────────
 mkdir -p "$BACKUP_DIR"
-mkdir -p "$LOG_DEST"
+mkdir -p "$LOG_DEST_DIR"
 
-# ─── 2. Dump full database ──────────────────────
-echo "🛢️  Backing up database to $DB_FILE"
+# ─── 2. Dump full database ─────────────────────────────────────────────────────
+echo "🛢️  Backing up all databases to $DB_FILE..."
 mysqldump -u "$DB_USER" -p"$DB_PASS" --all-databases > "$DB_FILE"
+echo "✅ Database backup complete."
 
-if [ $? -eq 0 ]; then
-  echo "✅ Database backup complete."
+# ─── 3. Copy log files (Safely) ────────────────────────────────────────────────
+echo "📂 Checking for log files to copy..."
+if [ -d "$LOG_SOURCE_DIR" ] && [ "$(ls -A $LOG_SOURCE_DIR)" ]; then
+  # The source directory exists and is not empty, so copy its contents.
+  cp -r "$LOG_SOURCE_DIR"/* "$LOG_DEST_DIR/"
+  echo "✅ Log files copied successfully."
 else
-  echo "❌ Database backup failed."
-  exit 1
+  # The source directory does not exist or is empty.
+  echo "⚠️  Log directory '$LOG_SOURCE_DIR' not found or is empty. Skipping log copy."
 fi
 
-# ─── 3. Copy log files ──────────────────────────
-echo "📂 Copying logs from $LOG_SOURCE to $LOG_DEST..."
-cp -r "$LOG_SOURCE/"* "$LOG_DEST/"
-
-echo "✅ Log copy complete."
-
-# ─── 4. Cleanup old backups ─────────────────────
-MAX_BACKUPS=7
+# ─── 4. Cleanup old backups ────────────────────────────────────────────────────
 echo "🧹 Keeping only the last $MAX_BACKUPS backups in $BACKUP_DIR..."
-cd "$BACKUP_DIR" || exit 1
-ls -1t *.sql | tail -n +$((MAX_BACKUPS + 1)) | xargs -r rm --
+# The '|| true' prevents the script from exiting if no files match (e.g., on first run)
+ls -1t "$BACKUP_DIR"/*.sql | tail -n +$((MAX_BACKUPS + 1)) | xargs -r rm --
 echo "🗑️  Old backups cleaned up."
 
-# ─── 5. Git status reminder ─────────────────────
-echo "📝 You can now add, commit, and push DBBkp and logs via Git."
+# ─── 5. Auto Commit to Git (Corrected Workflow) ────────────────────────────────
+echo "🚀 Committing changes to Git..."
+cd "$SITE_REPO_DIR" || { echo "❌ Failed to navigate to Git repository: $SITE_REPO_DIR"; exit 1; }
 
-# ─── 6. Auto Commit to Git ──────────────────────
-cd /home/admin/ERPCode || exit
-git pull origin main --rebase
-git add Site/DBBkp/ Site/logs/
-git commit -m "🔄 Auto backup: $TIMESTAMP"
-git push origin main
+# Add all changes within the DBBkp and logs directories
+git add DBBkp/ logs/
+
+# Check if there are any changes to commit to avoid an empty commit error
+if git diff-index --quiet HEAD --; then
+  echo "ℹ️  No new backups or logs to commit. Git is up to date."
+else
+  # Commit the changes with a descriptive message
+  git commit -m "Automated Site Backup: $TIMESTAMP"
+  
+  # Push the changes to the remote repository
+  git push origin main
+  echo "✅ Changes successfully pushed to GitHub."
+fi
+
+echo "✨ Backup and sync process finished."
