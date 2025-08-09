@@ -400,4 +400,86 @@ function search_sub_categories_by_name($name) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+// -----------------------------------------
+// ----- Item-related functions -----
+// -----------------------------------------
+
+/**
+ * Retrieves a single item from the database by its ID.
+ * Also joins to get parent category_id for edit mode convenience.
+ *
+ * @param string $item_id The ID of the item to fetch.
+ * @return array|false The item data, or false if not found.
+ */
+function get_item($item_id) {
+    $db = db();
+    if (!$db) return false;
+    
+    // We join to get the parent category_id, which makes populating the form in edit mode easier
+    $stmt = $db->prepare("
+        SELECT i.*, cs.category_id 
+        FROM items i
+        JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id
+        WHERE i.item_id = ?
+    ");
+    if (!$stmt) return false;
+
+    $stmt->bind_param("s", $item_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_assoc() : false;
+}
+
+/**
+ * Searches for items by name for live search functionality.
+ *
+ * @param string $name The name to search for.
+ * @return array An array of matching items.
+ */
+function search_items_by_name($name) {
+    $db = db();
+    if (!$db) return [];
+
+    $search_term = "%$name%";
+    $stmt = $db->prepare("
+        SELECT 
+            i.item_id, 
+            i.name, 
+            cs.name as sub_category_name,
+            c.name as parent_category_name
+        FROM items i
+        JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id
+        JOIN categories c ON cs.category_id = c.category_id
+        WHERE i.name LIKE ? 
+        ORDER BY i.name 
+        LIMIT 10
+    ");
+    if (!$stmt) return [];
+
+    $stmt->bind_param("s", $search_term);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+/**
+ * Retrieves all sub-categories belonging to a specific parent category.
+ * This is used for the dynamic/cascading dropdown.
+ *
+ * @param string $category_id The ID of the parent category.
+ * @return array An array of sub-categories.
+ */
+function get_sub_categories_by_category_id($category_id) {
+    $db = db();
+    if (!$db) return [];
+
+    $stmt = $db->prepare("SELECT category_sub_id, name FROM categories_sub WHERE category_id = ? ORDER BY name ASC");
+    if (!$stmt) return [];
+
+    $stmt->bind_param("s", $category_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
 ?>
