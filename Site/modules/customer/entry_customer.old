@@ -1,4 +1,5 @@
 <?php
+
 // File: /modules/customer/entry_customer.php
 
 session_start();
@@ -228,6 +229,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <main class="container mt-4">
     <h2><?= $is_edit ? 'Edit' : 'New' ?> Customer <?= $is_edit ? "<span class='badge bg-primary'>{$customer['customer_id']}</span>" : '' ?></h2>
+        <p><strong>Mode:</strong> <?= $is_edit ? 'EDIT' : 'CREATE' ?></p>
 
     <?php if ($message): ?>
     <div class="alert alert-<?= $message_type ?>"><?= htmlspecialchars($message) ?></div>
@@ -333,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // Update UI for edit mode
-    const setEditMode = (customerId, customerName) => {
+        const setEditMode = (customerId, customerName) => {
         const header = document.querySelector('main.container h2');
         const submitBtn = document.querySelector('button[type="submit"]');
         
@@ -376,7 +378,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                          <small>${escapeHtml(c.phone)}</small>
                                          <span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
                         item.onclick = () => {
-                            setEditMode(c.customer_id, c.name);
+                            //setEditMode(c.customer_id, c.name);
+                            console.log("[Redirect] Editing customer:", c.customer_id);
                             window.location.href = `entry_customer.php?customer_id=${c.customer_id}`;
                         };
                         phoneResults.appendChild(item);

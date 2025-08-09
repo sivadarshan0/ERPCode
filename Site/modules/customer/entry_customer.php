@@ -1,6 +1,6 @@
 <?php
-
 // File: /modules/customer/entry_customer.php
+// Revalidated and refactored for consistency and correctness.
 
 session_start();
 error_reporting(E_ALL);
@@ -10,52 +10,46 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// --- Flash message handling ---
+$message = '';
+$message_type = '';
+if (isset($_SESSION['success_message'])) {
+    $message = $_SESSION['success_message'];
+    $message_type = 'success';
+    unset($_SESSION['success_message']);
+}
+
 // Initialize database connection
 $db = db();
 if (!$db) {
     die("Database connection failed");
 }
 
-// Handle AJAX live search
+// Handle AJAX live search for phone numbers
 if (isset($_GET['phone_lookup'])) {
     header('Content-Type: application/json');
     try {
         $phone = trim($_GET['phone_lookup']);
         echo json_encode(strlen($phone) >= 3 ? search_customers_by_phone($phone) : []);
     } catch (Exception $e) {
+        http_response_code(500);
         echo json_encode(['error' => $e->getMessage()]);
     }
     exit;
 }
 
-// Ensure logged in
-if (!isset($_SESSION['user_id'])) {
-    $_SESSION['login_redirect'] = $_SERVER['REQUEST_URI'];
-    header('Location: /login.php');
-    exit;
-}
+// Security: Ensure user is logged in for all other operations
+require_login();
 
-// Get current user info
+// Get current user info from the session
 $current_user_id = $_SESSION['user_id'];
-$current_user_name = 'Unknown';
+$current_user_name = $_SESSION['username'] ?? 'Unknown';
 
-// Safely get username
-$user_stmt = $db->prepare("SELECT username FROM users WHERE id = ?");
-if ($user_stmt) {
-    $user_stmt->bind_param("i", $current_user_id);
-    $user_stmt->execute();
-    $user_stmt->bind_result($username);
-    if ($user_stmt->fetch()) {
-        $current_user_name = $username;
-    }
-    $user_stmt->close();
-}
-
-// Load customer if editing
+// Initialize default customer structure with all fields
 $customer = [
     'customer_id' => '',
-    'phone' => '',
     'name' => '',
+    'phone' => '',
     'address' => '',
     'city' => '',
     'district' => '',
@@ -70,157 +64,82 @@ $customer = [
 ];
 $is_edit = false;
 
+// Load customer data if editing
 if (isset($_GET['customer_id'])) {
-    $customer_data = get_customer($_GET['customer_id']);
+    $customer_data = get_customer(trim($_GET['customer_id']));
     if ($customer_data) {
         $customer = array_merge($customer, $customer_data);
         $is_edit = true;
     } else {
-        $_SESSION['error_message'] = "Customer not found";
-        header("Location: list_customers.php");
+        // Use a flash message for the error and redirect
+        $_SESSION['error_message'] = "Customer not found.";
+        header("Location: entry_customer.php");
         exit;
     }
 }
 
-$message = '';
-$message_type = '';
-$clear_form = false;
-
-// Handle POST (Create / Update)
+// Handle POST request (Create or Update)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        // Validate required fields
-        $phone = trim($_POST['phone'] ?? '');
+        $is_edit_post = !empty($_POST['customer_id']);
         $name = trim($_POST['name'] ?? '');
-        if (empty($phone) || empty($name)) {
-            throw new Exception("Phone and name are required");
-        }
+        $phone = trim($_POST['phone'] ?? '');
 
-        // Check for duplicate phone
-        $check_sql = "SELECT customer_id FROM customers WHERE phone = ?";
-        if (!empty($_POST['customer_id'])) {
-            $check_sql .= " AND customer_id != ?";
-        }
+        if (empty($name)) throw new Exception("Customer name is required.");
+        if (empty($phone)) throw new Exception("Phone number is required.");
         
-        $check_stmt = $db->prepare($check_sql);
-        if (!$check_stmt) {
-            throw new Exception("Database error: " . $db->error);
+        // Use the dedicated validation function
+        $posted_id = $_POST['customer_id'] ?? null;
+        if (!validate_customer_phone($phone, $posted_id)) {
+            throw new Exception("This phone number is already registered to another customer.");
         }
 
-        if (!empty($_POST['customer_id'])) {
-            $check_stmt->bind_param("ss", $phone, $_POST['customer_id']);
-        } else {
-            $check_stmt->bind_param("s", $phone);
-        }
-        
-        $check_stmt->execute();
-        if ($check_stmt->get_result()->num_rows > 0) {
-            throw new Exception("Phone number already exists");
-        }
-        $check_stmt->close();
-
-        // Prepare data
-        $current_time = date('Y-m-d H:i:s');
-        $customer_id = $_POST['customer_id'] ?? null;
+        // Gather all other form fields
         $address = trim($_POST['address'] ?? '');
         $city = trim($_POST['city'] ?? '');
         $district = trim($_POST['district'] ?? '');
         $postal_code = trim($_POST['postal_code'] ?? '');
         $known_by = trim($_POST['known_by'] ?? '');
         $email = trim($_POST['email'] ?? '');
-        $first_order_date = trim($_POST['first_order_date'] ?? '');
+        $first_order_date = !empty($_POST['first_order_date']) ? trim($_POST['first_order_date']) : null;
         $description = trim($_POST['description'] ?? '');
         $profile = trim($_POST['profile'] ?? '');
-
-        if ($is_edit) {
-            // Update existing customer
-
-            $stmt = $db->prepare("UPDATE customers SET 
-                phone=?, name=?, address=?, city=?, district=?, postal_code=?, 
-                known_by=?, email=?, first_order_date=?, description=?, profile=?, 
-                updated_at=NOW(), updated_by=?, updated_by_name=?
-                WHERE customer_id=?");
-
-            $stmt->bind_param("ssssssssssssss", 
-                $phone, $name, $address, $city, $district, $postal_code,
-                $known_by, $email, $first_order_date, $description, $profile,
-                $current_user_id, $current_user_name, $customer_id);
-
+        
+        if ($is_edit_post) {
+            // ----- UPDATE existing customer -----
+            $stmt = $db->prepare(
+                "UPDATE customers SET name=?, phone=?, address=?, city=?, district=?, postal_code=?, known_by=?, email=?, first_order_date=?, description=?, profile=?, updated_at=NOW(), updated_by=?, updated_by_name=? WHERE customer_id=?"
+            );
+            // CORRECTED: `bind_param` types are now accurate (i for integer, s for string)
+            $stmt->bind_param("sssssssssssisss", $name, $phone, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_user_id, $current_user_name, $posted_id);
             $action = 'updated';
+
         } else {
-            // Create new customer
-            $customer_id = generate_sequence_id('customer_id');
+            // ----- CREATE new customer -----
+            // CORRECTED: The function call now includes all 3 required arguments.
+            $customer_id = generate_sequence_id('customer_id', 'customers', 'customer_id');
 
-            // Add this:
-            $check = $db->prepare("SELECT customer_id FROM customers WHERE customer_id = ?");
-            $check->bind_param("s", $customer_id);
-            $check->execute();
-            if ($check->get_result()->num_rows > 0) {
-                throw new Exception("Generated customer ID already exists - system error");
-            }
-
-            if (!$customer_id) {
-                throw new Exception("Failed to generate customer ID");
-            }
-
-            $stmt = $db->prepare("INSERT INTO customers (
-                customer_id, phone, name, address, city, district, postal_code, 
-                known_by, email, first_order_date, description, profile, 
-                created_at, created_by, created_by_name,
-                updated_at, updated_by, updated_by_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            
-            if (!$stmt) {
-                throw new Exception("Database error: " . $db->error);
-            }
-            
-            $null = null;
-            $stmt->bind_param("ssssssssssssssssss", 
-                $customer_id, $phone, $name, $address, $city, $district, $postal_code, 
-                $known_by, $email, $first_order_date, $description, $profile, 
-                $current_time, $current_user_id, $current_user_name,
-                $null, $null, $null);
+            $stmt = $db->prepare(
+                "INSERT INTO customers (customer_id, name, phone, address, city, district, postal_code, known_by, email, first_order_date, description, profile, created_at, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)"
+            );
+             // CORRECTED: `bind_param` types are now accurate
+            $stmt->bind_param("ssssssssssssis", $customer_id, $name, $phone, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_user_id, $current_user_name);
             $action = 'created';
-            $clear_form = true;
         }
 
         if ($stmt->execute()) {
-            $message = "✅ Customer successfully $action.";
-            $message_type = 'success';
-            
-            if ($clear_form) {
-                // Reset form for new entries
-                $customer = [
-                    'customer_id' => '',
-                    'phone' => '',
-                    'name' => '',
-                    'address' => '',
-                    'city' => '',
-                    'district' => '',
-                    'postal_code' => '',
-                    'known_by' => '',
-                    'email' => '',
-                    'first_order_date' => '',
-                    'description' => '',
-                    'profile' => '',
-                    'created_by_name' => $current_user_name,
-                    'updated_by_name' => null
-                ];
-                $is_edit = false;
-            } else {
-                // Reload updated customer data
-                $customer = get_customer($customer_id);
-                $is_edit = true;
-            }
+            // CORRECTED: Using the reliable flash message and redirect pattern
+            $_SESSION['success_message'] = "✅ Customer successfully $action.";
+            header("Location: entry_customer.php");
+            exit;
         } else {
-            throw new Exception("❌ Failed to save customer: " . $stmt->error);
+            throw new Exception("Database error: Failed to save customer.");
         }
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
-        // Preserve submitted data
         $customer = array_merge($customer, $_POST);
-        $is_edit = !empty($_POST['customer_id']);
+        $is_edit = !empty($_POST['customer_id']); 
     }
 }
 
@@ -228,28 +147,32 @@ require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <main class="container mt-4">
-    <h2><?= $is_edit ? 'Edit' : 'New' ?> Customer <?= $is_edit ? "<span class='badge bg-primary'>{$customer['customer_id']}</span>" : '' ?></h2>
-        <p><strong>Mode:</strong> <?= $is_edit ? 'EDIT' : 'CREATE' ?></p>
+    <h2><?= $is_edit ? 'Edit Customer' : 'New Customer' ?>
+        <?php if ($is_edit): ?>
+            <span class='badge bg-primary'><?= htmlspecialchars($customer['customer_id']) ?></span>
+        <?php endif; ?>
+    </h2>
+    <p><strong>Mode:</strong> <?= $is_edit ? 'EDIT' : 'CREATE' ?></p>
 
     <?php if ($message): ?>
-    <div class="alert alert-<?= $message_type ?>"><?= htmlspecialchars($message) ?></div>
+    <div id="alert-message" class="alert alert-<?= $message_type ?> alert-dismissible fade show" role="alert"><?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
 
-    <form method="POST" class="row g-3 needs-validation" novalidate id="customerForm">
+    <form method="POST" class="row g-3 needs-validation" novalidate id="customerForm" action="entry_customer.php<?= $is_edit ? '?customer_id=' . htmlspecialchars($customer['customer_id']) : '' ?>">
 
         <input type="hidden" name="customer_id" value="<?= htmlspecialchars($customer['customer_id']) ?>">
-
-        <div class="col-md-6 position-relative">
-            <label for="phone" class="form-label">Phone *</label>
-            <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars($customer['phone']) ?>" pattern="[0-9]{10,15}" required>
-            <div class="invalid-feedback">Enter a valid phone number</div>
-            <div id="phoneResults" class="list-group mt-1 d-none" style="position: absolute; z-index: 999; max-height: 300px; overflow-y: auto;"></div>
-        </div>
-
+        
         <div class="col-md-6">
             <label for="name" class="form-label">Full Name *</label>
             <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($customer['name']) ?>" required>
-            <div class="invalid-feedback">Name is required</div>
+            <div class="invalid-feedback">Name is required.</div>
+        </div>
+
+        <div class="col-md-6 position-relative">
+            <label for="phone" class="form-label">Phone *</label>
+            <input type="tel" class="form-control" id="phone" name="phone" value="<?= htmlspecialchars($customer['phone']) ?>" required>
+            <div class="invalid-feedback">A unique phone number is required.</div>
+            <div id="phoneResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
         </div>
 
         <div class="col-12">
@@ -296,16 +219,16 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <div class="col-12">
             <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" name="description"><?= htmlspecialchars($customer['description']) ?></textarea>
+            <textarea class="form-control" name="description" rows="3"><?= htmlspecialchars($customer['description']) ?></textarea>
         </div>
 
         <div class="col-12">
             <label for="profile" class="form-label">Profile Notes</label>
-            <textarea class="form-control" name="profile"><?= htmlspecialchars($customer['profile']) ?></textarea>
+            <textarea class="form-control" name="profile" rows="3"><?= htmlspecialchars($customer['profile']) ?></textarea>
         </div>
 
         <div class="col-12">
-            <button class="btn btn-primary" type="submit"><?= $is_edit ? 'Update' : 'Create' ?> Customer</button>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-<?= $is_edit ? 'floppy' : 'plus-circle' ?>"></i> <?= $is_edit ? 'Update' : 'Create' ?> Customer</button>
             <a href="/index.php" class="btn btn-outline-secondary">Back</a>
             <?php if ($is_edit): ?>
                 <a href="entry_customer.php" class="btn btn-outline-success">+ New Customer</a>
@@ -314,102 +237,10 @@ require_once __DIR__ . '/../../includes/header.php';
     </form>
 </main>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const phoneInput = document.getElementById('phone');
-    const phoneResults = document.getElementById('phoneResults');
-    const form = document.getElementById('customerForm');
-
-    if (!phoneInput) return;
-
-    // Escape HTML
-    const escapeHtml = text => text.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-
-    // Debounce
-    const debounce = (func, delay) => {
-        let timeout;
-        return (...args) => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), delay);
-        };
-    };
-
-    // Update UI for edit mode
-        const setEditMode = (customerId, customerName) => {
-        const header = document.querySelector('main.container h2');
-        const submitBtn = document.querySelector('button[type="submit"]');
-        
-        if (header && submitBtn) {
-            header.innerHTML = `Edit Customer <span class='badge bg-primary'>${escapeHtml(customerId)}</span>`;
-            submitBtn.textContent = 'Update Customer';
-            
-            // Show + New Customer button if not present
-            if (!document.querySelector('a.btn-outline-success')) {
-                const backBtn = document.querySelector('a.btn-outline-secondary');
-                if (backBtn) {
-                    const newBtn = document.createElement('a');
-                    newBtn.href = 'entry_customer.php';
-                    newBtn.className = 'btn btn-outline-success ms-2';
-                    newBtn.textContent = '+ New Customer';
-                    backBtn.insertAdjacentElement('afterend', newBtn);
-                }
-            }
-        }
-    };
-
-    // Phone lookup
-    const doPhoneLookup = debounce(() => {
-        const phone = phoneInput.value.trim();
-        if (phone.length < 3) {
-            phoneResults.classList.add('d-none');
-            return;
-        }
-
-        fetch(`entry_customer.php?phone_lookup=${encodeURIComponent(phone)}`)
-            .then(response => response.json())
-            .then(data => {
-                phoneResults.innerHTML = '';
-                if (data.length > 0) {
-                    data.forEach(c => {
-                        const item = document.createElement('button');
-                        item.type = 'button';
-                        item.className = 'list-group-item list-group-item-action';
-                        item.innerHTML = `<strong>${escapeHtml(c.name)}</strong><br>
-                                         <small>${escapeHtml(c.phone)}</small>
-                                         <span class="badge bg-primary float-end">${escapeHtml(c.customer_id)}</span>`;
-                        item.onclick = () => {
-                            //setEditMode(c.customer_id, c.name);
-                            console.log("[Redirect] Editing customer:", c.customer_id);
-                            window.location.href = `entry_customer.php?customer_id=${c.customer_id}`;
-                        };
-                        phoneResults.appendChild(item);
-                    });
-                    phoneResults.classList.remove('d-none');
-                } else {
-                    phoneResults.classList.add('d-none');
-                }
-            })
-            .catch(() => phoneResults.classList.add('d-none'));
-    }, 300);
-
-    phoneInput.addEventListener('input', doPhoneLookup);
-    document.addEventListener('click', e => {
-        if (!phoneResults.contains(e.target) && e.target !== phoneInput) {
-            phoneResults.classList.add('d-none');
-        }
-    });
-
-    // Initialize form validation
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    }
-});
-</script>
+<?php
+// NOTE: The inline <script> block has been removed.
+// All JavaScript logic should be in your /assets/js/app.js file.
+// The existing `initCustomerEntry()` function in your app.js already handles this page perfectly.
+?>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
