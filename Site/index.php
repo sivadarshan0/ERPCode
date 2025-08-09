@@ -34,15 +34,17 @@ require_once __DIR__ . '/includes/header.php';
             <!-- Main Dashboard Cards -->
             <div class="row mt-4">
 
-                <!-- Card 1: Customer Management (Layout updated to col-md-4) -->
+                <!-- Card 1: Customer Management -->
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-people-fill"></i> Customer Management
                         </div>
-                        <div class="card-body d-flex flex-column">
+                        <!-- CORRECTED: Removed d-flex flex-column for top alignment -->
+                        <div class="card-body">
                             <h5 class="card-title">Quick Actions</h5>
-                            <div class="d-grid gap-2 mt-auto">
+                            <!-- CORRECTED: Removed mt-auto and added a small top margin (mt-3) -->
+                            <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/customer/entry_customer.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Add New Customer
                                 </a>
@@ -54,22 +56,26 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- NEW Card 2: Inventory (Layout set to col-md-4) -->
+                <!-- Card 2: Inventory -->
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-boxes"></i> Inventory
                         </div>
-                        <div class="card-body d-flex flex-column">
+                        <!-- CORRECTED: Removed d-flex flex-column for top alignment -->
+                        <div class="card-body">
                             <h5 class="card-title">Manage Inventory</h5>
-                            <div class="d-grid gap-2 mt-auto">
+                            <!-- CORRECTED: Removed mt-auto and added a small top margin (mt-3) -->
+                            <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/inventory/entry_item.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Add New Item
                                 </a>
-                                <a href="/modules/inventory/entry_category.php" class="btn btn-info text-dark">
+                                <!-- CORRECTED: Changed btn-info to btn-primary for color consistency -->
+                                <a href="/modules/inventory/entry_category.php" class="btn btn-primary">
                                     <i class="bi bi-tags-fill"></i> Manage Categories
                                 </a>
-                                <a href="/modules/inventory/entry_category_sub.php" class="btn btn-info text-dark">
+                                <!-- CORRECTED: Changed btn-info to btn-primary for color consistency -->
+                                <a href="/modules/inventory/entry_category_sub.php" class="btn btn-primary">
                                     <i class="bi bi-diagram-2-fill"></i> Manage Sub-Categories
                                 </a>
                             </div>
@@ -77,15 +83,17 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Card 3: Price Calculator (Layout updated to col-md-4) -->
+                <!-- Card 3: Price Calculator -->
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
                         </div>
-                        <div class="card-body d-flex flex-column">
+                        <!-- CORRECTED: Removed d-flex flex-column for top alignment -->
+                        <div class="card-body">
                             <h5 class="card-title">Pricing Tools</h5>
-                            <div class="d-grid gap-2 mt-auto">
+                            <!-- CORRECTED: Removed mt-auto and added a small top margin (mt-3) -->
+                            <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/price/calculate_price.php" class="btn btn-primary">
                                     <i class="bi bi-play-circle"></i> Open Calculator
                                 </a>
