@@ -88,13 +88,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($name)) throw new Exception("Customer name is required.");
         if (empty($phone)) throw new Exception("Phone number is required.");
         
-        // Use the dedicated validation function
         $posted_id = $_POST['customer_id'] ?? null;
         if (!validate_customer_phone($phone, $posted_id)) {
             throw new Exception("This phone number is already registered to another customer.");
         }
 
-        // Gather all other form fields
         $address = trim($_POST['address'] ?? '');
         $city = trim($_POST['city'] ?? '');
         $district = trim($_POST['district'] ?? '');
@@ -110,25 +108,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $db->prepare(
                 "UPDATE customers SET name=?, phone=?, address=?, city=?, district=?, postal_code=?, known_by=?, email=?, first_order_date=?, description=?, profile=?, updated_at=NOW(), updated_by=?, updated_by_name=? WHERE customer_id=?"
             );
-            // CORRECTED: `bind_param` types are now accurate (i for integer, s for string)
-            $stmt->bind_param("sssssssssssisss", $name, $phone, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_user_id, $current_user_name, $posted_id);
+            // CORRECTED LINE: The type string now has 14 characters ("sssssssssssiss") to match the 14 placeholders.
+            $stmt->bind_param("sssssssssssiss", $name, $phone, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_user_id, $current_user_name, $posted_id);
             $action = 'updated';
 
         } else {
             // ----- CREATE new customer -----
-            // CORRECTED: The function call now includes all 3 required arguments.
             $customer_id = generate_sequence_id('customer_id', 'customers', 'customer_id');
 
             $stmt = $db->prepare(
                 "INSERT INTO customers (customer_id, name, phone, address, city, district, postal_code, known_by, email, first_order_date, description, profile, created_at, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)"
             );
-             // CORRECTED: `bind_param` types are now accurate
             $stmt->bind_param("ssssssssssssis", $customer_id, $name, $phone, $address, $city, $district, $postal_code, $known_by, $email, $first_order_date, $description, $profile, $current_user_id, $current_user_name);
             $action = 'created';
         }
 
         if ($stmt->execute()) {
-            // CORRECTED: Using the reliable flash message and redirect pattern
             $_SESSION['success_message'] = "✅ Customer successfully $action.";
             header("Location: entry_customer.php");
             exit;
@@ -236,11 +231,5 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
     </form>
 </main>
-
-<?php
-// NOTE: The inline <script> block has been removed.
-// All JavaScript logic should be in your /assets/js/app.js file.
-// The existing `initCustomerEntry()` function in your app.js already handles this page perfectly.
-?>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
