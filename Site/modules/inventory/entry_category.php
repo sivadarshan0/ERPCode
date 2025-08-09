@@ -1,5 +1,5 @@
 <?php
-// File: /modules/category/entry_category.php
+// File: /modules/inventory/entry_category.php
 
 session_start();
 error_reporting(E_ALL);
@@ -70,7 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Check for duplicate category name
-        // THIS IS THE CORRECTED LINE: Changed "SELECT id" to "SELECT category_id"
         $check_stmt = $db->prepare("SELECT category_id FROM categories WHERE name = ? AND category_id != ?");
         $posted_id = $_POST['category_id'] ?? '';
         $check_stmt->bind_param("ss", $name, $posted_id);
@@ -85,7 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($is_edit) {
             // ----- UPDATE existing category -----
             $stmt = $db->prepare("UPDATE categories SET name = ?, description = ?, updated_at = NOW(), updated_by = ?, updated_by_name = ? WHERE category_id = ?");
-            $stmt->bind_param("ssisss", $name, $description, $current_user_id, $current_user_name, $category['category_id']);
+            
+            // CORRECTED LINE: The type string "ssisss" was changed to "ssiss" to match the 5 placeholders
+            $stmt->bind_param("ssiss", $name, $description, $current_user_id, $current_user_name, $category['category_id']);
+            
             $action = 'updated';
 
         } else {
