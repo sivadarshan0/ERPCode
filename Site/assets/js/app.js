@@ -236,7 +236,7 @@ function initCategoryEntry() {
         }
 
         // The AJAX endpoint is the page itself, with a specific query parameter
-        fetch(`/modules/category/entry_category.php?category_lookup=${encodeURIComponent(name)}`)
+        fetch(`/modules/inventory/entry_category.php?category_lookup=${encodeURIComponent(name)}`)
             .then(response => {
                 if (!response.ok) throw new Error('Category search failed');
                 return response.json();
