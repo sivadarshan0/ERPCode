@@ -257,43 +257,130 @@ function initItemEntry() {
     });
 }
 
-// ───── Table Live Search Functionality ─────
-function initLiveSearch() {
-    const inputs = document.querySelectorAll(".live-search");
-    if (inputs.length === 0) return;
+// ───── Stock Adjustment Handler ─────
+// ADDED: The missing function for the stock adjustment page.
+function initStockAdjustmentEntry() {
+    const form = document.getElementById('stockAdjustmentForm');
+    if (!form) return;
 
-    const debouncedSearch = debounce(() => {
-        const params = new URLSearchParams(window.location.search);
-        inputs.forEach(inp => {
-            if (inp.value.trim()) {
-                params.set(inp.dataset.column, inp.value.trim());
-            } else {
-                params.delete(inp.dataset.column);
-            }
-        });
-        
-        fetch(`/modules/customer/search_customers.php?${params.toString()}`)
-            .then(res => res.ok ? res.json() : Promise.reject('Search failed'))
+    const searchInput = document.getElementById('item_search');
+    const resultsContainer = document.getElementById('itemResults');
+    const hiddenItemId = document.getElementById('item_id');
+    const selectedItemDisplay = document.getElementById('selected_item_display');
+
+    const doItemLookup = debounce(() => {
+        const name = searchInput.value.trim();
+        if (name.length < 2) {
+            resultsContainer.classList.add('d-none');
+            return;
+        }
+
+        fetch(`entry_stock_adjustment.php?item_lookup=${encodeURIComponent(name)}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
             .then(data => {
-                const tbody = document.querySelector("table tbody");
-                tbody.innerHTML = "";
-                if (data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No results found</td></tr>`;
-                    return;
+                resultsContainer.innerHTML = '';
+                if (data.error) throw new Error(data.error);
+
+                if (data.length > 0) {
+                    data.forEach(item => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'list-group-item list-group-item-action py-2';
+                        button.innerHTML = `<div class="d-flex justify-content-between"><span><strong>${escapeHtml(item.item_name)}</strong><br><small class="text-muted">${escapeHtml(item.parent_category_name)} > ${escapeHtml(item.sub_category_name)}</small></span><span class="badge bg-primary align-self-center">${escapeHtml(item.item_id)}</span></div>`;
+                        button.addEventListener('click', () => {
+                            searchInput.value = item.item_name;
+                            hiddenItemId.value = item.item_id;
+                            selectedItemDisplay.innerHTML = `Selected Item ID: <strong>${escapeHtml(item.item_id)}</strong>`;
+                            selectedItemDisplay.classList.remove('d-none');
+                            resultsContainer.classList.add('d-none');
+                        });
+                        resultsContainer.appendChild(button);
+                    });
+                    resultsContainer.classList.remove('d-none');
+                } else {
+                    resultsContainer.classList.add('d-none');
                 }
-                data.forEach(cust => {
-                    tbody.innerHTML += `<tr><td>${escapeHtml(cust.customer_id)}</td><td>${escapeHtml(cust.name)}</td><td>${escapeHtml(cust.phone)}</td><td>${escapeHtml(cust.city || '')}</td><td>${escapeHtml(cust.district || '')}</td><td>${escapeHtml(cust.known_by || '')}</td><td><a href="entry_customer.php?customer_id=${cust.customer_id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a></td></tr>`;
-                });
             })
             .catch(error => {
-                console.error('[LiveSearch] Error:', error);
-                showAlert('Search failed. Please try again.', 'danger');
+                console.error('[StockItemLookup] Error:', error);
+                resultsContainer.classList.add('d-none');
             });
     }, 300);
 
-    inputs.forEach(input => {
-        input.addEventListener("input", debouncedSearch);
+    searchInput.addEventListener('input', doItemLookup);
+
+    document.addEventListener('click', (e) => {
+        if (!resultsContainer.contains(e.target) && e.target !== searchInput) {
+            resultsContainer.classList.add('d-none');
+        }
     });
+}
+
+// ───── GRN Entry Handler ─────
+function initGrnEntry() {
+    const form = document.getElementById('grnForm');
+    if (!form) return;
+
+    const itemRowsContainer = document.getElementById('grnItemRows');
+    const template = document.getElementById('grnItemRowTemplate');
+    const addRowBtn = document.getElementById('addItemRow');
+
+    const addRow = () => {
+        const newRow = template.content.cloneNode(true);
+        itemRowsContainer.appendChild(newRow);
+    };
+
+    addRow(); // Add initial row
+
+    addRowBtn.addEventListener('click', addRow);
+
+    itemRowsContainer.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-item-row')) {
+            e.target.closest('.grn-item-row').remove();
+        }
+    });
+
+    itemRowsContainer.addEventListener('input', debounce((e) => {
+        if (e.target.classList.contains('item-search-input')) {
+            const searchInput = e.target;
+            const resultsContainer = searchInput.nextElementSibling;
+            const name = searchInput.value.trim();
+
+            if (name.length < 2) {
+                resultsContainer.classList.add('d-none');
+                return;
+            }
+
+            fetch(`entry_grn.php?item_lookup=${encodeURIComponent(name)}`)
+                .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
+                .then(data => {
+                    resultsContainer.innerHTML = '';
+                    if (data.error) throw new Error(data.error);
+                    if (data.length > 0) {
+                        data.forEach(item => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'list-group-item list-group-item-action py-2';
+                            button.innerHTML = `<strong>${escapeHtml(item.item_name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
+                            button.addEventListener('click', () => {
+                                const parentRow = searchInput.closest('.grn-item-row');
+                                parentRow.querySelector('.item-id-input').value = item.item_id;
+                                searchInput.value = item.item_name;
+                                resultsContainer.classList.add('d-none');
+                            });
+                            resultsContainer.appendChild(button);
+                        });
+                        resultsContainer.classList.remove('d-none');
+                    } else {
+                        resultsContainer.classList.add('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('[GRNItemLookup] Error:', error);
+                    resultsContainer.classList.add('d-none');
+                });
+        }
+    }, 300));
 }
 
 // ───── DOM Ready ─────
@@ -311,6 +398,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('itemForm')) {
         initItemEntry();
     }
+    // ADDED: Initializer for the Stock Adjustment page.
+    if (document.getElementById('stockAdjustmentForm')) {
+        initStockAdjustmentEntry();
+    }
+    // ADDED: Initializer for the GRN page.
+    if (document.getElementById('grnForm')) {
+        initGrnEntry();
+    }
 
     // Initialize live search for table pages.
     if (document.querySelector('.live-search')) {
@@ -322,6 +417,10 @@ document.addEventListener('DOMContentLoaded', function () {
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
     setupFormSubmitSpinner(document.getElementById('subCategoryForm'));
     setupFormSubmitSpinner(document.getElementById('itemForm'));
+    // ADDED: Spinner logic for the Stock Adjustment form.
+    setupFormSubmitSpinner(document.getElementById('stockAdjustmentForm'));
+    // ADDED: Spinner logic for the GRN form.
+    setupFormSubmitSpinner(document.getElementById('grnForm'));
 
     // Auto-hide any static alerts that were loaded with the page.
     const staticAlerts = document.querySelectorAll('.alert-dismissible');

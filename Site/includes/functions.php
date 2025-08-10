@@ -482,4 +482,71 @@ function get_sub_categories_by_category_id($category_id) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+// -----------------------------------------
+// ----- GRN (Goods Received Note) Functions -----
+// -----------------------------------------
+
+/**
+ * Processes a complete GRN, creating the GRN record, its item lines,
+ * and adjusting stock for each item in a single database transaction.
+ *
+ * @param string $grn_date The date of the GRN.
+ * @param array $items An array of items, each item being an array with 'item_id', 'uom', and 'quantity'.
+ * @param string $remarks Optional remarks for the GRN.
+ * @return string The ID of the newly created GRN.
+ * @throws Exception On validation or database errors.
+ */
+function process_grn($grn_date, $items, $remarks) {
+    $db = db();
+    if (!$db) throw new Exception("Database connection failed.");
+
+    // --- Validation ---
+    if (empty($grn_date) || !is_array($items) || empty($items)) {
+        throw new Exception("GRN date and at least one item are required.");
+    }
+    foreach ($items as $item) {
+        if (empty($item['item_id']) || empty($item['quantity']) || $item['quantity'] <= 0) {
+            throw new Exception("Invalid data found in one of the item rows. Each item must have an ID and a valid quantity.");
+        }
+    }
+
+    $db->begin_transaction();
+
+    try {
+        // Step 1: Get user details from session
+        $user_id = $_SESSION['user_id'];
+        $user_name = $_SESSION['username'] ?? 'Unknown';
+
+        // Step 2: Create the main GRN record
+        $grn_id = generate_sequence_id('grn_id', 'grn', 'grn_id');
+        $stmt_grn = $db->prepare("INSERT INTO grn (grn_id, grn_date, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+        $stmt_grn->bind_param("sssis", $grn_id, $grn_date, $remarks, $user_id, $user_name);
+        $stmt_grn->execute();
+
+        // Step 3: Loop through each item, add it to grn_items, and adjust stock
+        $stmt_items = $db->prepare("INSERT INTO grn_items (grn_id, item_id, uom, quantity) VALUES (?, ?, ?, ?)");
+
+        foreach ($items as $item) {
+            // Add to grn_items table
+            $stmt_items->bind_param("sssd", $grn_id, $item['item_id'], $item['uom'], $item['quantity']);
+            $stmt_items->execute();
+
+            // Adjust stock level using our existing robust function
+            $stock_reason = "Received via GRN #" . $grn_id;
+            adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason);
+        }
+
+        // If everything succeeded, commit the transaction
+        $db->commit();
+        
+        return $grn_id; // Return the new GRN ID on success
+
+    } catch (Exception $e) {
+        // If any part of the process failed, roll back everything
+        $db->rollback();
+        // Pass the error message up to the calling page
+        throw new Exception("Failed to process GRN: " . $e->getMessage());
+    }
+}
+
 ?>
