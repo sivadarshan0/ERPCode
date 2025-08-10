@@ -1,85 +1,55 @@
 <?php
-// File: includes/functions.php
+// File: /includes/functions.php
+// Final validated version containing all modules.
 
 defined('_IN_APP_') or die('Unauthorized access');
 
 require_once __DIR__ . '/../config/db.php';
 
-// ───── Auth-related functions ─────
+// -----------------------------------------
+// ----- Auth-related functions -----
+// -----------------------------------------
 
 function is_account_locked($username) {
     $db = db();
     $stmt = $db->prepare("SELECT locked_until FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-
-    if ($user && $user['locked_until'] && strtotime($user['locked_until']) > time()) {
-        return $user['locked_until'];
-    }
-    return false;
+    $user = $stmt->get_result()->fetch_assoc();
+    return ($user && $user['locked_until'] && strtotime($user['locked_until']) > time()) ? $user['locked_until'] : false;
 }
 
 function get_user_by_username($username) {
     $db = db();
-    
     $stmt = $db->prepare("SELECT * FROM users WHERE username = ?");
-    if (!$stmt) {
-        error_log("Database prepare error: " . $db->error);
-        return null;
-    }
-    
     $stmt->bind_param("s", $username);
-    if (!$stmt->execute()) {
-        error_log("Database execute error: " . $stmt->error);
-        return null;
-    }
-    
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_assoc() : null;
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc();
 }
 
 function update_user_login($user_id, $success, $ip_address) {
-    if (!is_numeric($user_id) || $user_id <= 0) {
-        error_log("Invalid user_id in update_user_login: $user_id");
-        return false;
-    }
-
     $db = db();
-
-    try {
-        if ($success) {
-            $stmt = $db->prepare("UPDATE users SET last_login = NOW(), failed_attempts = 0, locked_until = NULL WHERE id = ?");
-        } else {
-            $stmt = $db->prepare("UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?");
-        }
-        
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-
-        if (!$success) {
-            $stmt_check = $db->prepare("SELECT failed_attempts FROM users WHERE id = ?");
-            $stmt_check->bind_param("i", $user_id);
-            $stmt_check->execute();
-            $result = $stmt_check->get_result();
-            $user = $result->fetch_assoc();
-            
-            if ($user && $user['failed_attempts'] >= 5) {
-                $lock_time = date('Y-m-d H:i:s', strtotime('+30 minutes'));
-                $stmt_lock = $db->prepare("UPDATE users SET locked_until = ? WHERE id = ?");
-                $stmt_lock->bind_param("si", $lock_time, $user_id);
-                $stmt_lock->execute();
-            }
-        }
-
-        log_login_attempt($user_id, $ip_address, $success);
-
-        return true;
-    } catch (Exception $e) {
-        error_log("Error in update_user_login: " . $e->getMessage());
-        return false;
+    if ($success) {
+        $stmt = $db->prepare("UPDATE users SET last_login = NOW(), failed_attempts = 0, locked_until = NULL WHERE id = ?");
+    } else {
+        $stmt = $db->prepare("UPDATE users SET failed_attempts = failed_attempts + 1 WHERE id = ?");
     }
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    
+    if (!$success) {
+        $stmt_check = $db->prepare("SELECT failed_attempts FROM users WHERE id = ?");
+        $stmt_check->bind_param("i", $user_id);
+        $stmt_check->execute();
+        $user = $stmt_check->get_result()->fetch_assoc();
+        if ($user && $user['failed_attempts'] >= 5) {
+            $lock_time = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+            $stmt_lock = $db->prepare("UPDATE users SET locked_until = ? WHERE id = ?");
+            $stmt_lock->bind_param("si", $lock_time, $user_id);
+            $stmt_lock->execute();
+        }
+    }
+    log_login_attempt($user_id, $ip_address, $success);
 }
 
 function log_login_attempt($user_id, $ip_address, $success) {
@@ -89,7 +59,9 @@ function log_login_attempt($user_id, $ip_address, $success) {
     $stmt->execute();
 }
 
-// ───── Session handling ─────
+// -----------------------------------------
+// ----- Session handling -----
+// -----------------------------------------
 
 function is_logged_in() {
     return isset($_SESSION['user_id']);
@@ -101,51 +73,31 @@ function require_login() {
         header('Location: /login.php');
         exit;
     }
-
-    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) { // 30-minute timeout
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
         session_unset();
         session_destroy();
         header('Location: /login.php?timeout=1');
         exit;
     }
-
     $_SESSION['last_activity'] = time();
 }
 
-// ───── Sequence ID Generator (Robust & Generic Version) ─────
+// -----------------------------------------
+// ----- Sequence ID Generator -----
+// -----------------------------------------
 
-/**
- * Generates a unique, sequential ID from the system_sequences table.
- * This function is safe, generic, and handles potential sequence desynchronization.
- *
- * @param string $sequence_name The name of the sequence (e.g., 'customer_id', 'category_id').
- * @param string $table The database table where the ID will be used (e.g., 'customers', 'categories').
- * @param string $column The column in that table that holds the ID (e.g., 'customer_id', 'category_id').
- * @return string The newly generated unique ID.
- * @throws Exception If the sequence is not found or ID generation fails.
- */
 function generate_sequence_id($sequence_name, $table, $column) {
     $db = db();
     $db->begin_transaction();
-
     try {
-        // Step 1: Lock the sequence row to prevent race conditions and get its details.
         $stmt = $db->prepare("SELECT prefix, next_value, digit_length FROM system_sequences WHERE sequence_name = ? FOR UPDATE");
         $stmt->bind_param("s", $sequence_name);
         $stmt->execute();
         $seq = $stmt->get_result()->fetch_assoc();
-
-        if (!$seq) {
-            throw new Exception("Sequence '$sequence_name' not found in system_sequences.");
-        }
+        if (!$seq) throw new Exception("Sequence '$sequence_name' not found.");
 
         $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
         $next_value_for_update = $seq['next_value'] + 1;
-
-        // Step 2: SAFETY CHECK. Verify the generated ID doesn't already exist in the target table.
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table) || !preg_match('/^[a-zA-Z0-9_]+$/', $column)) {
-            throw new Exception("Invalid table or column name provided for sequence check.");
-        }
         
         $check_sql = "SELECT `$column` FROM `$table` WHERE `$column` = ?";
         $check_stmt = $db->prepare($check_sql);
@@ -153,9 +105,6 @@ function generate_sequence_id($sequence_name, $table, $column) {
         $check_stmt->execute();
 
         if ($check_stmt->get_result()->num_rows > 0) {
-            // ID is already in use! Recover by finding the actual max value.
-            error_log("SEQUENCE-RECOVERY: ID '$new_id' for '$sequence_name' already exists. Recalculating...");
-            
             $prefix_len = strlen($seq['prefix']);
             $find_max_sql = "SELECT MAX(CAST(SUBSTRING(`$column`, " . ($prefix_len + 1) . ") AS UNSIGNED)) FROM `$table` WHERE `$column` LIKE ?";
             $find_max_stmt = $db->prepare($find_max_sql);
@@ -169,17 +118,12 @@ function generate_sequence_id($sequence_name, $table, $column) {
             $next_value_for_update = $recalculated_num + 1;
         }
 
-        // Step 3: Update the sequence table with the correct next value.
         $update = $db->prepare("UPDATE system_sequences SET next_value = ?, last_used_at = NOW(), last_used_by = ? WHERE sequence_name = ?");
-        $user_id = $_SESSION['user_id'] ?? null;
-        $update->bind_param("iss", $next_value_for_update, $user_id, $sequence_name);
+        $update->bind_param("iss", $next_value_for_update, $_SESSION['user_id'], $sequence_name);
         $update->execute();
-
-        // Step 4: Commit the transaction.
-        $db->commit();
         
+        $db->commit();
         return $new_id;
-
     } catch (Exception $e) {
         $db->rollback();
         error_log("SEQUENCE-ERROR: " . $e->getMessage());
@@ -187,366 +131,204 @@ function generate_sequence_id($sequence_name, $table, $column) {
     }
 }
 
-// ───── Customer-related functions ─────
+// -----------------------------------------
+// ----- Customer-related functions -----
+// -----------------------------------------
 
 function get_customer($customer_id) {
     $db = db();
-    if (!$db) return false;
-    
     $stmt = $db->prepare("SELECT * FROM customers WHERE customer_id = ?");
-    if (!$stmt) {
-        error_log("Prepare failed: " . $db->error);
-        return false;
-    }
-
     $stmt->bind_param("s", $customer_id);
-    if (!$stmt->execute()) {
-        error_log("Execute failed: " . $stmt->error);
-        return false;
-    }
-
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_assoc() : false;
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc();
 }
 
 function search_customers_by_phone($phone) {
     $db = db();
-    if (!$db) {
-        error_log("Database connection failed");
-        return [];
-    }
-
     $search_term = "%$phone%";
     $stmt = $db->prepare("SELECT customer_id, name, phone FROM customers WHERE phone LIKE ? ORDER BY name LIMIT 10");
-    
-    if (!$stmt) {
-        error_log("Prepare failed: " . $db->error);
-        return [];
-    }
-
     $stmt->bind_param("s", $search_term);
-
-    if (!$stmt->execute()) {
-        error_log("Execute failed: " . $stmt->error);
-        return [];
-    }
-
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
 function validate_customer_phone($phone, $exclude_id = null) {
     $db = db();
     $sql = "SELECT COUNT(*) FROM customers WHERE phone = ?";
-    $types = "s";
     $params = [$phone];
-    
+    $types = "s";
     if ($exclude_id) {
         $sql .= " AND customer_id != ?";
-        $types .= "s";
         $params[] = $exclude_id;
+        $types .= "s";
     }
-    
     $stmt = $db->prepare($sql);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
-    $count = $stmt->get_result()->fetch_row()[0];
-    return $count == 0;
+    return $stmt->get_result()->fetch_row()[0] == 0;
 }
 
-// ───── Category-related functions ─────
+// -----------------------------------------
+// ----- Category-related functions -----
+// -----------------------------------------
 
-/**
- * Retrieves a single category from the database by its category_id.
- *
- * @param string $category_id The ID of the category to fetch.
- * @return array|false The category data as an associative array, or false if not found.
- */
 function get_category($category_id) {
     $db = db();
-    if (!$db) return false;
-    
     $stmt = $db->prepare("SELECT * FROM categories WHERE category_id = ?");
-    if (!$stmt) {
-        error_log("Prepare failed: " . $db->error);
-        return false;
-    }
-
     $stmt->bind_param("s", $category_id);
-    if (!$stmt->execute()) {
-        error_log("Execute failed: " . $stmt->error);
-        return false;
-    }
-
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_assoc() : false;
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc();
 }
 
-/**
- * Searches for categories by name (case-insensitive).
- *
- * @param string $name The name to search for.
- * @return array An array of matching categories.
- */
 function search_categories_by_name($name) {
     $db = db();
-    if (!$db) {
-        error_log("Database connection failed");
-        return [];
-    }
-
     $search_term = "%$name%";
-    $stmt = $db->prepare("SELECT c.category_id, c.name, c.description FROM categories c WHERE c.name LIKE ? ORDER BY c.name LIMIT 10");
-    
-    if (!$stmt) {
-        error_log("Prepare failed: " . $db->error);
-        return [];
-    }
-
+    $stmt = $db->prepare("SELECT category_id, name, description FROM categories WHERE name LIKE ? ORDER BY name LIMIT 10");
     $stmt->bind_param("s", $search_term);
-
-    if (!$stmt->execute()) {
-        error_log("Execute failed: " . $stmt->error);
-        return [];
-    }
-
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
-// ---------------------------------------------
-// ----- Sub-Category-related functions -----
-// ---------------------------------------------
-
-/**
- * Retrieves all parent categories for use in dropdowns.
- *
- * @return array An array of all categories.
- */
 function get_all_categories() {
     $db = db();
-    if (!$db) return [];
     $result = $db->query("SELECT category_id, name FROM categories ORDER BY name ASC");
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
-/**
- * Retrieves a single sub-category from the database by its ID.
- *
- * @param string $category_sub_id The ID of the sub-category to fetch.
- * @return array|false The sub-category data, or false if not found.
- */
+// -----------------------------------------
+// ----- Sub-Category-related functions -----
+// -----------------------------------------
+
 function get_sub_category($category_sub_id) {
     $db = db();
-    if (!$db) return false;
-    
     $stmt = $db->prepare("SELECT * FROM categories_sub WHERE category_sub_id = ?");
-    if (!$stmt) {
-        error_log("Prepare failed: " . $db->error);
-        return false;
-    }
-
     $stmt->bind_param("s", $category_sub_id);
-    if (!$stmt->execute()) {
-        error_log("Execute failed: " . $stmt->error);
-        return false;
-    }
-
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_assoc() : false;
+    $stmt->execute();
+    return $stmt->get_result()->fetch_assoc();
 }
 
-/**
- * Searches for sub-categories by name (case-insensitive).
- *
- * @param string $name The name to search for.
- * @return array An array of matching sub-categories.
- */
 function search_sub_categories_by_name($name) {
     $db = db();
-    if (!$db) {
-        error_log("Database connection failed");
-        return [];
-    }
-
     $search_term = "%$name%";
-    // Join with categories to show the parent category name in search results
-    $stmt = $db->prepare("
-        SELECT 
-            cs.category_sub_id, 
-            cs.name, 
-            cs.description,
-            c.name as parent_category_name
-        FROM categories_sub cs
-        JOIN categories c ON cs.category_id = c.category_id
-        WHERE cs.name LIKE ? 
-        ORDER BY cs.name 
-        LIMIT 10
-    ");
-    
-    if (!$stmt) {
-        error_log("Prepare failed: " . $db->error);
-        return [];
-    }
-
+    $stmt = $db->prepare("SELECT cs.category_sub_id, cs.name, cs.description, c.name as parent_category_name FROM categories_sub cs JOIN categories c ON cs.category_id = c.category_id WHERE cs.name LIKE ? ORDER BY cs.name LIMIT 10");
     $stmt->bind_param("s", $search_term);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
 
-    if (!$stmt->execute()) {
-        error_log("Execute failed: " . $stmt->error);
-        return [];
-    }
-
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+function get_sub_categories_by_category_id($category_id) {
+    $db = db();
+    $stmt = $db->prepare("SELECT category_sub_id, name FROM categories_sub WHERE category_id = ? ORDER BY name ASC");
+    $stmt->bind_param("s", $category_id);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
 // -----------------------------------------
 // ----- Item-related functions -----
 // -----------------------------------------
 
-/**
- * Retrieves a single item from the database by its ID.
- * Also joins to get parent category_id for edit mode convenience.
- *
- * @param string $item_id The ID of the item to fetch.
- * @return array|false The item data, or false if not found.
- */
 function get_item($item_id) {
     $db = db();
-    if (!$db) return false;
-    
-    // We join to get the parent category_id, which makes populating the form in edit mode easier
-    $stmt = $db->prepare("
-        SELECT i.*, cs.category_id 
-        FROM items i
-        JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id
-        WHERE i.item_id = ?
-    ");
-    if (!$stmt) return false;
-
+    $stmt = $db->prepare("SELECT i.*, cs.category_id FROM items i JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id WHERE i.item_id = ?");
     $stmt->bind_param("s", $item_id);
     $stmt->execute();
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_assoc() : false;
+    return $stmt->get_result()->fetch_assoc();
 }
 
-/**
- * Searches for items by name for live search functionality.
- *
- * @param string $name The name to search for.
- * @return array An array of matching items.
- */
 function search_items_by_name($name) {
     $db = db();
-    if (!$db) return [];
-
     $search_term = "%$name%";
-    $stmt = $db->prepare("
-        SELECT 
-            i.item_id, 
-            i.name, 
-            cs.name as sub_category_name,
-            c.name as parent_category_name
-        FROM items i
-        JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id
-        JOIN categories c ON cs.category_id = c.category_id
-        WHERE i.name LIKE ? 
-        ORDER BY i.name 
-        LIMIT 10
-    ");
-    if (!$stmt) return [];
-
+    $stmt = $db->prepare("SELECT i.item_id, i.name, cs.name as sub_category_name, c.name as parent_category_name FROM items i JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id JOIN categories c ON cs.category_id = c.category_id WHERE i.name LIKE ? ORDER BY i.name LIMIT 10");
     $stmt->bind_param("s", $search_term);
     $stmt->execute();
-    $result = $stmt->get_result();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+// -----------------------------------------
+// ----- Stock Management Functions -----
+// -----------------------------------------
+
+function get_all_stock_levels() {
+    $db = db();
+    $sql = "SELECT i.item_id, i.name AS item_name, c.name AS category_name, cs.name AS sub_category_name, COALESCE(sl.quantity, 0.00) AS quantity FROM items i LEFT JOIN stock_levels sl ON i.item_id = sl.item_id JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id JOIN categories c ON cs.category_id = c.category_id ORDER BY c.name, cs.name, i.name";
+    $result = $db->query($sql);
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
-/**
- * Retrieves all sub-categories belonging to a specific parent category.
- * This is used for the dynamic/cascading dropdown.
- *
- * @param string $category_id The ID of the parent category.
- * @return array An array of sub-categories.
- */
-function get_sub_categories_by_category_id($category_id) {
+function adjust_stock_level($item_id, $type, $quantity, $reason) {
     $db = db();
-    if (!$db) return [];
+    if (empty($item_id) || !in_array($type, ['IN', 'OUT']) || !is_numeric($quantity) || $quantity <= 0) {
+        throw new Exception("Invalid arguments for stock adjustment.");
+    }
+    
+    // This function can be called from within a transaction (like process_grn) or on its own.
+    // It is designed to be a single unit of work.
+    
+    // Record the movement in the transaction ledger
+    $transaction_id = generate_sequence_id('transaction_id', 'stock_transactions', 'transaction_id');
+    $stmt_trans = $db->prepare("INSERT INTO stock_transactions (transaction_id, item_id, transaction_type, quantity_change, reason, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt_trans->bind_param("sssdsis", $transaction_id, $item_id, $type, $quantity, $reason, $_SESSION['user_id'], $_SESSION['username']);
+    $stmt_trans->execute();
 
-    $stmt = $db->prepare("SELECT category_sub_id, name FROM categories_sub WHERE category_id = ? ORDER BY name ASC");
-    if (!$stmt) return [];
+    // Update the current stock level
+    $update_quantity = ($type === 'IN') ? $quantity : -$quantity;
+    $sql_update = "INSERT INTO stock_levels (item_id, quantity) VALUES (?, ?) ON DUPLICATE KEY UPDATE quantity = quantity + ?";
+    $stmt_level = $db->prepare($sql_update);
+    $stmt_level->bind_param("sdd", $item_id, $update_quantity, $update_quantity);
+    $stmt_level->execute();
 
-    $stmt->bind_param("s", $category_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    // Final check for negative stock
+    $check_stmt = $db->prepare("SELECT quantity FROM stock_levels WHERE item_id = ?");
+    $check_stmt->bind_param("s", $item_id);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result()->fetch_assoc();
+    if ($result && $result['quantity'] < 0) {
+        // This is a critical error. We MUST throw an exception to trigger the rollback in the calling function.
+        throw new Exception("Operation failed: Stock level for item $item_id cannot go below zero.");
+    }
+    return true;
 }
 
 // -----------------------------------------
 // ----- GRN (Goods Received Note) Functions -----
 // -----------------------------------------
 
-/**
- * Processes a complete GRN, creating the GRN record, its item lines,
- * and adjusting stock for each item in a single database transaction.
- *
- * @param string $grn_date The date of the GRN.
- * @param array $items An array of items, each item being an array with 'item_id', 'uom', and 'quantity'.
- * @param string $remarks Optional remarks for the GRN.
- * @return string The ID of the newly created GRN.
- * @throws Exception On validation or database errors.
- */
 function process_grn($grn_date, $items, $remarks) {
     $db = db();
-    if (!$db) throw new Exception("Database connection failed.");
-
-    // --- Validation ---
     if (empty($grn_date) || !is_array($items) || empty($items)) {
         throw new Exception("GRN date and at least one item are required.");
     }
     foreach ($items as $item) {
         if (empty($item['item_id']) || empty($item['quantity']) || $item['quantity'] <= 0) {
-            throw new Exception("Invalid data found in one of the item rows. Each item must have an ID and a valid quantity.");
+            throw new Exception("Invalid data in item rows. Each item needs an ID and valid quantity.");
         }
     }
 
     $db->begin_transaction();
-
     try {
-        // Step 1: Get user details from session
-        $user_id = $_SESSION['user_id'];
-        $user_name = $_SESSION['username'] ?? 'Unknown';
-
-        // Step 2: Create the main GRN record
+        // Create the main GRN record
         $grn_id = generate_sequence_id('grn_id', 'grn', 'grn_id');
         $stmt_grn = $db->prepare("INSERT INTO grn (grn_id, grn_date, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
-        $stmt_grn->bind_param("sssis", $grn_id, $grn_date, $remarks, $user_id, $user_name);
+        $stmt_grn->bind_param("sssis", $grn_id, $grn_date, $remarks, $_SESSION['user_id'], $_SESSION['username']);
         $stmt_grn->execute();
 
-        // Step 3: Loop through each item, add it to grn_items, and adjust stock
+        // Loop through items, add to grn_items, and adjust stock
         $stmt_items = $db->prepare("INSERT INTO grn_items (grn_id, item_id, uom, quantity) VALUES (?, ?, ?, ?)");
-
         foreach ($items as $item) {
-            // Add to grn_items table
             $stmt_items->bind_param("sssd", $grn_id, $item['item_id'], $item['uom'], $item['quantity']);
             $stmt_items->execute();
 
-            // Adjust stock level using our existing robust function
+            // The adjust_stock_level function is called here
             $stock_reason = "Received via GRN #" . $grn_id;
             adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason);
         }
 
-        // If everything succeeded, commit the transaction
         $db->commit();
-        
-        return $grn_id; // Return the new GRN ID on success
-
+        return $grn_id;
     } catch (Exception $e) {
-        // If any part of the process failed, roll back everything
         $db->rollback();
-        // Pass the error message up to the calling page
-        throw new Exception("Failed to process GRN: " . $e->getMessage());
+        // Provide a more specific error message back to the user
+        throw new Exception("Failed to process GRN. Reason: " . $e->getMessage());
     }
 }
-
-?>
