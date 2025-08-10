@@ -258,7 +258,6 @@ function initItemEntry() {
 }
 
 // ───── Stock Adjustment Handler ─────
-// ADDED: The missing function for the stock adjustment page.
 function initStockAdjustmentEntry() {
     const form = document.getElementById('stockAdjustmentForm');
     if (!form) return;
@@ -286,9 +285,11 @@ function initStockAdjustmentEntry() {
                         const button = document.createElement('button');
                         button.type = 'button';
                         button.className = 'list-group-item list-group-item-action py-2';
-                        button.innerHTML = `<div class="d-flex justify-content-between"><span><strong>${escapeHtml(item.item_name)}</strong><br><small class="text-muted">${escapeHtml(item.parent_category_name)} > ${escapeHtml(item.sub_category_name)}</small></span><span class="badge bg-primary align-self-center">${escapeHtml(item.item_id)}</span></div>`;
+                        // CORRECTED: Use `item.name` here, not `item.item_name`
+                        button.innerHTML = `<div class="d-flex justify-content-between"><span><strong>${escapeHtml(item.name)}</strong><br><small class="text-muted">${escapeHtml(item.parent_category_name)} > ${escapeHtml(item.sub_category_name)}</small></span><span class="badge bg-primary align-self-center">${escapeHtml(item.item_id)}</span></div>`;
                         button.addEventListener('click', () => {
-                            searchInput.value = item.item_name;
+                            // CORRECTED: Use `item.name` here as well
+                            searchInput.value = item.name;
                             hiddenItemId.value = item.item_id;
                             selectedItemDisplay.innerHTML = `Selected Item ID: <strong>${escapeHtml(item.item_id)}</strong>`;
                             selectedItemDisplay.classList.remove('d-none');
@@ -361,11 +362,13 @@ function initGrnEntry() {
                             const button = document.createElement('button');
                             button.type = 'button';
                             button.className = 'list-group-item list-group-item-action py-2';
-                            button.innerHTML = `<strong>${escapeHtml(item.item_name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
+                            // CORRECTED: Use `item.name`, not `item.item_name`
+                            button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
                             button.addEventListener('click', () => {
                                 const parentRow = searchInput.closest('.grn-item-row');
                                 parentRow.querySelector('.item-id-input').value = item.item_id;
-                                searchInput.value = item.item_name;
+                                // CORRECTED: Use `item.name` to set the input field value
+                                searchInput.value = item.name;
                                 resultsContainer.classList.add('d-none');
                             });
                             resultsContainer.appendChild(button);
@@ -383,6 +386,7 @@ function initGrnEntry() {
     }, 300));
 }
 
+
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
     // Initialize modules based on which form is present on the page.
@@ -398,11 +402,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('itemForm')) {
         initItemEntry();
     }
-    // ADDED: Initializer for the Stock Adjustment page.
     if (document.getElementById('stockAdjustmentForm')) {
         initStockAdjustmentEntry();
     }
-    // ADDED: Initializer for the GRN page.
     if (document.getElementById('grnForm')) {
         initGrnEntry();
     }
@@ -417,9 +419,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
     setupFormSubmitSpinner(document.getElementById('subCategoryForm'));
     setupFormSubmitSpinner(document.getElementById('itemForm'));
-    // ADDED: Spinner logic for the Stock Adjustment form.
     setupFormSubmitSpinner(document.getElementById('stockAdjustmentForm'));
-    // ADDED: Spinner logic for the GRN form.
     setupFormSubmitSpinner(document.getElementById('grnForm'));
 
     // Auto-hide any static alerts that were loaded with the page.
