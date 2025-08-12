@@ -1,6 +1,6 @@
 <?php
 // File: /includes/functions.php
-// Final validated version containing all modules.
+// Final validated version with the bind_param fix.
 
 defined('_IN_APP_') or die('Unauthorized access');
 
@@ -119,7 +119,11 @@ function generate_sequence_id($sequence_name, $table, $column) {
         }
 
         $update = $db->prepare("UPDATE system_sequences SET next_value = ?, last_used_at = NOW(), last_used_by = ? WHERE sequence_name = ?");
-        $update->bind_param("iss", $next_value_for_update, $_SESSION['user_id'], $sequence_name);
+        $user_id = $_SESSION['user_id'] ?? null;
+
+        // CORRECTED: The type string is now "iis" to match the integer, integer, string variable types.
+        $update->bind_param("iis", $next_value_for_update, $user_id, $sequence_name);
+        
         $update->execute();
         
         $db->commit();
@@ -261,30 +265,23 @@ function adjust_stock_level($item_id, $type, $quantity, $reason) {
     if (empty($item_id) || !in_array($type, ['IN', 'OUT']) || !is_numeric($quantity) || $quantity <= 0) {
         throw new Exception("Invalid arguments for stock adjustment.");
     }
-    
-    // This function can be called from within a transaction (like process_grn) or on its own.
-    // It is designed to be a single unit of work.
-    
-    // Record the movement in the transaction ledger
+
     $transaction_id = generate_sequence_id('transaction_id', 'stock_transactions', 'transaction_id');
     $stmt_trans = $db->prepare("INSERT INTO stock_transactions (transaction_id, item_id, transaction_type, quantity_change, reason, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt_trans->bind_param("sssdsis", $transaction_id, $item_id, $type, $quantity, $reason, $_SESSION['user_id'], $_SESSION['username']);
     $stmt_trans->execute();
 
-    // Update the current stock level
     $update_quantity = ($type === 'IN') ? $quantity : -$quantity;
     $sql_update = "INSERT INTO stock_levels (item_id, quantity) VALUES (?, ?) ON DUPLICATE KEY UPDATE quantity = quantity + ?";
     $stmt_level = $db->prepare($sql_update);
     $stmt_level->bind_param("sdd", $item_id, $update_quantity, $update_quantity);
     $stmt_level->execute();
 
-    // Final check for negative stock
     $check_stmt = $db->prepare("SELECT quantity FROM stock_levels WHERE item_id = ?");
     $check_stmt->bind_param("s", $item_id);
     $check_stmt->execute();
     $result = $check_stmt->get_result()->fetch_assoc();
     if ($result && $result['quantity'] < 0) {
-        // This is a critical error. We MUST throw an exception to trigger the rollback in the calling function.
         throw new Exception("Operation failed: Stock level for item $item_id cannot go below zero.");
     }
     return true;
@@ -307,19 +304,16 @@ function process_grn($grn_date, $items, $remarks) {
 
     $db->begin_transaction();
     try {
-        // Create the main GRN record
         $grn_id = generate_sequence_id('grn_id', 'grn', 'grn_id');
         $stmt_grn = $db->prepare("INSERT INTO grn (grn_id, grn_date, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
         $stmt_grn->bind_param("sssis", $grn_id, $grn_date, $remarks, $_SESSION['user_id'], $_SESSION['username']);
         $stmt_grn->execute();
 
-        // Loop through items, add to grn_items, and adjust stock
         $stmt_items = $db->prepare("INSERT INTO grn_items (grn_id, item_id, uom, quantity) VALUES (?, ?, ?, ?)");
         foreach ($items as $item) {
             $stmt_items->bind_param("sssd", $grn_id, $item['item_id'], $item['uom'], $item['quantity']);
             $stmt_items->execute();
 
-            // The adjust_stock_level function is called here
             $stock_reason = "Received via GRN #" . $grn_id;
             adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason);
         }
@@ -328,7 +322,8 @@ function process_grn($grn_date, $items, $remarks) {
         return $grn_id;
     } catch (Exception $e) {
         $db->rollback();
-        // Provide a more specific error message back to the user
         throw new Exception("Failed to process GRN. Reason: " . $e->getMessage());
     }
 }
+
+?>
