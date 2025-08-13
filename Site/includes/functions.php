@@ -1,6 +1,6 @@
 <?php
 // File: /includes/functions.php
-// Final validated version with the nested transaction fix.
+// Final validated version with the correct bind_param type for the sequence generator.
 
 defined('_IN_APP_') or die('Unauthorized access');
 
@@ -88,7 +88,6 @@ function require_login() {
 
 function generate_sequence_id($sequence_name, $table, $column) {
     $db = db();
-    // REMOVED: $db->begin_transaction(); -- This was causing the nested transaction issue.
     try {
         $stmt = $db->prepare("SELECT prefix, next_value, digit_length FROM system_sequences WHERE sequence_name = ? FOR UPDATE");
         $stmt->bind_param("s", $sequence_name);
@@ -120,15 +119,15 @@ function generate_sequence_id($sequence_name, $table, $column) {
 
         $update = $db->prepare("UPDATE system_sequences SET next_value = ?, last_used_at = NOW(), last_used_by = ? WHERE sequence_name = ?");
         $user_id = $_SESSION['user_id'] ?? null;
-        $update->bind_param("iis", $next_value_for_update, $user_id, $sequence_name);
+        
+        // CORRECTED: The type string is now "iss" to match (integer, string, string) based on the database schema.
+        $update->bind_param("iss", $next_value_for_update, $user_id, $sequence_name);
+        
         $update->execute();
         
-        // REMOVED: $db->commit(); -- The parent function must handle the commit.
         return $new_id;
     } catch (Exception $e) {
-        // REMOVED: $db->rollback(); -- The parent function must handle the rollback.
         error_log("SEQUENCE-ERROR: " . $e->getMessage());
-        // Re-throw the exception so the parent function knows something went wrong.
         throw new Exception("Could not generate a unique ID. A system error occurred.");
     }
 }
