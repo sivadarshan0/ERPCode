@@ -1,6 +1,6 @@
 <?php
 // File: /includes/functions.php
-// Final validated version with the correct bind_param type for the sequence generator.
+// This version contains enhanced error reporting in generate_sequence_id to find the root cause.
 
 defined('_IN_APP_') or die('Unauthorized access');
 
@@ -83,54 +83,69 @@ function require_login() {
 }
 
 // -----------------------------------------
-// ----- Sequence ID Generator -----
+// ----- Sequence ID Generator (DEBUG VERSION) -----
 // -----------------------------------------
 
 function generate_sequence_id($sequence_name, $table, $column) {
     $db = db();
-    try {
-        $stmt = $db->prepare("SELECT prefix, next_value, digit_length FROM system_sequences WHERE sequence_name = ? FOR UPDATE");
-        $stmt->bind_param("s", $sequence_name);
-        $stmt->execute();
-        $seq = $stmt->get_result()->fetch_assoc();
-        if (!$seq) throw new Exception("Sequence '$sequence_name' not found.");
+    
+    // Step 1: Lock and select the sequence row
+    $stmt = $db->prepare("SELECT prefix, next_value, digit_length FROM system_sequences WHERE sequence_name = ? FOR UPDATE");
+    if (!$stmt) { throw new Exception("ID Generation Error: Failed to prepare SELECT statement. DB error: " . $db->error); }
+    
+    $stmt->bind_param("s", $sequence_name);
+    if (!$stmt->execute()) { throw new Exception("ID Generation Error: Failed to execute SELECT statement. Stmt error: " . $stmt->error); }
 
-        $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
-        $next_value_for_update = $seq['next_value'] + 1;
-        
-        $check_sql = "SELECT `$column` FROM `$table` WHERE `$column` = ?";
-        $check_stmt = $db->prepare($check_sql);
-        $check_stmt->bind_param("s", $new_id);
-        $check_stmt->execute();
+    $seq = $stmt->get_result()->fetch_assoc();
+    if (!$seq) { throw new Exception("ID Generation Error: Sequence '$sequence_name' not found in system_sequences table."); }
 
-        if ($check_stmt->get_result()->num_rows > 0) {
-            $prefix_len = strlen($seq['prefix']);
-            $find_max_sql = "SELECT MAX(CAST(SUBSTRING(`$column`, " . ($prefix_len + 1) . ") AS UNSIGNED)) FROM `$table` WHERE `$column` LIKE ?";
-            $find_max_stmt = $db->prepare($find_max_sql);
-            $like_prefix = $seq['prefix'] . '%';
-            $find_max_stmt->bind_param("s", $like_prefix);
-            $find_max_stmt->execute();
-            $max_used = (int) $find_max_stmt->get_result()->fetch_row()[0];
-            
-            $recalculated_num = $max_used + 1;
-            $new_id = $seq['prefix'] . str_pad($recalculated_num, $seq['digit_length'], '0', STR_PAD_LEFT);
-            $next_value_for_update = $recalculated_num + 1;
-        }
+    // Step 2: Calculate the new ID
+    $new_id = $seq['prefix'] . str_pad($seq['next_value'], $seq['digit_length'], '0', STR_PAD_LEFT);
+    $next_value_for_update = $seq['next_value'] + 1;
+    
+    // Step 3: Safety check if the ID already exists in the target table
+    $check_sql = "SELECT `$column` FROM `$table` WHERE `$column` = ?";
+    $check_stmt = $db->prepare($check_sql);
+    if (!$check_stmt) { throw new Exception("ID Generation Error: Failed to prepare safety check statement. DB error: " . $db->error); }
+    
+    $check_stmt->bind_param("s", $new_id);
+    if (!$check_stmt->execute()) { throw new Exception("ID Generation Error: Failed to execute safety check statement. Stmt error: " . $check_stmt->error); }
 
-        $update = $db->prepare("UPDATE system_sequences SET next_value = ?, last_used_at = NOW(), last_used_by = ? WHERE sequence_name = ?");
-        $user_id = $_SESSION['user_id'] ?? null;
+    // Step 4: Optional recovery logic if a duplicate is found
+    if ($check_stmt->get_result()->num_rows > 0) {
+        error_log("SEQUENCE-RECOVERY: ID '$new_id' for '$sequence_name' already exists. Recalculating...");
+        $prefix_len = strlen($seq['prefix']);
+        $find_max_sql = "SELECT MAX(CAST(SUBSTRING(`$column`, " . ($prefix_len + 1) . ") AS UNSIGNED)) FROM `$table` WHERE `$column` LIKE ?";
+        $find_max_stmt = $db->prepare($find_max_sql);
+        if (!$find_max_stmt) { throw new Exception("ID Generation Error: Failed to prepare recovery statement. DB error: " . $db->error); }
         
-        // CORRECTED: The type string is now "iss" to match (integer, string, string) based on the database schema.
-        $update->bind_param("iss", $next_value_for_update, $user_id, $sequence_name);
-        
-        $update->execute();
-        
-        return $new_id;
-    } catch (Exception $e) {
-        error_log("SEQUENCE-ERROR: " . $e->getMessage());
-        throw new Exception("Could not generate a unique ID. A system error occurred.");
+        $like_prefix = $seq['prefix'] . '%';
+        $find_max_stmt->bind_param("s", $like_prefix);
+        if (!$find_max_stmt->execute()) { throw new Exception("ID Generation Error: Failed to execute recovery statement. Stmt error: " . $find_max_stmt->error); }
+
+        $max_used = (int) $find_max_stmt->get_result()->fetch_row()[0];
+        $recalculated_num = $max_used + 1;
+        $new_id = $seq['prefix'] . str_pad($recalculated_num, $seq['digit_length'], '0', STR_PAD_LEFT);
+        $next_value_for_update = $recalculated_num + 1;
     }
+
+    // Step 5: Update the sequence table with the new next_value
+    $update = $db->prepare("UPDATE system_sequences SET next_value = ?, last_used_at = NOW(), last_used_by = ? WHERE sequence_name = ?");
+    if (!$update) { throw new Exception("ID Generation Error: Failed to prepare UPDATE statement. DB error: " . $db->error); }
+    
+    // Force user_id to string to match varchar column, preventing type issues
+    $user_id = (string) ($_SESSION['user_id'] ?? ''); 
+    
+    $update->bind_param("iss", $next_value_for_update, $user_id, $sequence_name);
+    
+    if (!$update->execute()) {
+        // This is the most important part - it will give us the specific MySQLi error
+        throw new Exception("ID Generation Error: FAILED TO EXECUTE UPDATE. Stmt error: " . $update->error);
+    }
+    
+    return $new_id;
 }
+
 
 // -----------------------------------------
 // ----- Customer-related functions -----
