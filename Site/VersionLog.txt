@@ -1,4 +1,24 @@
 ==================================================
+Date - 2025/08/15
+
+In this version
+    # Customer management
+        Customer entry 
+        Customer search 
+    # Inventory
+        Item entry
+            Category entry
+            Sub Category entry 
+        GRN entry 
+    # Price calculator 
+are perfectly working 
+
+Full backup - available
+
+Next development 
+    # Order entry (Output)
+
+==================================================
 Date - 2025/08/10
 
 In this version
