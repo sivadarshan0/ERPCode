@@ -40,10 +40,8 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-people-fill"></i> Customer Management
                         </div>
-                        <!-- CORRECTED: Removed d-flex flex-column for top alignment -->
                         <div class="card-body">
                             <h5 class="card-title">Quick Actions</h5>
-                            <!-- CORRECTED: Removed mt-auto and added a small top margin (mt-3) -->
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/customer/entry_customer.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Add New Customer
@@ -56,28 +54,23 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Card 2: Inventory -->
+                <!-- Card 2: Inventory (MODIFIED) -->
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-boxes"></i> Inventory
                         </div>
-                        <!-- CORRECTED: Removed d-flex flex-column for top alignment -->
                         <div class="card-body">
                             <h5 class="card-title">Manage Inventory</h5>
-                            <!-- CORRECTED: Removed mt-auto and added a small top margin (mt-3) -->
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/inventory/entry_item.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Add New Item
                                 </a>
-                                <!-- CORRECTED: Changed btn-info to btn-primary for color consistency -->
-                                <a href="/modules/inventory/entry_category.php" class="btn btn-primary">
-                                    <i class="bi bi-tags-fill"></i> Manage Categories
+                                <!-- ADDED: GRN button -->
+                                <a href="/modules/inventory/entry_grn.php" class="btn btn-primary">
+                                    <i class="bi bi-box-arrow-in-down"></i> Receive Stock (GRN)
                                 </a>
-                                <!-- CORRECTED: Changed btn-info to btn-primary for color consistency -->
-                                <a href="/modules/inventory/entry_category_sub.php" class="btn btn-primary">
-                                    <i class="bi bi-diagram-2-fill"></i> Manage Sub-Categories
-                                </a>
+                                <!-- REMOVED: Manage Categories and Sub-Categories buttons -->
                             </div>
                         </div>
                     </div>
@@ -89,10 +82,8 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
                         </div>
-                        <!-- CORRECTED: Removed d-flex flex-column for top alignment -->
                         <div class="card-body">
                             <h5 class="card-title">Pricing Tools</h5>
-                            <!-- CORRECTED: Removed mt-auto and added a small top margin (mt-3) -->
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/price/calculate_price.php" class="btn btn-primary">
                                     <i class="bi bi-play-circle"></i> Open Calculator
@@ -111,3 +102,4 @@ require_once __DIR__ . '/includes/header.php';
 <?php
 require_once __DIR__ . '/includes/footer.php';
 ?>
+
