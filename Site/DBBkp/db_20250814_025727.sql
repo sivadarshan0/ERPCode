@@ -25,6 +25,78 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/ `erpdb` /*!40100 DEFAULT CHARACTER SET 
 USE `erpdb`;
 
 --
+-- Table structure for table `categories`
+--
+
+DROP TABLE IF EXISTS `categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `categories` (
+  `category_id` varchar(10) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(255) DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `updated_by` int(11) DEFAULT NULL,
+  `updated_by_name` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`category_id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `categories`
+--
+
+LOCK TABLES `categories` WRITE;
+/*!40000 ALTER TABLE `categories` DISABLE KEYS */;
+INSERT INTO `categories` VALUES
+('CAT00001','Saree','Saree category update 20250809 1331','2025-08-08 21:31:55',1,'admin','2025-08-09 08:02:25',1,'admin'),
+('CAT00002','Kurithi','Kuruthi category','2025-08-09 07:55:30',1,'admin',NULL,NULL,NULL),
+('CAT00003','Shalwar','Shalwar category','2025-08-09 08:04:27',1,'admin',NULL,NULL,NULL);
+/*!40000 ALTER TABLE `categories` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `categories_sub`
+--
+
+DROP TABLE IF EXISTS `categories_sub`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `categories_sub` (
+  `category_sub_id` varchar(10) NOT NULL,
+  `category_id` varchar(10) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
+  `updated_by` int(11) DEFAULT NULL,
+  `updated_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`category_sub_id`),
+  UNIQUE KEY `name` (`name`),
+  KEY `category_id` (`category_id`),
+  CONSTRAINT `fk_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`category_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `categories_sub`
+--
+
+LOCK TABLES `categories_sub` WRITE;
+/*!40000 ALTER TABLE `categories_sub` DISABLE KEYS */;
+INSERT INTO `categories_sub` VALUES
+('SUB00001','CAT00001','Cotton Saree','Cotto Saree sub category 20250809 1438','2025-08-09 09:08:25',1,'admin','2025-08-09 09:18:35',1,'admin'),
+('SUB00002','CAT00002','Cotton Kurithi','Cotton Kurithi category','2025-08-09 09:19:17',1,'admin',NULL,NULL,NULL);
+/*!40000 ALTER TABLE `categories_sub` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `customers`
 --
 
@@ -69,7 +141,7 @@ INSERT INTO `customers` VALUES
 ('CUS00001','0771060853','Siva','Kotahena street, Colombo 13','Kotahena','Colombo','01300','Instagram','sivadarshan@gmail.com','2025-07-06','Test updated','Insta','2025-07-10 15:09:08',1,'admin','2025-07-19 10:09:56',1,'admin'),
 ('CUS00002','0768406545','Thivya','Kotahena','Colombo 13','Colombo','01400','Instagram','thivya@abc.com','2025-07-08','Test 2','Insta','2025-07-10 15:10:45',1,'admin','2025-07-19 10:09:43',1,'admin'),
 ('CUS00003','0773100853','Agarvin','Jaffna street','Jaffna','Colombo','02100','Instagram','agarvin@abc.com','2025-07-09','Update entry 20250720 1900','Insta','2025-07-13 01:36:13',1,'admin','2025-07-20 13:31:05',1,'admin'),
-('CUS00004','0772190853','Aathi','Chullipurm east','Chullipuram','Colombo','02110','Instagram','aathi@abc.com','2025-07-06','Update entry 20250720 1943','Instagram','2025-07-13 01:45:02',1,'admin','2025-07-20 14:13:57',1,'admin'),
+('CUS00004','0772190853','Aathi','Chullipurm east','Chullipuram','Colombo','02110','Instagram','aathi@abc.com','2025-07-06','Update entry 20250810 0135','Instagram','2025-07-13 01:45:02',1,'admin','2025-08-09 20:06:32',1,'admin'),
 ('CUS00005','0777123456','Latha','Main street, Kandy','Kandy','Colombo','08100','Instagram','latha@abc.com','2025-07-01','Test customer First update','Insta','2025-07-13 10:25:32',1,'admin','2025-07-20 10:59:40',1,'admin'),
 ('CUS00006','0777654321','Anupriya','Main road','Rathota','Colombo','06012','Instagram','anupriya@abc.com','2025-07-02','Test record','Insta','2025-07-13 11:02:23',1,'admin','2025-07-19 10:08:50',1,'admin'),
 ('CUS00007','1234567890','dsdfg','afvadf','dfvdvdf','dvdvadfva','1234','SearchEngine','abc@xyz.com','2025-07-14','vsdas','sgaerqg','2025-07-19 18:52:29',1,'admin',NULL,NULL,NULL),
@@ -78,8 +150,208 @@ INSERT INTO `customers` VALUES
 ('CUS00010','0222222222','sdfgqr','svaedgaerb dafgeg','efgwe','dvedge','2222','Facebook','cnf@cbd.com','2025-07-14','adfwfeqwfqwf','sdfqwdfqw','2025-07-19 19:10:17',1,'admin',NULL,NULL,NULL),
 ('CUS00011','0333333333','dfshs','aegehsh','fsdsdg','dfgsdgsd','04444','Friends','bda@ghg.com','2025-07-14','dfgdfgad','dgadgd','2025-07-20 04:09:34',1,'admin',NULL,NULL,NULL),
 ('CUS00012','0444444444','dfgdfger','fadfgadfvge','fvadfva','dvdfv','88888','Other','abc@bnd.com','2025-07-08','wfqwfqwf','sdfaswfdqw','2025-07-20 11:02:12',1,'admin',NULL,NULL,NULL),
-('CUS00013','0987654321','bhvkjdfk','fbga;kdj;ak','Galle','Galle','09876','Friends','abc@dbc.com','2025-07-15','kg;LH;GOAHER 20250720 2327','ADJNGAKN','2025-07-20 17:57:20',1,'admin','2025-07-20 17:58:01',1,'admin');
+('CUS00013','0987654321','bhvkjdfk','fbga;kdj;ak','Galle','Galle','09876','Friends','abc@dbc.com','2025-07-15','kg;LH;GOAHER 20250720 2327','ADJNGAKN','2025-07-20 17:57:20',1,'admin','2025-07-20 17:58:01',1,'admin'),
+('CUS00014','0776123456','SFasdasdfv','sdvsdvasdvasdv','Galle','Galle','02100','SearchEngine','AND@123.com','2025-08-04','asdADa Update 20250810 0129','asAasd','2025-08-10 01:25:50',1,'admin','2025-08-09 20:00:50',1,'admin');
 /*!40000 ALTER TABLE `customers` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grn`
+--
+
+DROP TABLE IF EXISTS `grn`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `grn` (
+  `grn_id` varchar(10) NOT NULL,
+  `grn_date` date NOT NULL,
+  `remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`grn_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grn`
+--
+
+LOCK TABLES `grn` WRITE;
+/*!40000 ALTER TABLE `grn` DISABLE KEYS */;
+INSERT INTO `grn` VALUES
+('GRN000001','2025-08-08','Initial order','2025-08-10 18:32:14',1,'admin'),
+('GRN000002','2025-08-05','Initial order','2025-08-10 19:07:14',1,'admin'),
+('GRN000003','2025-08-06','Test','2025-08-12 22:03:34',1,'admin'),
+('GRN000004','2025-08-10','Another Test','2025-08-12 22:07:56',1,'admin'),
+('GRN000005','2025-08-11','3rd test order','2025-08-12 22:10:01',1,'admin'),
+('GRN000006','2025-08-01','4th order ','2025-08-12 22:19:55',1,'admin'),
+('GRN000007','2025-08-12','fqerer','2025-08-12 22:20:43',1,'admin'),
+('GRN000008','2025-08-12','rfqefq','2025-08-12 22:21:21',1,'admin'),
+('GRN000009','2025-08-13','wfjljblkj','2025-08-13 20:41:11',1,'admin'),
+('GRN000010','2025-08-11','Test order','2025-08-13 20:43:24',1,'admin'),
+('GRN000011','2025-08-13','Another test','2025-08-13 20:44:05',1,'admin'),
+('GRN000012','2025-08-13','Test after Cost ','2025-08-13 21:18:33',1,'admin'),
+('GRN000013','2025-08-13','Test at 20250814 0253','2025-08-13 21:25:03',1,'admin');
+/*!40000 ALTER TABLE `grn` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grn_items`
+--
+
+DROP TABLE IF EXISTS `grn_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `grn_items` (
+  `grn_item_id` int(11) NOT NULL AUTO_INCREMENT,
+  `grn_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) NOT NULL,
+  `uom` enum('No','Set','Pair') NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 0,
+  `cost` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `weight` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`grn_item_id`),
+  KEY `grn_id` (`grn_id`),
+  KEY `item_id` (`item_id`),
+  CONSTRAINT `fk_grn_header` FOREIGN KEY (`grn_id`) REFERENCES `grn` (`grn_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_grn_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grn_items`
+--
+
+LOCK TABLES `grn_items` WRITE;
+/*!40000 ALTER TABLE `grn_items` DISABLE KEYS */;
+INSERT INTO `grn_items` VALUES
+(1,'GRN000001','ITM00001','No',3,0.00,0),
+(2,'GRN000002','ITM00001','No',5,0.00,0),
+(3,'GRN000003','ITM00001','No',3,0.00,0),
+(4,'GRN000004','ITM00001','No',5,0.00,0),
+(5,'GRN000005','ITM00002','No',5,0.00,0),
+(6,'GRN000006','ITM00002','No',2,0.00,0),
+(7,'GRN000007','ITM00001','No',1,0.00,0),
+(8,'GRN000008','ITM00002','No',5,0.00,0),
+(15,'GRN000009','ITM00001','No',5,0.00,0),
+(16,'GRN000010','ITM00001','No',4,0.00,0),
+(17,'GRN000010','ITM00002','No',6,0.00,0),
+(18,'GRN000011','ITM00002','No',2,0.00,0),
+(19,'GRN000011','ITM00001','No',2,0.00,0),
+(20,'GRN000011','ITM00002','No',2,0.00,0),
+(21,'GRN000012','ITM00002','No',5,3500.00,550),
+(22,'GRN000012','ITM00001','No',5,3000.00,560),
+(23,'GRN000013','ITM00002','No',4,3400.00,550),
+(24,'GRN000013','ITM00001','No',4,3000.00,500);
+/*!40000 ALTER TABLE `grn_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `items`
+--
+
+DROP TABLE IF EXISTS `items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `items` (
+  `item_id` varchar(10) NOT NULL,
+  `category_sub_id` varchar(10) NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
+  `updated_by` int(11) DEFAULT NULL,
+  `updated_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`item_id`),
+  UNIQUE KEY `name` (`name`),
+  KEY `category_sub_id` (`category_sub_id`),
+  CONSTRAINT `fk_category_sub` FOREIGN KEY (`category_sub_id`) REFERENCES `categories_sub` (`category_sub_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `items`
+--
+
+LOCK TABLES `items` WRITE;
+/*!40000 ALTER TABLE `items` DISABLE KEYS */;
+INSERT INTO `items` VALUES
+('ITM00001','SUB00001','Maheshwari cotton saree','Maheshwari cotton saree Update 20250810 0026','2025-08-09 18:55:29',1,'admin','2025-08-09 18:57:00',1,'admin'),
+('ITM00002','SUB00001','Narayanapat cotton Saree','Narayanapat cotton Saree','2025-08-12 22:07:41',1,'admin',NULL,NULL,NULL);
+/*!40000 ALTER TABLE `items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `stock_levels`
+--
+
+DROP TABLE IF EXISTS `stock_levels`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `stock_levels` (
+  `item_id` varchar(10) NOT NULL,
+  `quantity` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `last_updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`item_id`),
+  CONSTRAINT `fk_stock_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `stock_levels`
+--
+
+LOCK TABLES `stock_levels` WRITE;
+/*!40000 ALTER TABLE `stock_levels` DISABLE KEYS */;
+INSERT INTO `stock_levels` VALUES
+('ITM00001',20.00,'2025-08-13 21:25:03'),
+('ITM00002',19.00,'2025-08-13 21:25:03');
+/*!40000 ALTER TABLE `stock_levels` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `stock_transactions`
+--
+
+DROP TABLE IF EXISTS `stock_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `stock_transactions` (
+  `transaction_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) NOT NULL,
+  `transaction_type` enum('IN','OUT') NOT NULL,
+  `quantity_change` decimal(10,2) NOT NULL,
+  `reason` varchar(255) DEFAULT NULL,
+  `transaction_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`transaction_id`),
+  KEY `item_id` (`item_id`),
+  CONSTRAINT `fk_transaction_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `stock_transactions`
+--
+
+LOCK TABLES `stock_transactions` WRITE;
+/*!40000 ALTER TABLE `stock_transactions` DISABLE KEYS */;
+INSERT INTO `stock_transactions` VALUES
+('TRN000001','ITM00001','IN',5.00,'Received via GRN #GRN000009','2025-08-13 20:41:11',1,'admin'),
+('TRN000002','ITM00001','IN',4.00,'Received via GRN #GRN000010','2025-08-13 20:43:24',1,'admin'),
+('TRN000003','ITM00002','IN',6.00,'Received via GRN #GRN000010','2025-08-13 20:43:25',1,'admin'),
+('TRN000004','ITM00002','IN',2.00,'Received via GRN #GRN000011','2025-08-13 20:44:05',1,'admin'),
+('TRN000005','ITM00001','IN',2.00,'Received via GRN #GRN000011','2025-08-13 20:44:05',1,'admin'),
+('TRN000006','ITM00002','IN',2.00,'Received via GRN #GRN000011','2025-08-13 20:44:05',1,'admin'),
+('TRN000007','ITM00002','IN',5.00,'Received via GRN #GRN000012','2025-08-13 21:18:33',1,'admin'),
+('TRN000008','ITM00001','IN',5.00,'Received via GRN #GRN000012','2025-08-13 21:18:33',1,'admin'),
+('TRN000009','ITM00002','IN',4.00,'Received via GRN #GRN000013','2025-08-13 21:25:03',1,'admin'),
+('TRN000010','ITM00001','IN',4.00,'Received via GRN #GRN000013','2025-08-13 21:25:03',1,'admin');
+/*!40000 ALTER TABLE `stock_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -108,7 +380,12 @@ CREATE TABLE `system_sequences` (
 LOCK TABLES `system_sequences` WRITE;
 /*!40000 ALTER TABLE `system_sequences` DISABLE KEYS */;
 INSERT INTO `system_sequences` VALUES
-('customer_id','CUS',14,5,'Customer IDs','2025-07-20 17:57:20','1');
+('category_id','CAT',4,5,'Category IDs','2025-08-09 08:04:27','1'),
+('category_sub_id','SUB',3,5,'Sub-Category IDs','2025-08-09 09:19:17','1'),
+('customer_id','CUS',15,5,'Customer IDs','2025-08-09 19:55:50','1'),
+('grn_id','GRN',14,6,'Goods Received Note IDs','2025-08-13 21:25:03','1'),
+('item_id','ITM',3,5,'Item IDs','2025-08-12 22:07:41','1'),
+('transaction_id','TRN',11,6,'Stock Transaction IDs','2025-08-13 21:25:03','1');
 /*!40000 ALTER TABLE `system_sequences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -128,7 +405,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -214,7 +491,45 @@ INSERT INTO `user_login_audit` VALUES
 (74,1,'2025-07-20 19:33:41','10.0.7.124',1),
 (75,1,'2025-07-20 23:17:54','10.0.7.125',1),
 (76,1,'2025-07-20 23:25:18','10.0.7.125',1),
-(77,1,'2025-07-22 19:55:14','10.0.6.102',1);
+(77,1,'2025-07-22 19:55:14','10.0.6.102',1),
+(78,1,'2025-07-29 19:54:36','172.20.10.4',1),
+(79,1,'2025-08-06 02:12:19','172.20.10.4',1),
+(80,1,'2025-08-06 02:32:42','172.20.10.4',1),
+(81,1,'2025-08-06 02:38:12','172.20.10.4',1),
+(82,1,'2025-08-06 02:48:50','172.20.10.4',1),
+(83,1,'2025-08-06 02:50:59','172.20.10.4',1),
+(84,1,'2025-08-06 03:01:59','172.20.10.4',0),
+(85,1,'2025-08-06 03:02:04','172.20.10.4',1),
+(86,1,'2025-08-06 03:06:26','172.20.10.4',1),
+(87,1,'2025-08-06 03:14:45','172.20.10.4',1),
+(88,1,'2025-08-06 03:19:06','172.20.10.4',1),
+(89,1,'2025-08-08 23:08:01','172.20.10.5',0),
+(90,1,'2025-08-08 23:08:24','172.20.10.5',0),
+(91,1,'2025-08-08 23:08:30','172.20.10.5',1),
+(92,1,'2025-08-09 01:24:06','172.20.10.5',1),
+(93,1,'2025-08-09 02:55:11','172.20.10.5',1),
+(94,1,'2025-08-09 12:59:07','10.0.7.133',1),
+(95,1,'2025-08-09 14:34:10','10.0.7.129',1),
+(96,1,'2025-08-10 00:21:56','10.0.7.120',1),
+(97,1,'2025-08-10 00:23:45','10.0.7.120',1),
+(98,1,'2025-08-10 00:28:53','10.0.7.120',1),
+(99,1,'2025-08-10 00:34:55','10.0.7.120',1),
+(100,1,'2025-08-10 00:40:28','10.0.7.120',1),
+(101,1,'2025-08-10 01:11:43','10.0.7.120',1),
+(102,1,'2025-08-10 01:35:46','10.0.7.120',1),
+(103,1,'2025-08-10 16:01:04','10.0.7.120',1),
+(104,1,'2025-08-10 23:27:12','10.0.7.120',1),
+(105,1,'2025-08-10 23:55:42','10.0.7.120',1),
+(106,1,'2025-08-10 23:55:42','10.0.7.120',1),
+(107,1,'2025-08-11 00:36:08','10.0.7.120',1),
+(108,1,'2025-08-11 16:31:23','10.0.7.120',1),
+(109,1,'2025-08-13 00:45:31','172.20.10.3',1),
+(110,1,'2025-08-13 00:54:40','172.20.10.3',1),
+(111,1,'2025-08-13 03:32:30','172.20.10.3',1),
+(112,1,'2025-08-13 03:39:06','172.20.10.5',1),
+(113,1,'2025-08-13 03:49:16','172.20.10.5',1),
+(114,1,'2025-08-14 01:25:14','10.0.7.121',1),
+(115,1,'2025-08-14 01:47:37','10.0.7.121',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -279,7 +594,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-07-22 19:55:14','2025-07-22 14:25:14',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-08-14 01:47:37','2025-08-13 20:17:37',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2438,4 +2753,4 @@ USE `mysql`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-07-22 20:05:03
+-- Dump completed on 2025-08-14  2:57:28
