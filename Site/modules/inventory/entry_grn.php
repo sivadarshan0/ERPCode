@@ -35,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $item_ids = $_POST['items']['id'] ?? [];
         $uoms = $_POST['items']['uom'] ?? [];
         $quantities = $_POST['items']['quantity'] ?? [];
+        // ADDED: Collect new cost and weight arrays
+        $costs = $_POST['items']['cost'] ?? [];
+        $weights = $_POST['items']['weight'] ?? [];
 
         // Restructure the POST data into a clean array for our function
         $items_to_process = [];
@@ -43,7 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $items_to_process[] = [
                     'item_id'  => $item_id,
                     'uom'      => $uoms[$index],
-                    'quantity' => $quantities[$index]
+                    'quantity' => $quantities[$index],
+                    // ADDED: Include cost and weight in the array for each item
+                    'cost'     => $costs[$index],
+                    'weight'   => $weights[$index]
                 ];
             }
         }
@@ -102,12 +108,15 @@ require_once __DIR__ . '/../../includes/header.php';
                 </button>
             </div>
             <div class="card-body">
-                <table class="table">
+                <table class="table table-sm">
                     <thead>
                         <tr>
-                            <th style="width: 50%;">Item *</th>
-                            <th style="width: 20%;">UOM *</th>
-                            <th style="width: 20%;">Quantity *</th>
+                            <!-- MODIFIED: Adjusted widths and added new columns -->
+                            <th style="width: 35%;">Item *</th>
+                            <th style="width: 12%;">UOM *</th>
+                            <th style="width: 12%;">Quantity *</th>
+                            <th style="width: 15%;">Cost *</th>
+                            <th style="width: 15%;">Weight (g) *</th>
                             <th style="width: 10%;">Actions</th>
                         </tr>
                     </thead>
@@ -125,7 +134,7 @@ require_once __DIR__ . '/../../includes/header.php';
     </form>
 </main>
 
-<!-- Hidden template for a new item row -->
+<!-- MODIFIED: Hidden template now includes Cost and Weight fields -->
 <template id="grnItemRowTemplate">
     <tr class="grn-item-row">
         <td class="position-relative">
@@ -143,6 +152,16 @@ require_once __DIR__ . '/../../includes/header.php';
         </td>
         <td>
             <input type="number" class="form-control quantity-input" name="items[quantity][]" min="0.01" step="0.01" required>
+            <div class="invalid-feedback">Req.</div>
+        </td>
+        <!-- ADDED: Cost Input -->
+        <td>
+            <input type="number" class="form-control cost-input" name="items[cost][]" value="0.00" min="0.00" step="0.01" required>
+            <div class="invalid-feedback">Req.</div>
+        </td>
+        <!-- ADDED: Weight Input -->
+        <td>
+            <input type="number" class="form-control weight-input" name="items[weight][]" value="0.00" min="0.00" step="0.01" required>
             <div class="invalid-feedback">Req.</div>
         </td>
         <td>
