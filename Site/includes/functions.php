@@ -394,7 +394,6 @@ function search_items_for_order($name) {
     if (!$db) return [];
 
     $search_term = "%$name%";
-    // This query finds the most recent GRN cost for each item to use as a default cost price.
     $stmt = $db->prepare("
         SELECT 
             i.item_id, 
@@ -412,7 +411,10 @@ function search_items_for_order($name) {
 
     $stmt->bind_param("s", $search_term);
     $stmt->execute();
-    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $result = $stmt->get_result();
+
+    // CORRECTED: Use fetch_all to ensure the result is always an array.
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
 /**
