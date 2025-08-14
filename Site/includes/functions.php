@@ -377,3 +377,113 @@ function process_grn($grn_date, $items, $remarks) {
         throw new Exception("Failed to process GRN: " . $e->getMessage());
     }
 }
+
+// -----------------------------------------
+// ----- Sales Order Functions -----
+// -----------------------------------------
+
+/**
+ * Searches for items and returns details needed for an order line:
+ * last cost price, uom, and current stock level.
+ *
+ * @param string $name The item name to search for.
+ * @return array An array of matching items.
+ */
+function search_items_for_order($name) {
+    $db = db();
+    if (!$db) return [];
+
+    $search_term = "%$name%";
+    // This query finds the most recent GRN cost for each item to use as a default cost price.
+    $stmt = $db->prepare("
+        SELECT 
+            i.item_id, 
+            i.name, 
+            i.uom,
+            COALESCE(sl.quantity, 0.00) AS stock_on_hand,
+            (SELECT gi.cost FROM grn_items gi WHERE gi.item_id = i.item_id ORDER BY gi.grn_item_id DESC LIMIT 1) as last_cost
+        FROM items i
+        LEFT JOIN stock_levels sl ON i.item_id = sl.item_id
+        WHERE i.name LIKE ? 
+        ORDER BY i.name 
+        LIMIT 10
+    ");
+    if (!$stmt) return [];
+
+    $stmt->bind_param("s", $search_term);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
+
+/**
+ * Processes a complete Sales Order with all the new detailed fields.
+ *
+ * @param string $customer_id The ID of the customer placing the order.
+ * @param string $order_date The date of the order.
+ * @param array $items An array of items, each with 'item_id', 'quantity', 'price', 'cost_price', 'profit_margin'.
+ * @param array $details An array containing other order details like statuses and remarks.
+ * @return array The ID and formatted total amount of the newly created order.
+ * @throws Exception On validation or database errors.
+ */
+function process_order($customer_id, $order_date, $items, $details) {
+    $db = db();
+    if (!$db) throw new Exception("Database connection failed.");
+
+    // --- Validation ---
+    if (empty($customer_id) || empty($order_date) || !is_array($items) || empty($items)) {
+        throw new Exception("Customer, date, and at least one item are required.");
+    }
+
+    $total_amount = 0;
+    foreach ($items as $item) {
+        if (empty($item['item_id']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0 || !is_numeric($item['price'])) {
+            throw new Exception("Invalid data in item rows. Each item needs an ID, quantity, and price.");
+        }
+        $total_amount += $item['quantity'] * $item['price'];
+    }
+
+    $db->begin_transaction();
+    try {
+        $user_id = $_SESSION['user_id'];
+        $user_name = $_SESSION['username'] ?? 'Unknown';
+
+        // Step 1: Create the main order record with all the new status fields
+        $order_id = generate_sequence_id('order_id', 'orders', 'order_id');
+        $stmt_order = $db->prepare("
+            INSERT INTO orders (order_id, customer_id, order_date, total_amount, payment_method, payment_status, status, remarks, created_by, created_by_name) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt_order->bind_param("sssdsissis", 
+            $order_id, $customer_id, $order_date, $total_amount, 
+            $details['payment_method'], $details['payment_status'], $details['order_status'], 
+            $details['remarks'], $user_id, $user_name
+        );
+        $stmt_order->execute();
+
+        // Step 2: Loop through items, add them to order_items, and deduct from stock
+        $stmt_items = $db->prepare("
+            INSERT INTO order_items (order_id, item_id, quantity, price, cost_price, profit_margin) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
+        foreach ($items as $item) {
+            // Add the item to the order_items table
+            $stmt_items->bind_param("ssdddd", 
+                $order_id, $item['item_id'], $item['quantity'], 
+                $item['price'], $item['cost_price'], $item['profit_margin']
+            );
+            $stmt_items->execute();
+
+            // Deduct the quantity from stock using our existing robust function
+            $stock_reason = "Sold via Order #" . $order_id;
+            adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason);
+        }
+
+        $db->commit();
+        // Return the new Order ID and the formatted total amount on success
+        return ['id' => $order_id, 'total' => number_format($total_amount, 2, '.', ',')];
+    } catch (Exception $e) {
+        $db->rollback();
+        // Pass the error up to the next level so the user can see it
+        throw new Exception("Failed to process order. Reason: " . $e->getMessage());
+    }
+}
