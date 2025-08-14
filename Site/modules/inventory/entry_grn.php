@@ -144,22 +144,17 @@ require_once __DIR__ . '/../../includes/header.php';
             <div class="invalid-feedback">Please select an item.</div>
         </td>
         <td>
-            <select class="form-select uom-input" name="items[uom][]" required>
-                <option value="No">No</option>
-                <option value="Set">Set</option>
-                <option value="Pair">Pair</option>
-            </select>
+            <!-- MODIFIED: Changed from a select dropdown to a readonly text input -->
+            <input type="text" class="form-control uom-input" name="items[uom][]" readonly required>
         </td>
         <td>
             <input type="number" class="form-control quantity-input" name="items[quantity][]" min="0.01" step="0.01" required>
             <div class="invalid-feedback">Req.</div>
         </td>
-        <!-- ADDED: Cost Input -->
         <td>
             <input type="number" class="form-control cost-input" name="items[cost][]" value="0.00" min="0.00" step="0.01" required>
             <div class="invalid-feedback">Req.</div>
         </td>
-        <!-- ADDED: Weight Input -->
         <td>
             <input type="number" class="form-control weight-input" name="items[weight][]" value="0.00" min="0.00" step="0.01" required>
             <div class="invalid-feedback">Req.</div>

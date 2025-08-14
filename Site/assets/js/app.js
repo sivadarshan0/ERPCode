@@ -362,13 +362,19 @@ function initGrnEntry() {
                             const button = document.createElement('button');
                             button.type = 'button';
                             button.className = 'list-group-item list-group-item-action py-2';
-                            // CORRECTED: Use `item.name`, not `item.item_name`
                             button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
+                            
                             button.addEventListener('click', () => {
                                 const parentRow = searchInput.closest('.grn-item-row');
                                 parentRow.querySelector('.item-id-input').value = item.item_id;
-                                // CORRECTED: Use `item.name` to set the input field value
                                 searchInput.value = item.name;
+                                
+                                // MODIFIED: This now sets the value of the readonly text input
+                                const uomInput = parentRow.querySelector('.uom-input');
+                                if (uomInput && item.uom) {
+                                    uomInput.value = item.uom;
+                                }
+                                
                                 resultsContainer.classList.add('d-none');
                             });
                             resultsContainer.appendChild(button);
@@ -385,7 +391,6 @@ function initGrnEntry() {
         }
     }, 300));
 }
-
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
