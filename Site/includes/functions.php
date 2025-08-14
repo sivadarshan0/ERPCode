@@ -254,11 +254,29 @@ function get_item($item_id) {
 
 function search_items_by_name($name) {
     $db = db();
+    if (!$db) return [];
+
     $search_term = "%$name%";
-    $stmt = $db->prepare("SELECT i.item_id, i.name, cs.name as sub_category_name, c.name as parent_category_name FROM items i JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id JOIN categories c ON cs.category_id = c.category_id WHERE i.name LIKE ? ORDER BY i.name LIMIT 10");
+    $stmt = $db->prepare("
+        SELECT 
+            i.item_id, 
+            i.name, 
+            i.uom, -- ADDED: Include the UOM in the search result
+            cs.name as sub_category_name,
+            c.name as parent_category_name
+        FROM items i
+        JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id
+        JOIN categories c ON cs.category_id = c.category_id
+        WHERE i.name LIKE ? 
+        ORDER BY i.name 
+        LIMIT 10
+    ");
+    if (!$stmt) return [];
+
     $stmt->bind_param("s", $search_term);
     $stmt->execute();
-    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
 // -----------------------------------------
