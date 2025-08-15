@@ -16,7 +16,6 @@ if (isset($_GET['customer_lookup'])) {
     header('Content-Type: application/json');
     try {
         $phone = trim($_GET['customer_lookup']);
-        // We reuse the existing customer search function
         echo json_encode(strlen($phone) >= 3 ? search_customers_by_phone($phone) : []);
     } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
     exit;
@@ -25,7 +24,6 @@ if (isset($_GET['item_lookup'])) {
     header('Content-Type: application/json');
     try {
         $name = trim($_GET['item_lookup']);
-        // We use the new, specialized item search function for orders
         echo json_encode(strlen($name) >= 2 ? search_items_for_order($name) : []);
     } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
     exit;
@@ -42,13 +40,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'payment_method' => $_POST['payment_method'] ?? 'COD',
             'payment_status' => $_POST['payment_status'] ?? 'Pending',
             'order_status'   => $_POST['order_status'] ?? 'New',
-            'remarks'        => $_POST['remarks'] ?? ''
+            'remarks'        => $_POST['remarks'] ?? '',
+            'other_expenses' => $_POST['other_expenses'] ?? 0 // ADDED: Collect other expenses
         ];
         
-        // Structure the item data from the table rows into a clean array
         $items_to_process = [];
         foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
-            if (!empty($item_id)) { // Only process rows that have an item selected
+            if (!empty($item_id)) { 
                 $items_to_process[] = [
                     'item_id'       => $item_id,
                     'quantity'      => $_POST['items']['quantity'][$index],
@@ -59,10 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Call the main processing function
+        // Pass the new data to the processing function
         $new_order = process_order($_POST['customer_id'], $_POST['order_date'], $items_to_process, $order_details);
         
-        // Format the success message
         $message = "✅ Order #{$new_order['id']} created successfully! Total Amount: {$new_order['total']}";
         $message_type = 'success';
 
@@ -113,6 +110,13 @@ require_once __DIR__ . '/../../includes/header.php';
                      <div class="card-header">2. Status & Totals</div>
                      <div class="card-body">
                          <div class="mb-3"><label for="order_status" class="form-label">Order Status</label><select name="order_status" class="form-select"><option value="New">New</option><option value="Processing">Processing</option><option value="With Courier">With Courier</option><option value="Delivered">Delivered</option><option value="Canceled">Canceled</option></select></div>
+                         
+                         <!-- ADDED: Other Expenses Field -->
+                         <div class="mb-3">
+                             <label for="other_expenses" class="form-label">Other Expenses</label>
+                             <input type="number" class="form-control" id="other_expenses" name="other_expenses" value="0.00" min="0.00" step="0.01">
+                         </div>
+                         
                          <hr>
                          <h3 class="text-end">Total: <span id="orderTotal">0.00</span></h3>
                      </div>
@@ -122,38 +126,18 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <!-- Items Section -->
         <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span>3. Items</span>
-                <button type="button" class="btn btn-sm btn-success" id="addItemRow"><i class="bi bi-plus-circle"></i> Add Item</button>
-            </div>
-            <div class="card-body p-2">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead class="table-light"><tr><th style="width: 30%;">Item *</th><th>UOM</th><th>Stock</th><th>Cost</th><th>Margin %</th><th>Sell Price *</th><th>Qty *</th><th class="text-end">Subtotal</th><th></th></tr></thead>
-                        <tbody id="orderItemRows">
-                            <!-- Dynamic item rows will be inserted here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow"><i class="bi bi-plus-circle"></i> Add Item</button></div>
+            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th style="width: 30%;">Item *</th><th>UOM</th><th>Stock</th><th>Cost</th><th>Margin %</th><th>Sell Price *</th><th>Qty *</th><th class="text-end">Subtotal</th><th></th></tr></thead><tbody id="orderItemRows"></tbody></table></div></div>
         </div>
 
-        <div class="col-12 mt-4">
-            <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-save"></i> Create Order & Update Stock</button>
-            <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
-        </div>
+        <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-save"></i> Create Order & Update Stock</button><a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a></div>
     </form>
 </main>
 
 <!-- HTML Template for a single item row in the order table -->
 <template id="orderItemRowTemplate">
     <tr class="order-item-row">
-        <td class="position-relative">
-            <input type="hidden" name="items[id][]" class="item-id-input">
-            <input type="hidden" name="items[cost][]" class="cost-input">
-            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required>
-            <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
-        </td>
+        <td class="position-relative"><input type="hidden" name="items[id][]" class="item-id-input"><input type="hidden" name="items[cost][]" class="cost-input"><input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required><div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div></td>
         <td><input type="text" class="form-control form-control-sm uom-display" readonly></td>
         <td><input type="text" class="form-control form-control-sm stock-display" readonly></td>
         <td><input type="text" class="form-control form-control-sm cost-display" readonly></td>
