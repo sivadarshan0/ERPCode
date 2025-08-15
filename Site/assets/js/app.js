@@ -1,5 +1,5 @@
 // File: assets/js/app.js
-// Final validated version with all modules and bug fixes.
+// Final validated version with all modules and all UI/UX refinements.
 
 // ───── Utility Functions ─────
 function escapeHtml(unsafe) {
@@ -513,6 +513,22 @@ function initOrderEntry() {
         });
         calculateTotals();
     });
+    
+    itemRowsContainer.addEventListener('keydown', e => {
+        const row = e.target.closest('.order-item-row');
+        if (!row) return;
+
+        if (e.key === 'Tab' && e.target.classList.contains('item-search-input')) {
+            const resultsContainer = row.querySelector('.item-results');
+            if (!resultsContainer.classList.contains('d-none')) {
+                const firstResult = resultsContainer.querySelector('button');
+                if (firstResult) {
+                    e.preventDefault();
+                    firstResult.focus();
+                }
+            }
+        }
+    });
 
     itemRowsContainer.addEventListener('input', e => {
         const row = e.target.closest('.order-item-row');
@@ -585,8 +601,6 @@ function initOrderEntry() {
             if (cost > 0) {
                 marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
             } else {
-                // If no cost and price is entered, this implies infinite margin. 
-                // Setting to 100% is a reasonable default for display.
                 marginInput.value = (price > 0) ? '100.00' : '0.00';
             }
         }

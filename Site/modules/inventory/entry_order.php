@@ -150,11 +150,11 @@ require_once __DIR__ . '/../../includes/header.php';
 <!-- Template for an item row -->
 <template id="orderItemRowTemplate">
     <tr class="order-item-row">
-        <!-- The first item input has tabindex="9" -->
         <td class="position-relative">
             <input type="hidden" name="items[id][]" class="item-id-input">
             <input type="hidden" name="items[cost][]" class="cost-input">
-            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required tabindex="9">
+            <!-- MODIFIED: Removed tabindex="9" to allow natural tabbing -->
+            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required>
             <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
             <div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock!</div>
         </td>

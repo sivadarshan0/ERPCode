@@ -198,3 +198,8 @@ main {
     max-width: 420px;
 }
 
+/* Custom styles for the Order Entry page */
+#orderItemRows {
+    min-height: 150px; /* Ensures the dropdown results are not cut off */
+}
+
