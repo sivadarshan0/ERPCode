@@ -198,8 +198,10 @@ main {
     max-width: 420px;
 }
 
-/* Custom styles for the Order Entry page */
+/* Custom styles for the Order Entry page item table */
 #orderItemRows {
-    min-height: 150px; /* Ensures the dropdown results are not cut off */
+    display: block; /* Required for min-height to work reliably on a tbody */
+    min-height: 150px;
 }
+
 
