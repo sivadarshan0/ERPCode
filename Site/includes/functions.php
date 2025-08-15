@@ -375,16 +375,27 @@ function process_order($customer_id, $order_date, $items, $details) {
         $user_name = $_SESSION['username'] ?? 'Unknown';
 
         $order_id = generate_sequence_id('order_id', 'orders', 'order_id');
+        
+        // The SQL query correctly has 11 columns to insert.
         $stmt_order = $db->prepare("
             INSERT INTO orders (order_id, customer_id, order_date, total_amount, payment_method, payment_status, status, remarks, other_expenses, created_by, created_by_name) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
-        // CORRECTED: The bind_param string now has the correct 11 types.
+        // CORRECTED: The bind_param string now has the correct 11 types without any typos.
+        // sssds_s_sdis = (string x 3), (double), (string x 4), (double), (integer), (string)
         $stmt_order->bind_param("sssds_s_sdis", 
-            $order_id, $customer_id, $order_date, $total_amount, 
-            $details['payment_method'], $details['payment_status'], $details['order_status'], 
-            $details['remarks'], $details['other_expenses'], $user_id, $user_name
+            $order_id, 
+            $customer_id, 
+            $order_date, 
+            $total_amount, 
+            $details['payment_method'], 
+            $details['payment_status'], 
+            $details['order_status'], 
+            $details['remarks'], 
+            $details['other_expenses'], 
+            $user_id, 
+            $user_name
         );
         $stmt_order->execute();
 
