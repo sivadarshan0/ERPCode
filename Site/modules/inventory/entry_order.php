@@ -1,5 +1,6 @@
 <?php
 // File: /modules/inventory/entry_order.php
+// Final and complete version with all features and UI/UX refinements.
 
 session_start();
 error_reporting(E_ALL);
@@ -38,6 +39,7 @@ if (isset($_GET['item_lookup'])) {
 $message = '';
 $message_type = '';
 
+// Handle the form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $order_details = [
@@ -91,13 +93,13 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-header">1. Order & Customer Details</div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6 position-relative"><label for="customer_search" class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" placeholder="Enter phone..."><div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div><input type="hidden" name="customer_id" id="customer_id" required><div class="invalid-feedback">Please select a customer.</div></div>
+                            <div class="col-md-6 position-relative"><label for="customer_search" class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" placeholder="Enter phone..." tabindex="1"><div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div><input type="hidden" name="customer_id" id="customer_id" required><div class="invalid-feedback">Please select a customer.</div></div>
                             <div class="col-md-6"><label class="form-label">Selected Customer</label><div id="selected_customer_display" class="form-control-plaintext fw-bold">None</div></div>
-                            <div class="col-md-4"><label for="stock_type" class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select"><option value="Ex-Stock">Ex-Stock</option><option value="Pre-Book">Pre-Book</option></select></div>
-                            <div class="col-md-4"><label for="payment_method" class="form-label">Payment Method</label><select name="payment_method" class="form-select"><option value="COD">COD</option><option value="BT">Bank Transfer</option></select></div>
-                            <div class="col-md-4"><label for="payment_status" class="form-label">Payment Status</label><select name="payment_status" class="form-select"><option value="Pending">Pending</option><option value="Received">Received</option></select></div>
-                            <div class="col-md-4"><label for="order_date" class="form-label">Order Date *</label><input type="date" class="form-control" id="order_date" name="order_date" value="<?= date('Y-m-d') ?>" required></div>
-                            <div class="col-md-8"><label for="remarks" class="form-label">Remarks</label><input type="text" class="form-control" id="remarks" name="remarks" placeholder="e.g., Delivery notes..."></div>
+                            <div class="col-md-4"><label for="stock_type" class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" tabindex="2"><option value="Ex-Stock">Ex-Stock</option><option value="Pre-Book">Pre-Book</option></select></div>
+                            <div class="col-md-4"><label for="payment_method" class="form-label">Payment Method</label><select name="payment_method" class="form-select" tabindex="3"><option value="COD">COD</option><option value="BT">Bank Transfer</option></select></div>
+                            <div class="col-md-4"><label for="payment_status" class="form-label">Payment Status</label><select name="payment_status" class="form-select" tabindex="4"><option value="Pending">Pending</option><option value="Received">Received</option></select></div>
+                            <div class="col-md-4"><label for="order_date" class="form-label">Order Date *</label><input type="date" class="form-control" id="order_date" name="order_date" value="<?= date('Y-m-d') ?>" required tabindex="5"></div>
+                            <div class="col-md-8"><label for="remarks" class="form-label">Remarks</label><input type="text" class="form-control" id="remarks" name="remarks" placeholder="e.g., Delivery notes..." tabindex="6"></div>
                         </div>
                     </div>
                 </div>
@@ -107,8 +109,8 @@ require_once __DIR__ . '/../../includes/header.php';
                  <div class="card">
                      <div class="card-header">2. Status & Totals</div>
                      <div class="card-body">
-                         <div class="mb-3"><label for="order_status" class="form-label">Order Status</label><select name="order_status" class="form-select"><option value="New">New</option><option value="Processing">Processing</option><option value="With Courier">With Courier</option><option value="Delivered">Delivered</option><option value="Canceled">Canceled</option></select></div>
-                         <div class="mb-3"><label for="other_expenses" class="form-label">Other Expenses</label><input type="number" class="form-control" id="other_expenses" name="other_expenses" value="0.00" min="0.00" step="0.01"></div>
+                         <div class="mb-3"><label for="order_status" class="form-label">Order Status</label><select name="order_status" class="form-select" tabindex="7"><option value="New">New</option><option value="Processing">Processing</option><option value="With Courier">With Courier</option><option value="Delivered">Delivered</option><option value="Canceled">Canceled</option></select></div>
+                         <div class="mb-3"><label for="other_expenses" class="form-label">Other Expenses</label><input type="number" class="form-control" id="other_expenses" name="other_expenses" value="0.00" min="0.00" step="0.01" tabindex="8"></div>
                          <hr>
                          <h3 class="text-end">Total: <span id="orderTotal">0.00</span></h3>
                      </div>
@@ -118,11 +120,10 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <!-- Items Section -->
         <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow"><i class="bi bi-plus-circle"></i> Add Item</button></div>
+            <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow" tabindex="10"><i class="bi bi-plus-circle"></i> Add Item</button></div>
             <div class="card-body p-2">
                 <div class="table-responsive">
                     <table class="table table-sm">
-                        <!-- MODIFIED: Reordered the table headers for the new flow -->
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 30%;">Item *</th>
@@ -142,17 +143,17 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
-        <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-save"></i> Create Order & Update Stock</button></div>
+        <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit" tabindex="11"><i class="bi bi-save"></i> Create Order & Update Stock</button></div>
     </form>
 </main>
 
-<!-- MODIFIED: Reordered the table cells to match the new header flow -->
+<!-- HTML Template for a single item row -->
 <template id="orderItemRowTemplate">
     <tr class="order-item-row">
         <td class="position-relative">
             <input type="hidden" name="items[id][]" class="item-id-input">
             <input type="hidden" name="items[cost][]" class="cost-input">
-            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required>
+            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required tabindex="9">
             <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
             <div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock!</div>
         </td>
