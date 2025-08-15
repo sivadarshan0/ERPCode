@@ -1,5 +1,5 @@
 // File: assets/js/app.js
-// Final validated version with all modules and bug fixes.
+// Final validated version with all modules, including the intelligent Order Entry handler.
 
 // ───── Utility Functions ─────
 function escapeHtml(unsafe) {
@@ -400,6 +400,23 @@ function initOrderEntry() {
     const template = document.getElementById('orderItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
     const orderTotalDisplay = document.getElementById('orderTotal');
+    const tableHeaders = form.querySelector('thead tr');
+
+    const toggleRowFields = (isPreBook) => {
+        tableHeaders.querySelector('.stock-col').classList.toggle('d-none', isPreBook);
+        tableHeaders.querySelector('.cost-col').classList.toggle('d-none', isPreBook);
+        itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+            row.querySelector('.stock-display').classList.toggle('d-none', isPreBook);
+            row.querySelector('.cost-display').classList.toggle('d-none', isPreBook);
+            row.querySelector('.margin-input').readOnly = isPreBook;
+            row.querySelector('.price-input').readOnly = isPreBook;
+            if (isPreBook) {
+                row.querySelector('.margin-input').value = 0;
+                row.querySelector('.cost-input').value = 0;
+                row.querySelector('.price-input').readOnly = false;
+            }
+        });
+    };
 
     const validateRowStock = (row) => {
         const stockType = stockTypeSelect.value;
@@ -463,7 +480,11 @@ function initOrderEntry() {
         }
     });
 
-    const addRow = () => itemRowsContainer.appendChild(template.content.cloneNode(true));
+    const addRow = () => {
+        const newRow = template.content.cloneNode(true);
+        itemRowsContainer.appendChild(newRow);
+        toggleRowFields(stockTypeSelect.value === 'Pre-Book');
+    };
     addRowBtn.addEventListener('click', addRow);
     
     itemRowsContainer.addEventListener('click', e => {
@@ -474,6 +495,7 @@ function initOrderEntry() {
     });
 
     stockTypeSelect.addEventListener('change', () => {
+        toggleRowFields(stockTypeSelect.value === 'Pre-Book');
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(validateRowStock);
     });
 
@@ -485,9 +507,11 @@ function initOrderEntry() {
             const searchInput = e.target;
             const resultsContainer = row.querySelector('.item-results');
             const name = searchInput.value.trim();
+            const stockType = stockTypeSelect.value;
+
             if (name.length < 2) return resultsContainer.classList.add('d-none');
             
-            fetch(`/modules/inventory/entry_order.php?item_lookup=${encodeURIComponent(name)}`)
+            fetch(`/modules/inventory/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
                 .then(res => res.ok ? res.json() : Promise.reject())
                 .then(data => {
                     resultsContainer.innerHTML = '';
@@ -496,16 +520,24 @@ function initOrderEntry() {
                             const btn = document.createElement('button');
                             btn.type = 'button';
                             btn.className = 'list-group-item list-group-item-action py-1';
-                            btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br><small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>`;
+                            const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
+                            btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
+                            
                             btn.addEventListener('click', () => {
                                 row.querySelector('.item-id-input').value = item.item_id;
                                 searchInput.value = item.name;
                                 row.querySelector('.uom-display').value = item.uom;
-                                row.querySelector('.stock-display').value = item.stock_on_hand;
-                                const cost = parseFloat(item.last_cost) || 0;
-                                row.querySelector('.cost-input').value = cost.toFixed(2);
-                                row.querySelector('.cost-display').value = cost.toFixed(2);
-                                row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
+                                
+                                if (stockType === 'Ex-Stock') {
+                                    row.querySelector('.stock-display').value = item.stock_on_hand;
+                                    const cost = parseFloat(item.last_cost) || 0;
+                                    row.querySelector('.cost-input').value = cost.toFixed(2);
+                                    row.querySelector('.cost-display').value = cost.toFixed(2);
+                                    row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
+                                } else {
+                                     row.querySelector('.price-input').focus();
+                                }
+                                
                                 resultsContainer.classList.add('d-none');
                                 validateRowStock(row);
                             });
@@ -517,22 +549,19 @@ function initOrderEntry() {
                     }
                 });
         }
-
+        
+        const isPreBook = stockTypeSelect.value === 'Pre-Book';
         const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
         const marginInput = row.querySelector('.margin-input');
         const priceInput = row.querySelector('.price-input');
-
-        if (e.target === marginInput) {
-            const margin = parseFloat(marginInput.value) || 0;
-            const newPrice = cost * (1 + margin / 100);
-            priceInput.value = newPrice.toFixed(2);
-        } else if (e.target === priceInput) {
-            const price = parseFloat(priceInput.value) || 0;
-            if (cost > 0) {
-                const newMargin = ((price / cost) - 1) * 100;
-                marginInput.value = newMargin.toFixed(2);
-            } else {
-                marginInput.value = '0.00';
+        
+        if (!isPreBook) {
+            if (e.target === marginInput) {
+                const margin = parseFloat(marginInput.value) || 0;
+                priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
+            } else if (e.target === priceInput) {
+                const price = parseFloat(priceInput.value) || 0;
+                marginInput.value = (cost > 0) ? (((price / cost) - 1) * 100).toFixed(2) : '0.00';
             }
         }
         

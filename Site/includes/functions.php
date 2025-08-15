@@ -340,33 +340,53 @@ function process_grn($grn_date, $items, $remarks) {
 // ----- Sales Order Functions -----
 // -----------------------------------------
 
+/**
+ * Searches for items for an 'Ex-Stock' order, returning price, uom, and stock.
+ * @param string $name The item name to search for.
+ * @return array An array of matching items.
+ */
 function search_items_for_order($name) {
     $db = db();
     if (!$db) return [];
     $search_term = "%$name%";
-    $stmt = $db->prepare("SELECT i.item_id, i.name, i.uom, COALESCE(sl.quantity, 0.00) AS stock_on_hand, (SELECT gi.cost FROM grn_items gi WHERE gi.item_id = i.item_id ORDER BY gi.grn_item_id DESC LIMIT 1) as last_cost FROM items i LEFT JOIN stock_levels sl ON i.item_id = sl.item_id WHERE i.name LIKE ? ORDER BY i.name LIMIT 10");
-    if (!$stmt) return [];
+    $stmt = $db->prepare("
+        SELECT 
+            i.item_id, i.name, i.uom,
+            COALESCE(sl.quantity, 0.00) AS stock_on_hand,
+            (SELECT gi.cost FROM grn_items gi WHERE gi.item_id = i.item_id ORDER BY gi.grn_item_id DESC LIMIT 1) as last_cost
+        FROM items i
+        LEFT JOIN stock_levels sl ON i.item_id = sl.item_id
+        WHERE i.name LIKE ? ORDER BY i.name LIMIT 10
+    ");
     $stmt->bind_param("s", $search_term);
     $stmt->execute();
-    $result = $stmt->get_result();
-    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
 /**
- * Processes a complete Sales Order with all the new detailed fields.
- *
- * @param string $customer_id The ID of the customer placing the order.
- * @param string $order_date The date of the order.
- * @param array $items An array of items, each with 'item_id', 'quantity', 'price', 'cost_price', 'profit_margin'.
- * @param array $details An array containing other order details like statuses and remarks.
- * @return array The ID and formatted total amount of the newly created order.
- * @throws Exception On validation or database errors.
+ * Searches for items for a 'Pre-Book' order, returning only basic details.
+ * @param string $name The item name to search for.
+ * @return array An array of matching items.
  */
+function search_items_for_prebook($name) {
+    $db = db();
+    if (!$db) return [];
+    $search_term = "%$name%";
+    $stmt = $db->prepare("SELECT item_id, name, uom FROM items WHERE name LIKE ? ORDER BY name LIMIT 10");
+    $stmt->bind_param("s", $search_term);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}
 
+/**
+ * Processes a complete Sales Order.
+ * Crucially, it only adjusts stock levels for 'Ex-Stock' orders.
+ */
 function process_order($customer_id, $order_date, $items, $details) {
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
 
+    // --- Validation ---
     if (empty($customer_id) || empty($order_date) || !is_array($items) || empty($items)) {
         throw new Exception("Customer, date, and at least one item are required.");
     }
@@ -374,7 +394,7 @@ function process_order($customer_id, $order_date, $items, $details) {
     $total_amount = 0;
     foreach ($items as $item) {
         if (empty($item['item_id']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0 || !is_numeric($item['price'])) {
-            throw new Exception("Invalid data in item rows. Each item needs an ID, quantity, and price.");
+            throw new Exception("Invalid data in item rows.");
         }
         $total_amount += $item['quantity'] * $item['price'];
     }
@@ -383,32 +403,27 @@ function process_order($customer_id, $order_date, $items, $details) {
     try {
         $user_id = $_SESSION['user_id'];
         $user_name = $_SESSION['username'] ?? 'Unknown';
-        
+
         $order_id = generate_sequence_id('order_id', 'orders', 'order_id');
         
         $stmt_order = $db->prepare("
             INSERT INTO orders (order_id, customer_id, order_date, total_amount, other_expenses, payment_method, payment_status, status, stock_type, remarks, created_by, created_by_name) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        
-        $stmt_order->bind_param("sssddsssssis", 
-            $order_id, $customer_id, $order_date, $total_amount, $details['other_expenses'],
-            $details['payment_method'], $details['payment_status'], $details['order_status'], 
-            $details['stock_type'], $details['remarks'], $user_id, $user_name
-        );
+        $stmt_order->bind_param("sssddsssssis", $order_id, $customer_id, $order_date, $total_amount, $details['other_expenses'], $details['payment_method'], $details['payment_status'], $details['order_status'], $details['stock_type'], $details['remarks'], $user_id, $user_name);
         $stmt_order->execute();
 
-        $stmt_items = $db->prepare("
-            INSERT INTO order_items (order_id, item_id, quantity, price, cost_price, profit_margin) 
-            VALUES (?, ?, ?, ?, ?, ?)
-        ");
+        $stmt_items = $db->prepare("INSERT INTO order_items (order_id, item_id, quantity, price, cost_price, profit_margin) VALUES (?, ?, ?, ?, ?, ?)");
         foreach ($items as $item) {
             $stmt_items->bind_param("ssdddd", $order_id, $item['item_id'], $item['quantity'], $item['price'], $item['cost_price'], $item['profit_margin']);
             $stmt_items->execute();
 
-            // MODIFIED: Pass the stock_type to the adjustment function
-            $stock_reason = "Sold via Order #" . $order_id;
-            adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, $details['stock_type']);
+            // --- CRITICAL LOGIC CHANGE ---
+            // Only deduct from stock if the order type is 'Ex-Stock'.
+            if ($details['stock_type'] === 'Ex-Stock') {
+                $stock_reason = "Sold via Order #" . $order_id;
+                adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock'); // Pass 'Ex-Stock' to enforce the check
+            }
         }
 
         $db->commit();

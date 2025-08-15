@@ -9,43 +9,41 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// --- AJAX Endpoints for Live Searches ---
+require_login();
 
-// Endpoint for Customer Lookup
+// --- AJAX Endpoints for Live Searches ---
 if (isset($_GET['customer_lookup'])) {
     header('Content-Type: application/json');
     try {
         $phone = trim($_GET['customer_lookup']);
         echo json_encode(strlen($phone) >= 3 ? search_customers_by_phone($phone) : []);
-    } catch (Exception $e) { 
-        http_response_code(500); 
-        echo json_encode(['error' => $e->getMessage()]); 
-    }
-    exit; // THIS WAS THE MISSING LINE
+    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
+    exit;
 }
 
-// Endpoint for Item Lookup
 if (isset($_GET['item_lookup'])) {
     header('Content-Type: application/json');
     try {
         $name = trim($_GET['item_lookup']);
-        echo json_encode(strlen($name) >= 2 ? search_items_for_order($name) : []);
-    } catch (Exception $e) { 
-        http_response_code(500); 
-        echo json_encode(['error' => $e->getMessage()]); 
-    }
-    exit; // THIS WAS THE MISSING LINE
+        $type = $_GET['type'] ?? 'Ex-Stock'; // Get the stock type from the request
+
+        // Call a different search function based on the stock type.
+        if ($type === 'Pre-Book') {
+            echo json_encode(strlen($name) >= 2 ? search_items_for_prebook($name) : []);
+        } else {
+            echo json_encode(strlen($name) >= 2 ? search_items_for_order($name) : []);
+        }
+    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
+    exit;
 }
-
-
-// --- Regular Page Logic (Requires Login) ---
-require_login();
 
 $message = '';
 $message_type = '';
 
+// Handle the form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        // Collect order details from the top part of the form
         $order_details = [
             'payment_method' => $_POST['payment_method'] ?? 'COD',
             'payment_status' => $_POST['payment_status'] ?? 'Pending',
@@ -55,9 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'other_expenses' => $_POST['other_expenses'] ?? 0
         ];
         
+        // Structure the item data from the table rows into a clean array
         $items_to_process = [];
         foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
-            if (!empty($item_id)) {
+            if (!empty($item_id)) { // Only process rows that have an item selected
                 $items_to_process[] = [
                     'item_id'       => $item_id,
                     'quantity'      => $_POST['items']['quantity'][$index],
@@ -72,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $message = "✅ Order #{$new_order['id']} created successfully! Total Amount: {$new_order['total']}";
         $message_type = 'success';
+
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
@@ -80,9 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
-
-<!-- The rest of the HTML for the page is identical to what you already have -->
-<!-- No changes are needed to the HTML part of the file -->
 
 <main class="container mt-4">
     <h2>New Sales Order</h2>
@@ -94,14 +91,29 @@ require_once __DIR__ . '/../../includes/header.php';
 
     <form method="POST" class="needs-validation" novalidate id="orderForm">
         <div class="row">
+            <!-- Left Column: Customer & Order Details -->
             <div class="col-lg-8">
                 <div class="card">
                     <div class="card-header">1. Order & Customer Details</div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6 position-relative"><label for="customer_search" class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" placeholder="Enter phone..." tabindex="1"><div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div><input type="hidden" name="customer_id" id="customer_id" required></div>
+                            <div class="col-md-6 position-relative">
+                                <label for="customer_search" class="form-label">Search Customer by Phone *</label>
+                                <input type="text" class="form-control" id="customer_search" required autocomplete="off" placeholder="Enter phone..." tabindex="1">
+                                <div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
+                                <input type="hidden" name="customer_id" id="customer_id" required>
+                                <div class="invalid-feedback">Please select a customer.</div>
+                            </div>
                             <div class="col-md-6"><label class="form-label">Selected Customer</label><div id="selected_customer_display" class="form-control-plaintext fw-bold">None</div></div>
-                            <div class="col-md-4"><label for="stock_type" class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" tabindex="2"><option value="Ex-Stock">Ex-Stock</option><option value="Pre-Book">Pre-Book</option></select></div>
+                            
+                            <div class="col-md-4">
+                                <label for="stock_type" class="form-label">Stock Type</label>
+                                <select name="stock_type" id="stock_type" class="form-select" tabindex="2">
+                                    <option value="Ex-Stock">Ex-Stock</option>
+                                    <option value="Pre-Book">Pre-Book</option>
+                                </select>
+                            </div>
+
                             <div class="col-md-4"><label for="payment_method" class="form-label">Payment Method</label><select name="payment_method" class="form-select" tabindex="3"><option value="COD">COD</option><option value="BT">Bank Transfer</option></select></div>
                             <div class="col-md-4"><label for="payment_status" class="form-label">Payment Status</label><select name="payment_status" class="form-select" tabindex="4"><option value="Pending">Pending</option><option value="Received">Received</option></select></div>
                             <div class="col-md-4"><label for="order_date" class="form-label">Order Date *</label><input type="date" class="form-control" id="order_date" name="order_date" value="<?= date('Y-m-d') ?>" required tabindex="5"></div>
@@ -110,6 +122,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
             </div>
+            <!-- Right Column: Status & Totals -->
             <div class="col-lg-4">
                  <div class="card">
                      <div class="card-header">2. Status & Totals</div>
@@ -123,21 +136,50 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
+        <!-- Items Section -->
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow" tabindex="10"><i class="bi bi-plus-circle"></i> Add Item</button></div>
-            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th style="width: 30%;">Item *</th><th>UOM</th><th>Stock</th><th>Cost</th><th>Margin %</th><th>Sell Price *</th><th>Qty *</th><th class="text-end">Subtotal</th><th></th></tr></thead><tbody id="orderItemRows"></tbody></table></div></div>
+            <div class="card-body p-2">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 30%;">Item *</th>
+                                <th>UOM</th>
+                                <th class="stock-col">Stock</th>
+                                <th class="cost-col">Cost</th>
+                                <th>Margin %</th>
+                                <th>Sell Price *</th>
+                                <th>Qty *</th>
+                                <th class="text-end">Subtotal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItemRows">
+                            <!-- Dynamic item rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit" tabindex="11"><i class="bi bi-save"></i> Create Order & Update Stock</button></div>
     </form>
 </main>
 
+<!-- HTML Template for a single item row -->
 <template id="orderItemRowTemplate">
     <tr class="order-item-row">
-        <td class="position-relative"><input type="hidden" name="items[id][]" class="item-id-input"><input type="hidden" name="items[cost][]" class="cost-input"><input type="text" class="form-control form-control-sm item-search-input" required tabindex="9"><div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div><div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock for Ex-Stock order!</div></td>
+        <td class="position-relative">
+            <input type="hidden" name="items[id][]" class="item-id-input">
+            <input type="hidden" name="items[cost][]" class="cost-input">
+            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required tabindex="9">
+            <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
+            <div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock!</div>
+        </td>
         <td><input type="text" class="form-control form-control-sm uom-display" readonly></td>
-        <td><input type="text" class="form-control form-control-sm stock-display" readonly></td>
-        <td><input type="text" class="form-control form-control-sm cost-display" readonly></td>
+        <td class="stock-col"><input type="text" class="form-control form-control-sm stock-display" readonly></td>
+        <td class="cost-col"><input type="text" class="form-control form-control-sm cost-display" readonly></td>
         <td><input type="number" class="form-control form-control-sm margin-input" name="items[margin][]" value="0" step="1"></td>
         <td><input type="number" class="form-control form-control-sm price-input" name="items[price][]" min="0.00" step="0.01" required></td>
         <td><input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required></td>
