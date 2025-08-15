@@ -1,5 +1,5 @@
 // File: assets/js/app.js
-// Final validated version with all modules, including the intelligent Order Entry handler.
+// Final validated version with all modules and bug fixes.
 
 // ───── Utility Functions ─────
 function escapeHtml(unsafe) {
@@ -328,7 +328,7 @@ function initGrnEntry() {
         itemRowsContainer.appendChild(newRow);
     };
 
-    addRow(); // Add initial row
+    addRow();
 
     addRowBtn.addEventListener('click', addRow);
 
@@ -402,18 +402,21 @@ function initOrderEntry() {
     const orderTotalDisplay = document.getElementById('orderTotal');
     const tableHeaders = form.querySelector('thead tr');
 
-    const toggleRowFields = (isPreBook) => {
-        tableHeaders.querySelector('.stock-col').classList.toggle('d-none', isPreBook);
-        tableHeaders.querySelector('.cost-col').classList.toggle('d-none', isPreBook);
+    const toggleRowFields = () => {
+        const isPreBook = stockTypeSelect.value === 'Pre-Book';
+        form.querySelector('th.stock-col').classList.toggle('d-none', isPreBook);
+        form.querySelector('th.cost-col').classList.toggle('d-none', isPreBook);
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-            row.querySelector('.stock-display').classList.toggle('d-none', isPreBook);
-            row.querySelector('.cost-display').classList.toggle('d-none', isPreBook);
+            row.querySelector('.stock-display').closest('td').classList.toggle('d-none', isPreBook);
+            row.querySelector('.cost-display').closest('td').classList.toggle('d-none', isPreBook);
             row.querySelector('.margin-input').readOnly = isPreBook;
-            row.querySelector('.price-input').readOnly = isPreBook;
+            
             if (isPreBook) {
-                row.querySelector('.margin-input').value = 0;
-                row.querySelector('.cost-input').value = 0;
+                row.querySelector('.margin-input').value = '0';
+                row.querySelector('.cost-input').value = '0';
                 row.querySelector('.price-input').readOnly = false;
+            } else {
+                 row.querySelector('.price-input').readOnly = true;
             }
         });
     };
@@ -475,7 +478,7 @@ function initOrderEntry() {
 
     customerSearchInput.addEventListener('input', doCustomerLookup);
     document.addEventListener('click', e => {
-        if (!customerResults.contains(e.target) && e.target !== customerSearchInput) {
+        if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearchInput) {
             customerResults.classList.add('d-none');
         }
     });
@@ -483,7 +486,7 @@ function initOrderEntry() {
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
-        toggleRowFields(stockTypeSelect.value === 'Pre-Book');
+        toggleRowFields();
     };
     addRowBtn.addEventListener('click', addRow);
     
@@ -495,7 +498,7 @@ function initOrderEntry() {
     });
 
     stockTypeSelect.addEventListener('change', () => {
-        toggleRowFields(stockTypeSelect.value === 'Pre-Book');
+        toggleRowFields();
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(validateRowStock);
     });
 
@@ -572,6 +575,7 @@ function initOrderEntry() {
     }, 50));
     
     addRow();
+    toggleRowFields(); // Set initial state on page load
 }
 
 // ───── DOM Ready ─────
