@@ -1,6 +1,6 @@
 <?php
 // File: /modules/inventory/entry_order.php
-// Final and complete version with all features and UI/UX refinements.
+// Final and complete version with all features and all UI/UX refinements.
 
 session_start();
 error_reporting(E_ALL);
@@ -119,7 +119,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <!-- Items Section -->
         <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow" tabindex="10"><i class="bi bi-plus-circle"></i> Add Item</button></div>
+            <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow" tabindex="9"><i class="bi bi-plus-circle"></i> Add Item</button></div>
             <div class="card-body p-2">
                 <div class="table-responsive">
                     <table class="table table-sm">
@@ -136,25 +136,23 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <th></th>
                             </tr>
                         </thead>
-                        <tbody id="orderItemRows"></tbody>
+                        <tbody id="orderItemRows" style="min-height: 150px;"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- MODIFIED: Added tabindex="11" to the main submit button -->
         <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit" tabindex="11"><i class="bi bi-save"></i> Create Order & Update Stock</button></div>
     </form>
 </main>
 
-<!-- Template for an item row -->
+<!-- HTML Template for a single item row -->
 <template id="orderItemRowTemplate">
     <tr class="order-item-row">
         <td class="position-relative">
             <input type="hidden" name="items[id][]" class="item-id-input">
             <input type="hidden" name="items[cost][]" class="cost-input">
-            <!-- MODIFIED: Removed tabindex="9" to allow natural tabbing -->
-            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required>
+            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required tabindex="10">
             <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
             <div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock!</div>
         </td>
