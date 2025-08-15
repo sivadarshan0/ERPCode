@@ -265,29 +265,39 @@ function get_all_stock_levels() {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
-function adjust_stock_level($item_id, $type, $quantity, $reason) {
+function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_type = 'Ex-Stock') {
     $db = db();
     if (empty($item_id) || !in_array($type, ['IN', 'OUT']) || !is_numeric($quantity) || $quantity <= 0) {
         throw new Exception("Invalid arguments for stock adjustment.");
     }
+
     $transaction_id = generate_sequence_id('transaction_id', 'stock_transactions', 'transaction_id');
     $stmt_trans = $db->prepare("INSERT INTO stock_transactions (transaction_id, item_id, transaction_type, quantity_change, reason, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt_trans->bind_param("sssdsis", $transaction_id, $item_id, $type, $quantity, $reason, $_SESSION['user_id'], $_SESSION['username']);
     $stmt_trans->execute();
+
     $update_quantity = ($type === 'IN') ? $quantity : -$quantity;
     $sql_update = "INSERT INTO stock_levels (item_id, quantity) VALUES (?, ?) ON DUPLICATE KEY UPDATE quantity = quantity + ?";
     $stmt_level = $db->prepare($sql_update);
     $stmt_level->bind_param("sdd", $item_id, $update_quantity, $update_quantity);
     $stmt_level->execute();
-    $check_stmt = $db->prepare("SELECT quantity FROM stock_levels WHERE item_id = ?");
-    $check_stmt->bind_param("s", $item_id);
-    $check_stmt->execute();
-    $result = $check_stmt->get_result()->fetch_assoc();
-    if ($result && $result['quantity'] < 0) {
-        throw new Exception("Operation failed: Stock level for item $item_id cannot go below zero.");
+
+    // MODIFIED LOGIC:
+    // Only throw a fatal error if the stock type is 'Ex-Stock' and the level goes negative.
+    if ($type === 'OUT' && $stock_check_type === 'Ex-Stock') {
+        $check_stmt = $db->prepare("SELECT quantity FROM stock_levels WHERE item_id = ?");
+        $check_stmt->bind_param("s", $item_id);
+        $check_stmt->execute();
+        $result = $check_stmt->get_result()->fetch_assoc();
+        if ($result && $result['quantity'] < 0) {
+            throw new Exception("Operation failed: Stock level for item $item_id cannot go below zero for an 'Ex-Stock' order.");
+        }
     }
+    // For 'Pre-Book' orders, we allow the stock to go negative.
+    
     return true;
 }
+
 
 // -----------------------------------------
 // ----- GRN (Goods Received Note) Functions -----
@@ -373,54 +383,32 @@ function process_order($customer_id, $order_date, $items, $details) {
     try {
         $user_id = $_SESSION['user_id'];
         $user_name = $_SESSION['username'] ?? 'Unknown';
-
+        
         $order_id = generate_sequence_id('order_id', 'orders', 'order_id');
         
         $stmt_order = $db->prepare("
-            INSERT INTO orders (
-                order_id, customer_id, order_date, total_amount, payment_method, 
-                payment_status, status, remarks, other_expenses, created_by, 
-                created_by_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO orders (order_id, customer_id, order_date, total_amount, other_expenses, payment_method, payment_status, status, stock_type, remarks, created_by, created_by_name) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
-        // THIS IS THE DEFINITIVELY CORRECTED LINE: The type string now has exactly 11 characters.
-        $stmt_order->bind_param(
-            "sssdssssdis", 
-            $order_id, 
-            $customer_id, 
-            $order_date, 
-            $total_amount, 
-            $details['payment_method'], 
-            $details['payment_status'], 
-            $details['order_status'], 
-            $details['remarks'], 
-            $details['other_expenses'], 
-            $user_id, 
-            $user_name
+        $stmt_order->bind_param("sssddsssssis", 
+            $order_id, $customer_id, $order_date, $total_amount, $details['other_expenses'],
+            $details['payment_method'], $details['payment_status'], $details['order_status'], 
+            $details['stock_type'], $details['remarks'], $user_id, $user_name
         );
         $stmt_order->execute();
 
         $stmt_items = $db->prepare("
-            INSERT INTO order_items (
-                order_id, item_id, quantity, price, cost_price, 
-                profit_margin
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO order_items (order_id, item_id, quantity, price, cost_price, profit_margin) 
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
         foreach ($items as $item) {
-            $stmt_items->bind_param(
-                "ssdddd",
-                $order_id,
-                $item['item_id'],
-                $item['quantity'],
-                $item['price'],
-                $item['cost_price'],
-                $item['profit_margin']
-            );
+            $stmt_items->bind_param("ssdddd", $order_id, $item['item_id'], $item['quantity'], $item['price'], $item['cost_price'], $item['profit_margin']);
             $stmt_items->execute();
 
+            // MODIFIED: Pass the stock_type to the adjustment function
             $stock_reason = "Sold via Order #" . $order_id;
-            adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason);
+            adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, $details['stock_type']);
         }
 
         $db->commit();
