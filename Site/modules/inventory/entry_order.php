@@ -9,11 +9,37 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-require_login();
+// --- AJAX Endpoints for Live Searches ---
 
-// AJAX Endpoints
-if (isset($_GET['customer_lookup'])) { /* ... */ }
-if (isset($_GET['item_lookup'])) { /* ... */ }
+// Endpoint for Customer Lookup
+if (isset($_GET['customer_lookup'])) {
+    header('Content-Type: application/json');
+    try {
+        $phone = trim($_GET['customer_lookup']);
+        echo json_encode(strlen($phone) >= 3 ? search_customers_by_phone($phone) : []);
+    } catch (Exception $e) { 
+        http_response_code(500); 
+        echo json_encode(['error' => $e->getMessage()]); 
+    }
+    exit; // THIS WAS THE MISSING LINE
+}
+
+// Endpoint for Item Lookup
+if (isset($_GET['item_lookup'])) {
+    header('Content-Type: application/json');
+    try {
+        $name = trim($_GET['item_lookup']);
+        echo json_encode(strlen($name) >= 2 ? search_items_for_order($name) : []);
+    } catch (Exception $e) { 
+        http_response_code(500); 
+        echo json_encode(['error' => $e->getMessage()]); 
+    }
+    exit; // THIS WAS THE MISSING LINE
+}
+
+
+// --- Regular Page Logic (Requires Login) ---
+require_login();
 
 $message = '';
 $message_type = '';
@@ -24,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'payment_method' => $_POST['payment_method'] ?? 'COD',
             'payment_status' => $_POST['payment_status'] ?? 'Pending',
             'order_status'   => $_POST['order_status'] ?? 'New',
-            'stock_type'     => $_POST['stock_type'] ?? 'Ex-Stock', // ADDED
+            'stock_type'     => $_POST['stock_type'] ?? 'Ex-Stock',
             'remarks'        => $_POST['remarks'] ?? '',
             'other_expenses' => $_POST['other_expenses'] ?? 0
         ];
@@ -32,7 +58,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $items_to_process = [];
         foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
             if (!empty($item_id)) {
-                $items_to_process[] = [ /* ... */ ];
+                $items_to_process[] = [
+                    'item_id'       => $item_id,
+                    'quantity'      => $_POST['items']['quantity'][$index],
+                    'price'         => $_POST['items']['price'][$index],
+                    'cost_price'    => $_POST['items']['cost'][$index],
+                    'profit_margin' => $_POST['items']['margin'][$index]
+                ];
             }
         }
         
@@ -48,6 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
+
+<!-- The rest of the HTML for the page is identical to what you already have -->
+<!-- No changes are needed to the HTML part of the file -->
 
 <main class="container mt-4">
     <h2>New Sales Order</h2>
@@ -66,10 +101,7 @@ require_once __DIR__ . '/../../includes/header.php';
                         <div class="row g-3">
                             <div class="col-md-6 position-relative"><label for="customer_search" class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" placeholder="Enter phone..." tabindex="1"><div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div><input type="hidden" name="customer_id" id="customer_id" required></div>
                             <div class="col-md-6"><label class="form-label">Selected Customer</label><div id="selected_customer_display" class="form-control-plaintext fw-bold">None</div></div>
-                            
-                            <!-- ADDED Stock Type Dropdown -->
                             <div class="col-md-4"><label for="stock_type" class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" tabindex="2"><option value="Ex-Stock">Ex-Stock</option><option value="Pre-Book">Pre-Book</option></select></div>
-
                             <div class="col-md-4"><label for="payment_method" class="form-label">Payment Method</label><select name="payment_method" class="form-select" tabindex="3"><option value="COD">COD</option><option value="BT">Bank Transfer</option></select></div>
                             <div class="col-md-4"><label for="payment_status" class="form-label">Payment Status</label><select name="payment_status" class="form-select" tabindex="4"><option value="Pending">Pending</option><option value="Received">Received</option></select></div>
                             <div class="col-md-4"><label for="order_date" class="form-label">Order Date *</label><input type="date" class="form-control" id="order_date" name="order_date" value="<?= date('Y-m-d') ?>" required tabindex="5"></div>
@@ -102,13 +134,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
 <template id="orderItemRowTemplate">
     <tr class="order-item-row">
-        <td class="position-relative">
-            <input type="hidden" name="items[id][]" class="item-id-input"><input type="hidden" name="items[cost][]" class="cost-input">
-            <input type="text" class="form-control form-control-sm item-search-input" required tabindex="9">
-            <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
-            <!-- ADDED: Div for stock warnings -->
-            <div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock for Ex-Stock order!</div>
-        </td>
+        <td class="position-relative"><input type="hidden" name="items[id][]" class="item-id-input"><input type="hidden" name="items[cost][]" class="cost-input"><input type="text" class="form-control form-control-sm item-search-input" required tabindex="9"><div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div><div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock for Ex-Stock order!</div></td>
         <td><input type="text" class="form-control form-control-sm uom-display" readonly></td>
         <td><input type="text" class="form-control form-control-sm stock-display" readonly></td>
         <td><input type="text" class="form-control form-control-sm cost-display" readonly></td>
