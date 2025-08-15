@@ -352,6 +352,7 @@ function search_items_for_order($name) {
  * @return array The ID and formatted total amount of the newly created order.
  * @throws Exception On validation or database errors.
  */
+
 function process_order($customer_id, $order_date, $items, $details) {
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
@@ -379,8 +380,8 @@ function process_order($customer_id, $order_date, $items, $details) {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
-        // CORRECTED: The bind_param string now has the correct types (sssds_s_sdisis)
-        $stmt_order->bind_param("sssds_s_sdisis", 
+        // CORRECTED: The bind_param string now has the correct 11 types.
+        $stmt_order->bind_param("sssds_s_sdis", 
             $order_id, $customer_id, $order_date, $total_amount, 
             $details['payment_method'], $details['payment_status'], $details['order_status'], 
             $details['remarks'], $details['other_expenses'], $user_id, $user_name
