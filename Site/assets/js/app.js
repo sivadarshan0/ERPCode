@@ -1,5 +1,5 @@
 // File: assets/js/app.js
-// Final validated version with all modules, including the intelligent Order Entry handler.
+// Final validated version with all modules and bug fixes.
 
 // ───── Utility Functions ─────
 function escapeHtml(unsafe) {
@@ -86,7 +86,7 @@ function initCustomerEntry() {
 
     phoneInput.addEventListener('input', doPhoneLookup);
     document.addEventListener('click', (e) => {
-        if (!phoneResults.contains(e.target) && e.target !== phoneInput) {
+        if (phoneResults && !phoneResults.contains(e.target) && e.target !== phoneInput) {
             phoneResults.classList.add('d-none');
         }
     });
@@ -130,7 +130,7 @@ function initCategoryEntry() {
 
     nameInput.addEventListener('input', doCategoryLookup);
     document.addEventListener('click', (e) => {
-        if (!categoryResults.contains(e.target) && e.target !== nameInput) {
+        if (categoryResults && !categoryResults.contains(e.target) && e.target !== nameInput) {
             categoryResults.classList.add('d-none');
         }
     });
@@ -174,7 +174,7 @@ function initSubCategoryEntry() {
 
     nameInput.addEventListener('input', doSubCategoryLookup);
     document.addEventListener('click', (e) => {
-        if (!subCategoryResults.contains(e.target) && e.target !== nameInput) {
+        if (subCategoryResults && !subCategoryResults.contains(e.target) && e.target !== nameInput) {
             subCategoryResults.classList.add('d-none');
         }
     });
@@ -250,7 +250,7 @@ function initItemEntry() {
 
     nameInput.addEventListener('input', doItemLookup);
     document.addEventListener('click', (e) => {
-        if (!itemResults.contains(e.target) && e.target !== nameInput) {
+        if (itemResults && !itemResults.contains(e.target) && e.target !== nameInput) {
             itemResults.classList.add('d-none');
         }
     });
@@ -308,7 +308,7 @@ function initStockAdjustmentEntry() {
     searchInput.addEventListener('input', doItemLookup);
 
     document.addEventListener('click', (e) => {
-        if (!resultsContainer.contains(e.target) && e.target !== searchInput) {
+        if (resultsContainer && !resultsContainer.contains(e.target) && e.target !== searchInput) {
             resultsContainer.classList.add('d-none');
         }
     });
@@ -405,16 +405,20 @@ function initOrderEntry() {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
         form.querySelector('th.stock-col').classList.toggle('d-none', isPreBook);
         form.querySelector('th.cost-col').classList.toggle('d-none', isPreBook);
+
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
             row.querySelector('.stock-display').closest('td').classList.toggle('d-none', isPreBook);
-            row.querySelector('.cost-display').closest('td').classList.toggle('d-none', isPreBook);
+            const costDisplay = row.querySelector('.cost-display');
+            costDisplay.closest('td').classList.toggle('d-none', isPreBook);
             
             const priceInput = row.querySelector('.price-input');
-            priceInput.readOnly = !isPreBook;
 
             if (isPreBook) {
-                row.querySelector('.cost-input').value = '0';
-                row.querySelector('.margin-input').value = '0';
+                costDisplay.readOnly = false;
+                priceInput.readOnly = false;
+            } else {
+                costDisplay.readOnly = true;
+                priceInput.readOnly = true;
             }
         });
     };
@@ -497,58 +501,70 @@ function initOrderEntry() {
 
     stockTypeSelect.addEventListener('change', () => {
         toggleRowFields();
-        itemRowsContainer.querySelectorAll('.order-item-row').forEach(validateRowStock);
+        itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+            row.querySelector('.item-search-input').value = '';
+            row.querySelector('.item-id-input').value = '';
+            row.querySelector('.uom-display').value = '';
+            row.querySelector('.stock-display').value = '';
+            row.querySelector('.cost-input').value = '0';
+            row.querySelector('.cost-display').value = '0.00';
+            row.querySelector('.margin-input').value = '0';
+            row.querySelector('.price-input').value = '0.00';
+            row.querySelector('.quantity-input').value = '1';
+            validateRowStock(row);
+        });
+        calculateTotals();
     });
 
-    itemRowsContainer.addEventListener('input', debounce(e => {
+    itemRowsContainer.addEventListener('input', e => {
         const row = e.target.closest('.order-item-row');
         if (!row) return;
 
         if (e.target.classList.contains('item-search-input')) {
-            const searchInput = e.target;
-            const resultsContainer = row.querySelector('.item-results');
-            const name = searchInput.value.trim();
-            const stockType = stockTypeSelect.value;
-
-            if (name.length < 2) return resultsContainer.classList.add('d-none');
-            
-            fetch(`/modules/inventory/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
-                .then(res => res.ok ? res.json() : Promise.reject())
-                .then(data => {
-                    resultsContainer.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            const btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.className = 'list-group-item list-group-item-action py-1';
-                            const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
-                            btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
-                            
-                            btn.addEventListener('click', () => {
-                                row.querySelector('.item-id-input').value = item.item_id;
-                                searchInput.value = item.name;
-                                row.querySelector('.uom-display').value = item.uom;
+            debounce(() => {
+                const searchInput = e.target;
+                const resultsContainer = row.querySelector('.item-results');
+                const name = searchInput.value.trim();
+                const stockType = stockTypeSelect.value;
+                if (name.length < 2) return resultsContainer.classList.add('d-none');
+                
+                fetch(`/modules/inventory/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
+                    .then(res => res.ok ? res.json() : Promise.reject())
+                    .then(data => {
+                        resultsContainer.innerHTML = '';
+                        if (data && data.length > 0) {
+                            data.forEach(item => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action py-1';
+                                const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
+                                btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
                                 
-                                if (stockType === 'Ex-Stock') {
-                                    row.querySelector('.stock-display').value = item.stock_on_hand;
-                                    const cost = parseFloat(item.last_cost) || 0;
-                                    row.querySelector('.cost-input').value = cost.toFixed(2);
-                                    row.querySelector('.cost-display').value = cost.toFixed(2);
-                                    row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
-                                } else {
-                                     row.querySelector('.cost-display').focus();
-                                }
-                                
-                                resultsContainer.classList.add('d-none');
-                                validateRowStock(row);
+                                btn.addEventListener('click', () => {
+                                    row.querySelector('.item-id-input').value = item.item_id;
+                                    searchInput.value = item.name;
+                                    row.querySelector('.uom-display').value = item.uom;
+                                    
+                                    if (stockType === 'Ex-Stock') {
+                                        row.querySelector('.stock-display').value = item.stock_on_hand;
+                                        const cost = parseFloat(item.last_cost) || 0;
+                                        row.querySelector('.cost-input').value = cost.toFixed(2);
+                                        row.querySelector('.cost-display').value = cost.toFixed(2);
+                                        row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
+                                    } else {
+                                         row.querySelector('.cost-display').focus();
+                                    }
+                                    
+                                    resultsContainer.classList.add('d-none');
+                                    validateRowStock(row);
+                                });
+                                resultsContainer.appendChild(btn);
                             });
-                            resultsContainer.appendChild(btn);
-                        });
-                        resultsContainer.classList.remove('d-none');
-                    } else {
-                        resultsContainer.classList.add('d-none');
-                    }
-                });
+                            resultsContainer.classList.remove('d-none');
+                        }
+                    });
+            }, 300)();
+            return;
         }
         
         const costDisplayInput = row.querySelector('.cost-display');
@@ -571,7 +587,7 @@ function initOrderEntry() {
             if (cost > 0) {
                 marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
             } else {
-                marginInput.value = '0.00';
+                marginInput.value = '100.00'; // If no cost, it's 100% margin
             }
         }
         
@@ -579,7 +595,7 @@ function initOrderEntry() {
             calculateTotals();
             validateRowStock(row);
         }
-    }, 50));
+    });
     
     addRow();
     toggleRowFields();
