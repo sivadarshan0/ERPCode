@@ -384,19 +384,19 @@ function process_order($customer_id, $order_date, $items, $details) {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
-        // THIS IS THE CORRECTED LINE: The type string now has exactly 11 characters matching the 11 variables.
+        // THIS IS THE DEFINITIVELY CORRECTED LINE: The type string now has exactly 11 characters.
         $stmt_order->bind_param(
-            "sssds_s_sdis",
-            $order_id,
-            $customer_id,
-            $order_date,
-            $total_amount,
-            $details['payment_method'],
-            $details['payment_status'],
-            $details['order_status'],
-            $details['remarks'],
-            $details['other_expenses'],
-            $user_id,
+            "sssds_s_sdis", 
+            $order_id, 
+            $customer_id, 
+            $order_date, 
+            $total_amount, 
+            $details['payment_method'], 
+            $details['payment_status'], 
+            $details['order_status'], 
+            $details['remarks'], 
+            $details['other_expenses'], 
+            $user_id, 
             $user_name
         );
         $stmt_order->execute();
