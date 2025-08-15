@@ -39,7 +39,6 @@ if (isset($_GET['item_lookup'])) {
 $message = '';
 $message_type = '';
 
-// Handle the form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $order_details = [
@@ -143,13 +142,15 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
+        <!-- MODIFIED: Added tabindex="11" to the main submit button -->
         <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit" tabindex="11"><i class="bi bi-save"></i> Create Order & Update Stock</button></div>
     </form>
 </main>
 
-<!-- HTML Template for a single item row -->
+<!-- Template for an item row -->
 <template id="orderItemRowTemplate">
     <tr class="order-item-row">
+        <!-- The first item input has tabindex="9" -->
         <td class="position-relative">
             <input type="hidden" name="items[id][]" class="item-id-input">
             <input type="hidden" name="items[cost][]" class="cost-input">
