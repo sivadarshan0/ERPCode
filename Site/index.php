@@ -34,8 +34,26 @@ require_once __DIR__ . '/includes/header.php';
             <!-- Main Dashboard Cards -->
             <div class="row mt-4">
 
-                <!-- Card 1: Customer Management -->
-                <div class="col-md-4 mb-4">
+                <!-- Card 1: Sales & Orders (NEW) -->
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-primary text-white">
+                            <i class="bi bi-cart-check-fill"></i> Sales & Orders
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Order Management</h5>
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="/modules/inventory/entry_order.php" class="btn btn-success">
+                                    <i class="bi bi-cart-plus-fill"></i> New Order
+                                </a>
+                                <!-- Future button: <a href="/modules/inventory/list_orders.php" class="btn btn-primary"><i class="bi bi-search"></i> Find Orders</a> -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Customer Management -->
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-people-fill"></i> Customer Management
@@ -54,30 +72,31 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Card 2: Inventory (MODIFIED) -->
-                <div class="col-md-4 mb-4">
+                <!-- Card 3: Inventory -->
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-boxes"></i> Inventory
                         </div>
                         <div class="card-body">
-                            <h5 class="card-title">Manage Inventory</h5>
+                            <h5 class="card-title">Manage Products</h5>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/inventory/entry_item.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Add New Item
                                 </a>
-                                <!-- ADDED: GRN button -->
                                 <a href="/modules/inventory/entry_grn.php" class="btn btn-primary">
                                     <i class="bi bi-box-arrow-in-down"></i> Receive Stock (GRN)
                                 </a>
-                                <!-- REMOVED: Manage Categories and Sub-Categories buttons -->
+                                <a href="/modules/inventory/list_stock.php" class="btn btn-secondary">
+                                    <i class="bi bi-card-list"></i> View Stock Levels
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Card 3: Price Calculator -->
-                <div class="col-md-4 mb-4">
+                
+                <!-- Card 4: Price Calculator -->
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
@@ -102,4 +121,3 @@ require_once __DIR__ . '/includes/header.php';
 <?php
 require_once __DIR__ . '/includes/footer.php';
 ?>
-
