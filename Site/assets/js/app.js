@@ -400,7 +400,6 @@ function initOrderEntry() {
     const template = document.getElementById('orderItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
     const orderTotalDisplay = document.getElementById('orderTotal');
-    const tableHeaders = form.querySelector('thead tr');
 
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
@@ -409,14 +408,17 @@ function initOrderEntry() {
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
             row.querySelector('.stock-display').closest('td').classList.toggle('d-none', isPreBook);
             row.querySelector('.cost-display').closest('td').classList.toggle('d-none', isPreBook);
-            row.querySelector('.margin-input').readOnly = isPreBook;
             
+            const marginInput = row.querySelector('.margin-input');
+            const priceInput = row.querySelector('.price-input');
+
+            marginInput.readOnly = isPreBook;
             if (isPreBook) {
-                row.querySelector('.margin-input').value = '0';
+                marginInput.value = '0';
                 row.querySelector('.cost-input').value = '0';
-                row.querySelector('.price-input').readOnly = false;
+                priceInput.readOnly = false;
             } else {
-                 row.querySelector('.price-input').readOnly = true;
+                 priceInput.readOnly = true;
             }
         });
     };
@@ -558,13 +560,16 @@ function initOrderEntry() {
         const marginInput = row.querySelector('.margin-input');
         const priceInput = row.querySelector('.price-input');
         
-        if (!isPreBook) {
-            if (e.target === marginInput) {
-                const margin = parseFloat(marginInput.value) || 0;
-                priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
-            } else if (e.target === priceInput) {
-                const price = parseFloat(priceInput.value) || 0;
-                marginInput.value = (cost > 0) ? (((price / cost) - 1) * 100).toFixed(2) : '0.00';
+        if (e.target === marginInput && !isPreBook) {
+            const margin = parseFloat(marginInput.value) || 0;
+            priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
+        } else if (e.target === priceInput) {
+            const price = parseFloat(priceInput.value) || 0;
+            if (cost > 0) {
+                const newMargin = ((price / cost) - 1) * 100;
+                marginInput.value = newMargin.toFixed(2);
+            } else {
+                marginInput.value = '0.00';
             }
         }
         
@@ -575,8 +580,9 @@ function initOrderEntry() {
     }, 50));
     
     addRow();
-    toggleRowFields(); // Set initial state on page load
+    toggleRowFields();
 }
+
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
@@ -604,4 +610,4 @@ document.addEventListener('DOMContentLoaded', function () {
             if (bsAlert) bsAlert.close();
         }, 5000);
     });
-});
+})
