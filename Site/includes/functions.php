@@ -386,7 +386,7 @@ function process_order($customer_id, $order_date, $items, $details) {
         
         // THIS IS THE DEFINITIVELY CORRECTED LINE: The type string now has exactly 11 characters.
         $stmt_order->bind_param(
-            "sssds_s_sdis", 
+            "sssdssssdis", 
             $order_id, 
             $customer_id, 
             $order_date, 
