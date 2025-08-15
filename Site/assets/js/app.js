@@ -1,5 +1,5 @@
 // File: assets/js/app.js
-// Final validated version with all modules and bug fixes.
+// Final validated version with all modules, including the intelligent Order Entry handler.
 
 // ───── Utility Functions ─────
 function escapeHtml(unsafe) {
@@ -409,16 +409,12 @@ function initOrderEntry() {
             row.querySelector('.stock-display').closest('td').classList.toggle('d-none', isPreBook);
             row.querySelector('.cost-display').closest('td').classList.toggle('d-none', isPreBook);
             
-            const marginInput = row.querySelector('.margin-input');
             const priceInput = row.querySelector('.price-input');
+            priceInput.readOnly = !isPreBook;
 
-            marginInput.readOnly = isPreBook;
             if (isPreBook) {
-                marginInput.value = '0';
                 row.querySelector('.cost-input').value = '0';
-                priceInput.readOnly = false;
-            } else {
-                 priceInput.readOnly = true;
+                row.querySelector('.margin-input').value = '0';
             }
         });
     };
@@ -540,7 +536,7 @@ function initOrderEntry() {
                                     row.querySelector('.cost-display').value = cost.toFixed(2);
                                     row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
                                 } else {
-                                     row.querySelector('.price-input').focus();
+                                     row.querySelector('.cost-display').focus();
                                 }
                                 
                                 resultsContainer.classList.add('d-none');
@@ -555,25 +551,31 @@ function initOrderEntry() {
                 });
         }
         
-        const isPreBook = stockTypeSelect.value === 'Pre-Book';
-        const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+        const costDisplayInput = row.querySelector('.cost-display');
+        const costHiddenInput = row.querySelector('.cost-input');
         const marginInput = row.querySelector('.margin-input');
         const priceInput = row.querySelector('.price-input');
         
-        if (e.target === marginInput && !isPreBook) {
+        if (e.target === costDisplayInput) {
+            costHiddenInput.value = costDisplayInput.value;
+        }
+
+        const cost = parseFloat(costHiddenInput.value) || 0;
+        
+        if (e.target === marginInput || e.target === costDisplayInput) {
             const margin = parseFloat(marginInput.value) || 0;
             priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
-        } else if (e.target === priceInput) {
+        } 
+        else if (e.target === priceInput) {
             const price = parseFloat(priceInput.value) || 0;
             if (cost > 0) {
-                const newMargin = ((price / cost) - 1) * 100;
-                marginInput.value = newMargin.toFixed(2);
+                marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
             } else {
                 marginInput.value = '0.00';
             }
         }
         
-        if (e.target.matches('.price-input, .quantity-input, .margin-input')) {
+        if (e.target.matches('.price-input, .quantity-input, .margin-input, .cost-display')) {
             calculateTotals();
             validateRowStock(row);
         }
@@ -610,4 +612,4 @@ document.addEventListener('DOMContentLoaded', function () {
             if (bsAlert) bsAlert.close();
         }, 5000);
     });
-})
+});

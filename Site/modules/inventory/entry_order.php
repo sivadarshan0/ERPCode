@@ -172,17 +172,21 @@ require_once __DIR__ . '/../../includes/header.php';
     <tr class="order-item-row">
         <td class="position-relative">
             <input type="hidden" name="items[id][]" class="item-id-input">
+            <!-- This hidden input is now the primary source for cost data -->
             <input type="hidden" name="items[cost][]" class="cost-input">
-            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required tabindex="9">
+            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Type to search..." required>
             <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
             <div class="stock-warning text-danger small mt-1 d-none">Warning: Insufficient stock!</div>
         </td>
         <td><input type="text" class="form-control form-control-sm uom-display" readonly></td>
         <td class="stock-col"><input type="text" class="form-control form-control-sm stock-display" readonly></td>
-        <td class="cost-col"><input type="text" class="form-control form-control-sm cost-display" readonly></td>
+        
+        <!-- MODIFIED: This is now an editable number input instead of a readonly text input -->
+        <td class="cost-col"><input type="number" class="form-control form-control-sm cost-display" min="0.00" step="0.01"></td>
+        
+        <td><input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required></td>
         <td><input type="number" class="form-control form-control-sm margin-input" name="items[margin][]" value="0" step="1"></td>
         <td><input type="number" class="form-control form-control-sm price-input" name="items[price][]" min="0.00" step="0.01" required></td>
-        <td><input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required></td>
         <td class="text-end subtotal-display fw-bold">0.00</td>
         <td><button type="button" class="btn btn-danger btn-sm remove-item-row" tabindex="-1"><i class="bi bi-trash"></i></button></td>
     </tr>
