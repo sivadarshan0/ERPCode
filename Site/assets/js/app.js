@@ -404,20 +404,18 @@ function initOrderEntry() {
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
         form.querySelector('th.stock-col').classList.toggle('d-none', isPreBook);
-        form.querySelector('th.cost-col').classList.toggle('d-none', isPreBook);
 
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
             row.querySelector('.stock-display').closest('td').classList.toggle('d-none', isPreBook);
-            const costDisplay = row.querySelector('.cost-display');
-            costDisplay.closest('td').classList.toggle('d-none', isPreBook);
             
+            const costDisplayInput = row.querySelector('.cost-display');
             const priceInput = row.querySelector('.price-input');
 
             if (isPreBook) {
-                costDisplay.readOnly = false;
+                costDisplayInput.readOnly = false;
                 priceInput.readOnly = false;
             } else {
-                costDisplay.readOnly = true;
+                costDisplayInput.readOnly = true;
                 priceInput.readOnly = true;
             }
         });
@@ -587,7 +585,9 @@ function initOrderEntry() {
             if (cost > 0) {
                 marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
             } else {
-                marginInput.value = '100.00'; // If no cost, it's 100% margin
+                // If no cost and price is entered, this implies infinite margin. 
+                // Setting to 100% is a reasonable default for display.
+                marginInput.value = (price > 0) ? '100.00' : '0.00';
             }
         }
         
