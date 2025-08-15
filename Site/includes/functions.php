@@ -342,12 +342,24 @@ function search_items_for_order($name) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+/**
+ * Processes a complete Sales Order with all the new detailed fields.
+ *
+ * @param string $customer_id The ID of the customer placing the order.
+ * @param string $order_date The date of the order.
+ * @param array $items An array of items, each with 'item_id', 'quantity', 'price', 'cost_price', 'profit_margin'.
+ * @param array $details An array containing other order details like statuses and remarks.
+ * @return array The ID and formatted total amount of the newly created order.
+ * @throws Exception On validation or database errors.
+ */
 function process_order($customer_id, $order_date, $items, $details) {
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
+
     if (empty($customer_id) || empty($order_date) || !is_array($items) || empty($items)) {
         throw new Exception("Customer, date, and at least one item are required.");
     }
+
     $total_amount = 0;
     foreach ($items as $item) {
         if (empty($item['item_id']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0 || !is_numeric($item['price'])) {
@@ -355,21 +367,41 @@ function process_order($customer_id, $order_date, $items, $details) {
         }
         $total_amount += $item['quantity'] * $item['price'];
     }
+
     $db->begin_transaction();
     try {
         $user_id = $_SESSION['user_id'];
         $user_name = $_SESSION['username'] ?? 'Unknown';
+
         $order_id = generate_sequence_id('order_id', 'orders', 'order_id');
-        $stmt_order = $db->prepare("INSERT INTO orders (order_id, customer_id, order_date, total_amount, payment_method, payment_status, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt_order->bind_param("sssdsissis", $order_id, $customer_id, $order_date, $total_amount, $details['payment_method'], $details['payment_status'], $details['order_status'], $details['remarks'], $user_id, $user_name);
+        $stmt_order = $db->prepare("
+            INSERT INTO orders (order_id, customer_id, order_date, total_amount, payment_method, payment_status, status, remarks, other_expenses, created_by, created_by_name) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        // CORRECTED: The bind_param string now has the correct types (sssds_s_sdisis)
+        $stmt_order->bind_param("sssds_s_sdisis", 
+            $order_id, $customer_id, $order_date, $total_amount, 
+            $details['payment_method'], $details['payment_status'], $details['order_status'], 
+            $details['remarks'], $details['other_expenses'], $user_id, $user_name
+        );
         $stmt_order->execute();
-        $stmt_items = $db->prepare("INSERT INTO order_items (order_id, item_id, quantity, price, cost_price, profit_margin) VALUES (?, ?, ?, ?, ?, ?)");
+
+        $stmt_items = $db->prepare("
+            INSERT INTO order_items (order_id, item_id, quantity, price, cost_price, profit_margin) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
         foreach ($items as $item) {
-            $stmt_items->bind_param("ssdddd", $order_id, $item['item_id'], $item['quantity'], $item['price'], $item['cost_price'], $item['profit_margin']);
+            $stmt_items->bind_param("ssdddd", 
+                $order_id, $item['item_id'], $item['quantity'], 
+                $item['price'], $item['cost_price'], $item['profit_margin']
+            );
             $stmt_items->execute();
+
             $stock_reason = "Sold via Order #" . $order_id;
             adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason);
         }
+
         $db->commit();
         return ['id' => $order_id, 'total' => number_format($total_amount, 2, '.', ',')];
     } catch (Exception $e) {
