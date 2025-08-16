@@ -117,20 +117,21 @@ require_once __DIR__ . '/../../includes/header.php';
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow" tabindex="10"><i class="bi bi-plus-circle"></i> Add Item</button></div>
             <div class="card-body p-2">
-                <!-- MODIFIED: Wrapped the table in a div and applied min-height to the div -->
+                <!-- CORRECTED: Set a min-height on this container div, not the tbody -->
                 <div class="table-responsive" style="min-height: 150px;">
                     <table class="table table-sm">
                         <thead class="table-light">
+                            <!-- CORRECTED: Removed all inline style="width:%" attributes to allow for a flexible layout -->
                             <tr>
-                                <th style="width: 30%;">Item *</th>
-                                <th style="width: 8%;">UOM</th>
-                                <th class="stock-col" style="width: 8%;">Stock</th>
-                                <th class="cost-col" style="width: 12%;">Cost Price</th>
-                                <th style="width: 10%;">Margin %</th>
-                                <th style="width: 12%;">Sell Price *</th>
-                                <th style="width: 8%;">Quantity *</th>
-                                <th class="text-end" style="width: 12%;">Subtotal</th>
-                                <th style="width: 5%;"></th>
+                                <th class="w-25">Item *</th>
+                                <th>UOM</th>
+                                <th class="stock-col">Stock</th>
+                                <th class="cost-col">Cost Price</th>
+                                <th>Margin %</th>
+                                <th>Sell Price *</th>
+                                <th>Quantity *</th>
+                                <th class="text-end">Subtotal</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody id="orderItemRows"></tbody>

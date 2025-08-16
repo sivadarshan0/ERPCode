@@ -198,16 +198,7 @@ main {
     max-width: 420px;
 }
 
-/* Custom styles for the Order Entry page item table */
-#orderItemRows {
-    display: block; /* Required for min-height to work reliably on a tbody */
-    min-height: 150px;
-}
-
-/*
- * Fix for Order Entry item table layout.
- * Overrides Bootstrap's .form-control width to allow table columns to size correctly.
- */
 #orderItemRows .form-control {
     width: auto;
+    min-width: 80px; /* Set a minimum width for usability */
 }
