@@ -434,6 +434,48 @@ function process_order($customer_id, $order_date, $items, $details) {
     }
 }
 
+/**
+ * Retrieves a single, complete order with its items for viewing/editing.
+ *
+ * @param string $order_id The ID of the order to fetch.
+ * @return array|false The complete order data, or false if not found.
+ */
+function get_order_details($order_id) {
+    $db = db();
+    if (!$db) return false;
+
+    // 1. Get the main order details
+    $stmt_order = $db->prepare("SELECT * FROM orders WHERE order_id = ?");
+    $stmt_order->bind_param("s", $order_id);
+    $stmt_order->execute();
+    $order = $stmt_order->get_result()->fetch_assoc();
+
+    if (!$order) {
+        return false; // Order not found
+    }
+
+    // 2. Get the associated customer details
+    $order['customer'] = get_customer($order['customer_id']);
+
+    // 3. Get all the line items for the order
+    $stmt_items = $db->prepare("
+        SELECT 
+            oi.*, 
+            i.name as item_name,
+            i.uom,
+            COALESCE(sl.quantity, 0) as stock_on_hand
+        FROM order_items oi
+        JOIN items i ON oi.item_id = i.item_id
+        LEFT JOIN stock_levels sl ON oi.item_id = sl.item_id
+        WHERE oi.order_id = ?
+    ");
+    $stmt_items->bind_param("s", $order_id);
+    $stmt_items->execute();
+    $order['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    return $order;
+}
+
 // -----------------------------------------
 // ----- Order Listing/Search Functions -----
 // -----------------------------------------
