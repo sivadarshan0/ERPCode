@@ -1,6 +1,6 @@
 <?php
 // File: /modules/inventory/entry_order.php
-// This version removes static tabindex attributes to allow for JS control.
+// This version adds the "Back" button for improved navigation.
 
 session_start();
 error_reporting(E_ALL);
@@ -138,7 +138,11 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
-        <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit" id="createOrderBtn"><i class="bi bi-save"></i> Create Order & Update Stock</button></div>
+        <!-- CORRECTED: Added the Back to Dashboard button -->
+        <div class="col-12 mt-4">
+            <button class="btn btn-primary btn-lg" type="submit" id="createOrderBtn"><i class="bi bi-save"></i> Create Order & Update Stock</button>
+            <a href="/index.php" class="btn btn-outline-secondary btn-lg">Back to Dashboard</a>
+        </div>
     </form>
 </main>
 
