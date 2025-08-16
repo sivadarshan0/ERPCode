@@ -476,6 +476,55 @@ function get_order_details($order_id) {
     return $order;
 }
 
+/**
+ * Updates the status and details of an existing order.
+ *
+ * @param string $order_id The ID of the order to update.
+ * @param array $details An array of details to update (status, payment_method, etc.).
+ * @return bool True on success, false on failure.
+ * @throws Exception On validation or database errors.
+ */
+function update_order_details($order_id, $details) {
+    $db = db();
+    if (!$db) throw new Exception("Database connection failed.");
+
+    // Basic validation
+    if (empty($order_id) || !is_array($details)) {
+        throw new Exception("Invalid arguments for updating order.");
+    }
+
+    // Prepare the SQL update statement
+    $stmt = $db->prepare("
+        UPDATE orders 
+        SET 
+            status = ?,
+            payment_method = ?,
+            payment_status = ?,
+            other_expenses = ?,
+            remarks = ?
+        WHERE order_id = ?
+    ");
+    
+    if (!$stmt) {
+        throw new Exception("Database error: Failed to prepare statement.");
+    }
+
+    $stmt->bind_param("sssds", 
+        $details['order_status'], 
+        $details['payment_method'], 
+        $details['payment_status'], 
+        $details['other_expenses'], 
+        $details['remarks'], 
+        $order_id
+    );
+
+    if ($stmt->execute()) {
+        return true;
+    } else {
+        throw new Exception("Failed to execute order update.");
+    }
+}
+
 // -----------------------------------------
 // ----- Order Listing/Search Functions -----
 // -----------------------------------------
