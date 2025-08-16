@@ -391,7 +391,6 @@ function initOrderEntry() {
     const form = document.getElementById('orderForm');
     if (!form) return;
 
-    // --- Element References ---
     const stockTypeSelect = document.getElementById('stock_type');
     const customerSearchInput = document.getElementById('customer_search');
     const customerResults = document.getElementById('customerResults');
@@ -401,8 +400,8 @@ function initOrderEntry() {
     const template = document.getElementById('orderItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
     const orderTotalDisplay = document.getElementById('orderTotal');
+    const otherExpensesInput = document.getElementById('other_expenses');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
-    const otherExpensesInput = document.getElementById('other_expenses'); // Get the 'Other Expenses' input
 
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
@@ -431,7 +430,6 @@ function initOrderEntry() {
     
     const calculateTotals = () => {
         let total = 0;
-        const otherExpenses = parseFloat(otherExpensesInput.value) || 0;
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
             const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
@@ -439,7 +437,6 @@ function initOrderEntry() {
             row.querySelector('.subtotal-display').textContent = subtotal.toFixed(2);
             total += subtotal;
         });
-        total += otherExpenses; // Add other expenses to the final total
         orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(total);
     };
 
@@ -592,22 +589,20 @@ function initOrderEntry() {
         }
     });
 
-    otherExpensesInput.addEventListener('input', calculateTotals);
+    // We have REMOVED the event listener from 'otherExpensesInput' so it doesn't affect the item total display.
     
-    // --- TABBING LOGIC ---
     form.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
 
         const activeElement = document.activeElement;
 
-        // NEW: Logic for jumping from 'Other Expenses' into the item table
         if (activeElement === otherExpensesInput) {
             const firstItemInput = itemRowsContainer.querySelector('.item-search-input');
             if (firstItemInput) {
                 e.preventDefault();
                 firstItemInput.focus();
             }
-            return; // Stop further execution for this event
+            return;
         }
 
         const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
@@ -627,6 +622,7 @@ function initOrderEntry() {
     addRow();
     toggleRowFields();
 }
+
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
