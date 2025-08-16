@@ -391,6 +391,7 @@ function initOrderEntry() {
     const form = document.getElementById('orderForm');
     if (!form) return;
 
+    // --- Element References ---
     const stockTypeSelect = document.getElementById('stock_type');
     const customerSearchInput = document.getElementById('customer_search');
     const customerResults = document.getElementById('customerResults');
@@ -401,6 +402,7 @@ function initOrderEntry() {
     const addRowBtn = document.getElementById('addItemRow');
     const orderTotalDisplay = document.getElementById('orderTotal');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
+    const otherExpensesInput = document.getElementById('other_expenses'); // Get the 'Other Expenses' input
 
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
@@ -429,6 +431,7 @@ function initOrderEntry() {
     
     const calculateTotals = () => {
         let total = 0;
+        const otherExpenses = parseFloat(otherExpensesInput.value) || 0;
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
             const price = parseFloat(row.querySelector('.price-input').value) || 0;
             const quantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
@@ -436,6 +439,7 @@ function initOrderEntry() {
             row.querySelector('.subtotal-display').textContent = subtotal.toFixed(2);
             total += subtotal;
         });
+        total += otherExpenses; // Add other expenses to the final total
         orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(total);
     };
 
@@ -507,20 +511,6 @@ function initOrderEntry() {
         calculateTotals();
     });
     
-    itemRowsContainer.addEventListener('keydown', e => {
-        if (e.key === 'Tab' && !e.shiftKey && e.target.classList.contains('item-search-input')) {
-            const row = e.target.closest('.order-item-row');
-            const resultsContainer = row.querySelector('.item-results');
-            if (!resultsContainer.classList.contains('d-none')) {
-                const firstResult = resultsContainer.querySelector('button');
-                if (firstResult) {
-                    e.preventDefault();
-                    firstResult.focus();
-                }
-            }
-        }
-    });
-
     itemRowsContainer.addEventListener('input', e => {
         const row = e.target.closest('.order-item-row');
         if (!row) return;
@@ -601,33 +591,42 @@ function initOrderEntry() {
             validateRowStock(row);
         }
     });
+
+    otherExpensesInput.addEventListener('input', calculateTotals);
     
-    // CORRECTED: Add the missing keydown event listener for tabbing logic
+    // --- TABBING LOGIC ---
     form.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
 
         const activeElement = document.activeElement;
 
-        // Check if we are on the LAST quantity input in the table
+        // NEW: Logic for jumping from 'Other Expenses' into the item table
+        if (activeElement === otherExpensesInput) {
+            const firstItemInput = itemRowsContainer.querySelector('.item-search-input');
+            if (firstItemInput) {
+                e.preventDefault();
+                firstItemInput.focus();
+            }
+            return; // Stop further execution for this event
+        }
+
         const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
         const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
         
         if (activeElement === lastQuantityInput) {
-            e.preventDefault(); // Stop the default browser tab behavior
-            addRowBtn.focus();  // Move focus to the "Add Item" button
+            e.preventDefault();
+            addRowBtn.focus();
         }
 
-        // Check if we are on the "Add Item" button
         if (activeElement === addRowBtn) {
-            e.preventDefault(); // Stop the default browser tab behavior
-            createOrderBtn.focus(); // Move focus to the final "Create Order" button
+            e.preventDefault();
+            createOrderBtn.focus();
         }
     });
 
     addRow();
     toggleRowFields();
 }
-
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
