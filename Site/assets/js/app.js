@@ -628,21 +628,21 @@ function initOrderList() {
     if (!searchForm) return;
 
     const tableBody = document.getElementById('orderListTableBody');
-    const inputs = searchForm.querySelectorAll('input');
+    // CORRECTED: Query all filter controls, including the new select dropdown
+    const filterControls = searchForm.querySelectorAll('input, select');
 
     const doOrderSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-        inputs.forEach(input => {
-            if (input.value) {
-                // Use the input ID without the 'search_' prefix as the parameter key
-                params.set(input.id.replace('search_', ''), input.value);
+        filterControls.forEach(control => {
+            if (control.value) {
+                params.set(control.id.replace('search_', ''), control.value);
             }
         });
 
         fetch(`/modules/sales/list_orders.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
             .then(data => {
-                tableBody.innerHTML = ''; // Clear existing results
+                tableBody.innerHTML = '';
                 if (data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No orders found matching your criteria.</td></tr>`;
                     return;
@@ -655,7 +655,7 @@ function initOrderList() {
                         <td>${escapeHtml(order.customer_name)}</td>
                         <td>${escapeHtml(order.customer_phone)}</td>
                         <td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td>
-                        <td><span class="badge bg-primary">${escapeHtml(order.order_status)}</span></td>
+                        <td><span class="badge bg-primary">${escapeHtml(order.status)}</span></td>
                         <td>
                             <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(order.order_id)}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil"></i> View
@@ -671,13 +671,12 @@ function initOrderList() {
             });
     }, 300);
 
-    inputs.forEach(input => {
-        input.addEventListener('input', doOrderSearch);
+    filterControls.forEach(control => {
+        // Use 'input' for text/date fields and 'change' for the select dropdown
+        const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+        control.addEventListener(eventType, doOrderSearch);
     });
 }
-
-
-
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {

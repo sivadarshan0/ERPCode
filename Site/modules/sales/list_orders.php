@@ -1,5 +1,6 @@
 <?php
 // File: /modules/sales/list_orders.php
+// Corrected to fix PHP warnings and add status filter.
 
 session_start();
 error_reporting(E_ALL);
@@ -15,12 +16,12 @@ require_login();
 if (isset($_GET['action']) && $_GET['action'] === 'search') {
     header('Content-Type: application/json');
     try {
-        // Collect filters from the GET request
         $filters = [
             'order_id'  => $_GET['order_id'] ?? null,
             'customer'  => $_GET['customer'] ?? null,
             'date_from' => $_GET['date_from'] ?? null,
             'date_to'   => $_GET['date_to'] ?? null,
+            'status'    => $_GET['status'] ?? null, // Added status
         ];
         $orders = search_orders($filters);
         echo json_encode($orders);
@@ -31,7 +32,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
     exit;
 }
 
-// Initial page load - get all recent orders
 $initial_orders = search_orders();
 
 require_once __DIR__ . '/../../includes/header.php';
@@ -47,9 +47,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
     <!-- Search Filters -->
     <div class="card mb-4">
-        <div class="card-header">
-            <i class="bi bi-search"></i> Find Orders
-        </div>
+        <div class="card-header"><i class="bi bi-search"></i> Find Orders</div>
         <div class="card-body">
             <form id="orderSearchForm" class="row g-3">
                 <div class="col-md-3">
@@ -60,11 +58,23 @@ require_once __DIR__ . '/../../includes/header.php';
                     <label for="search_customer" class="form-label">Customer (Name or Phone)</label>
                     <input type="text" class="form-control" id="search_customer">
                 </div>
-                <div class="col-md-3">
+                <!-- ADDED: New Order Status dropdown -->
+                <div class="col-md-2">
+                    <label for="search_status" class="form-label">Status</label>
+                    <select id="search_status" class="form-select">
+                        <option value="">All</option>
+                        <option value="New">New</option>
+                        <option value="Processing">Processing</option>
+                        <option value="With Courier">With Courier</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Canceled">Canceled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label for="search_date_from" class="form-label">Date From</label>
                     <input type="date" class="form-control" id="search_date_from">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="search_date_to" class="form-label">Date To</label>
                     <input type="date" class="form-control" id="search_date_to">
                 </div>
@@ -99,7 +109,8 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <td><?= htmlspecialchars($order['customer_name']) ?></td>
                                     <td><?= htmlspecialchars($order['customer_phone']) ?></td>
                                     <td class="text-end"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></td>
-                                    <td><span class="badge bg-primary"><?= htmlspecialchars($order['order_status']) ?></span></td>
+                                    <!-- CORRECTED: Using 'status' instead of 'order_status' -->
+                                    <td><span class="badge bg-primary"><?= htmlspecialchars($order['status']) ?></span></td>
                                     <td>
                                         <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-pencil"></i> View
