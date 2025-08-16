@@ -204,4 +204,10 @@ main {
     min-height: 150px;
 }
 
-
+/*
+ * Fix for Order Entry item table layout.
+ * Overrides Bootstrap's .form-control width to allow table columns to size correctly.
+ */
+#orderItemRows .form-control {
+    width: auto;
+}
