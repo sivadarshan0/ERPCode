@@ -448,12 +448,13 @@ function search_orders($filters = []) {
     $db = db();
     if (!$db) return [];
 
+    // CORRECTED: `o.status` is used instead of `o.order_status` to match the DB schema.
     $sql = "
         SELECT 
             o.order_id,
             o.order_date,
             o.total_amount,
-            o.order_status,
+            o.status,
             c.name AS customer_name,
             c.phone AS customer_phone
         FROM orders o
@@ -495,6 +496,8 @@ function search_orders($filters = []) {
     $sql .= " ORDER BY o.order_date DESC, o.order_id DESC";
     
     $stmt = $db->prepare($sql);
+    if (!$stmt) return []; // Return empty array if SQL is invalid
+    
     if ($params) {
         $stmt->bind_param($types, ...$params);
     }
