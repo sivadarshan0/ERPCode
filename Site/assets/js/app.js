@@ -623,6 +623,61 @@ function initOrderEntry() {
     toggleRowFields();
 }
 
+function initOrderList() {
+    const searchForm = document.getElementById('orderSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('orderListTableBody');
+    const inputs = searchForm.querySelectorAll('input');
+
+    const doOrderSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+        inputs.forEach(input => {
+            if (input.value) {
+                // Use the input ID without the 'search_' prefix as the parameter key
+                params.set(input.id.replace('search_', ''), input.value);
+            }
+        });
+
+        fetch(`/modules/sales/list_orders.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = ''; // Clear existing results
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No orders found matching your criteria.</td></tr>`;
+                    return;
+                }
+                data.forEach(order => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(order.order_id)}</td>
+                        <td>${new Date(order.order_date).toLocaleDateString('en-GB')}</td>
+                        <td>${escapeHtml(order.customer_name)}</td>
+                        <td>${escapeHtml(order.customer_phone)}</td>
+                        <td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td>
+                        <td><span class="badge bg-primary">${escapeHtml(order.order_status)}</span></td>
+                        <td>
+                            <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(order.order_id)}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i> View
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[OrderSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    inputs.forEach(input => {
+        input.addEventListener('input', doOrderSearch);
+    });
+}
+
+
+
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
@@ -634,6 +689,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('grnForm')) { initGrnEntry(); }
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.querySelector('.live-search')) { initLiveSearch(); }
+    if (document.getElementById('orderSearchForm')) { initOrderList(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
@@ -651,3 +707,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     });
 });
+
