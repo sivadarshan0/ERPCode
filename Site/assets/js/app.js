@@ -400,6 +400,7 @@ function initOrderEntry() {
     const template = document.getElementById('orderItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
     const orderTotalDisplay = document.getElementById('orderTotal');
+    const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
 
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
@@ -408,13 +409,8 @@ function initOrderEntry() {
             row.querySelector('.stock-display').closest('td').classList.toggle('d-none', isPreBook);
             const costDisplayInput = row.querySelector('.cost-display');
             const priceInput = row.querySelector('.price-input');
-            if (isPreBook) {
-                costDisplayInput.readOnly = false;
-                priceInput.readOnly = false;
-            } else {
-                costDisplayInput.readOnly = true;
-                priceInput.readOnly = true;
-            }
+            costDisplayInput.readOnly = !isPreBook;
+            priceInput.readOnly = !isPreBook;
         });
     };
 
@@ -606,6 +602,28 @@ function initOrderEntry() {
         }
     });
     
+    // CORRECTED: Add the missing keydown event listener for tabbing logic
+    form.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+
+        const activeElement = document.activeElement;
+
+        // Check if we are on the LAST quantity input in the table
+        const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
+        const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
+        
+        if (activeElement === lastQuantityInput) {
+            e.preventDefault(); // Stop the default browser tab behavior
+            addRowBtn.focus();  // Move focus to the "Add Item" button
+        }
+
+        // Check if we are on the "Add Item" button
+        if (activeElement === addRowBtn) {
+            e.preventDefault(); // Stop the default browser tab behavior
+            createOrderBtn.focus(); // Move focus to the final "Create Order" button
+        }
+    });
+
     addRow();
     toggleRowFields();
 }
