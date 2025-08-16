@@ -1,6 +1,6 @@
 <?php
 // File: /modules/inventory/entry_order.php
-// Final version with column width adjustments for a clean layout.
+// Final version with all features and all UI/UX refinements.
 
 session_start();
 error_reporting(E_ALL);
@@ -119,11 +119,11 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <!-- Items Section -->
         <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow" tabindex="10">...</button></div>
+            <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><button type="button" class="btn btn-sm btn-success" id="addItemRow" tabindex="10"><i class="bi bi-plus-circle"></i> Add Item</button></div>
             <div class="card-body p-2">
                 <div class="table-responsive">
-                    <!-- CORRECTED: Removed the incorrect style="table-layout: fixed;" -->
-                    <table class="table table-sm">
+                    <!-- CORRECTED: Added style="width: 100%;" to the table element -->
+                    <table class="table table-sm" style="width: 100%;">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 30%;">Item *</th>
@@ -143,7 +143,7 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
-        <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit" tabindex="11">...</button></div>
+        <div class="col-12 mt-4"><button class="btn btn-primary btn-lg" type="submit" tabindex="11"><i class="bi bi-save"></i> Create Order & Update Stock</button></div>
     </form>
 </main>
 
@@ -168,4 +168,4 @@ require_once __DIR__ . '/../../includes/header.php';
     </tr>
 </template>
 
-<?php require_once __DIR__ . '/../../includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../../includes/footer.php'; ?>```
