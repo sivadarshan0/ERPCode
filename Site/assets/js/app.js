@@ -630,14 +630,38 @@ function initOrderList() {
 
     const tableBody = document.getElementById('orderListTableBody');
     const filterControls = searchForm.querySelectorAll('input, select');
+    const dateRangeInput = document.getElementById('search_date_range');
+
+    // --- Date Range Picker Initialization ---
+    const picker = new Litepicker({
+        element: dateRangeInput,
+        singleMode: false,
+        autoApply: true,
+        format: 'YYYY-MM-DD',
+        setup: (picker) => {
+            picker.on('selected', (date1, date2) => {
+                // When a date range is selected, trigger the search
+                doOrderSearch();
+            });
+        }
+    });
 
     const doOrderSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-        filterControls.forEach(control => {
+
+        // Handle regular text and select inputs
+        searchForm.querySelectorAll('input[type="text"], select').forEach(control => {
             if (control.value) {
                 params.set(control.id.replace('search_', ''), control.value);
             }
         });
+
+        // Handle the date range picker input
+        const dateRange = picker.getStartDate() && picker.getEndDate() ? picker.getStartDate().format('YYYY-MM-DD') + ' - ' + picker.getEndDate().format('YYYY-MM-DD') : '';
+        if (dateRange) {
+            params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
+            params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
+        }
 
         fetch(`/modules/sales/list_orders.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
@@ -652,7 +676,7 @@ function initOrderList() {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${escapeHtml(order.order_id)}</td>
-                        <td>${new Date(order.order_date).toLocaleDateString('en-GB')}</td>
+                        <td>${new Date(order.order_date + 'T00:00:00').toLocaleDateString('en-GB')}</td>
                         <td>${escapeHtml(order.customer_name)}</td>
                         <td>${escapeHtml(order.customer_phone)}</td>
                         <td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td>
@@ -673,9 +697,12 @@ function initOrderList() {
             });
     }, 300);
 
+    // Attach event listeners to all filter controls EXCEPT the date range picker
     filterControls.forEach(control => {
-        const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
-        control.addEventListener(eventType, doOrderSearch);
+        if (control.id !== 'search_date_range') {
+            const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+            control.addEventListener(eventType, doOrderSearch);
+        }
     });
 }
 

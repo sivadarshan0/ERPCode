@@ -29,6 +29,11 @@ $logged_in = isset($_SESSION['user_id']);
     <!-- Mobile-specific CSS -->
     <meta name="theme-color" content="#712cf9">
     <link rel="manifest" href="/manifest.json">
+
+    <!-- Litepicker library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+
 </head>
 <body class="d-flex flex-column min-vh-100">
     <!-- Navigation Bar -->
