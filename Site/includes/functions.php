@@ -551,6 +551,7 @@ function search_orders($filters = []) {
             o.order_date,
             o.total_amount,
             o.status,
+            o.payment_status, -- Added payment_status to the SELECT statement
             c.name AS customer_name,
             c.phone AS customer_phone
         FROM orders o
@@ -561,14 +562,11 @@ function search_orders($filters = []) {
     $params = [];
     $types = '';
 
-    // Filter by Order ID
     if (!empty($filters['order_id'])) {
         $sql .= " AND o.order_id LIKE ?";
         $params[] = '%' . $filters['order_id'] . '%';
         $types .= 's';
     }
-
-    // Filter by Customer Name or Phone
     if (!empty($filters['customer'])) {
         $sql .= " AND (c.name LIKE ? OR c.phone LIKE ?)";
         $customer_query = '%' . $filters['customer'] . '%';
@@ -576,8 +574,17 @@ function search_orders($filters = []) {
         $params[] = $customer_query;
         $types .= 'ss';
     }
-
-    // Filter by Date Range
+    if (!empty($filters['status'])) {
+        $sql .= " AND o.status = ?";
+        $params[] = $filters['status'];
+        $types .= 's';
+    }
+    // ADDED: Logic for the new payment_status filter
+    if (!empty($filters['payment_status'])) {
+        $sql .= " AND o.payment_status = ?";
+        $params[] = $filters['payment_status'];
+        $types .= 's';
+    }
     if (!empty($filters['date_from'])) {
         $sql .= " AND o.order_date >= ?";
         $params[] = $filters['date_from'];
@@ -586,13 +593,6 @@ function search_orders($filters = []) {
     if (!empty($filters['date_to'])) {
         $sql .= " AND o.order_date <= ?";
         $params[] = $filters['date_to'];
-        $types .= 's';
-    }
-
-    // ADDED: Logic for the new status filter
-    if (!empty($filters['status'])) {
-        $sql .= " AND o.status = ?";
-        $params[] = $filters['status'];
         $types .= 's';
     }
 

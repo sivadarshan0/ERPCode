@@ -644,10 +644,11 @@ function initOrderList() {
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No orders found matching your criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No orders found matching your criteria.</td></tr>`;
                     return;
                 }
                 data.forEach(order => {
+                    const paymentStatusClass = order.payment_status === 'Received' ? 'bg-success' : 'bg-warning';
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${escapeHtml(order.order_id)}</td>
@@ -655,7 +656,8 @@ function initOrderList() {
                         <td>${escapeHtml(order.customer_name)}</td>
                         <td>${escapeHtml(order.customer_phone)}</td>
                         <td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td>
-                        <td><span class="badge bg-primary">${escapeHtml(order.status)}</span></td>
+                        <td><span class="badge bg-info text-dark">${escapeHtml(order.status)}</span></td>
+                        <td><span class="badge ${paymentStatusClass}">${escapeHtml(order.payment_status)}</span></td>
                         <td>
                             <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(order.order_id)}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil"></i> View
@@ -667,7 +669,7 @@ function initOrderList() {
             })
             .catch(error => {
                 console.error('[OrderSearch] Error:', error);
-                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load search results.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Failed to load search results.</td></tr>`;
             });
     }, 300);
 
