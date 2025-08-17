@@ -1,6 +1,6 @@
 <?php
 // File: /modules/sales/entry_order.php
-// FINAL version: Correctly enables fields in edit mode and consolidates HTML.
+// FINAL version: Handles create, view, and update modes with full history tracking.
 
 session_start();
 error_reporting(E_ALL);
@@ -91,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
-        // Repopulate form with POST data on error
         $order = array_merge($order ?? [], $_POST);
         $order['customer'] = get_customer($_POST['customer_id'] ?? '');
     }
@@ -125,7 +124,6 @@ require_once __DIR__ . '/../../includes/header.php';
                         <div class="row g-3">
                             <div class="col-md-6 position-relative"><label class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" value="<?= $is_edit ? htmlspecialchars($order['customer']['phone']) : '' ?>" <?= $is_edit ? 'readonly' : '' ?>><div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none"></div><input type="hidden" name="customer_id" id="customer_id" required value="<?= $is_edit ? htmlspecialchars($order['customer_id']) : '' ?>"></div>
                             <div class="col-md-6"><label class="form-label">Selected Customer</label><div id="selected_customer_display" class="form-control-plaintext fw-bold"><?= $is_edit ? htmlspecialchars($order['customer']['name']) . ' (ID: ' . htmlspecialchars($order['customer_id']) . ')' : 'None' ?></div></div>
-                            
                             <div class="col-md-4"><label class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" <?= $is_edit ? 'disabled' : '' ?>><option value="Ex-Stock" <?= ($is_edit && $order['stock_type'] == 'Ex-Stock') ? 'selected' : '' ?>>Ex-Stock</option><option value="Pre-Book" <?= ($is_edit && $order['stock_type'] == 'Pre-Book') ? 'selected' : '' ?>>Pre-Book</option></select></div>
                             <div class="col-md-4"><label class="form-label">Payment Method</label><select name="payment_method" class="form-select"><option value="COD" <?= ($is_edit && $order['payment_method'] == 'COD') ? 'selected' : '' ?>>COD</option><option value="BT" <?= ($is_edit && $order['payment_method'] == 'BT') ? 'selected' : '' ?>>Bank Transfer</option></select></div>
                             <div class="col-md-4"><label class="form-label">Payment Status</label><select name="payment_status" class="form-select"><option value="Pending" <?= ($is_edit && $order['payment_status'] == 'Pending') ? 'selected' : '' ?>>Pending</option><option value="Received" <?= ($is_edit && $order['payment_status'] == 'Received') ? 'selected' : '' ?>>Received</option></select></div>
@@ -162,8 +160,15 @@ require_once __DIR__ . '/../../includes/header.php';
             <div class="card-body"><ul class="list-group list-group-flush"><?php foreach ($order['status_history'] as $history): ?><li class="list-group-item d-flex justify-content-between align-items-center"><div>Status set to <strong><?= htmlspecialchars($history['status']) ?></strong><small class="d-block text-muted">by <?= htmlspecialchars($history['created_by_name']) ?></small></div><span class="badge bg-secondary rounded-pill"><?= date("d-M-Y h:i A", strtotime($history['created_at'])) ?></span></li><?php endforeach; ?></ul></div>
         </div>
         <?php endif; ?>
+
+        <!-- NEW: Payment Status History -->
+        <?php if ($is_edit && !empty($order['payment_history'])): ?>
+        <div class="card mt-3">
+            <div class="card-header"><i class="bi bi-credit-card"></i> Payment Status History</div>
+            <div class="card-body"><ul class="list-group list-group-flush"><?php foreach ($order['payment_history'] as $history): ?><li class="list-group-item d-flex justify-content-between align-items-center"><div>Payment Status set to <strong><?= htmlspecialchars($history['payment_status']) ?></strong><small class="d-block text-muted">by <?= htmlspecialchars($history['created_by_name']) ?></small></div><span class="badge bg-secondary rounded-pill"><?= date("d-M-Y h:i A", strtotime($history['created_at'])) ?></span></li><?php endforeach; ?></ul></div>
+        </div>
+        <?php endif; ?>
         
-        <!-- CONSOLIDATED: This block is now outside the history check -->
         <div class="col-12 mt-4">
             <button class="btn btn-primary btn-lg" type="submit" id="submitBtn"><i class="bi bi-<?= $is_edit ? 'floppy' : 'save' ?>"></i> <?= $is_edit ? 'Update Order' : 'Create Order & Update Stock' ?></button>
             <a href="/modules/sales/list_orders.php" class="btn btn-outline-secondary btn-lg">Back to Order List</a>
