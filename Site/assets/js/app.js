@@ -444,7 +444,8 @@ function initOrderEntry() {
         const phone = customerSearchInput.value.trim();
         if (phone.length < 3) return customerResults.classList.add('d-none');
         
-        fetch(`/modules/inventory/entry_order.php?customer_lookup=${encodeURIComponent(phone)}`)
+        // CORRECTED: The fetch URL now points to /modules/sales/entry_order.php
+        fetch(`/modules/sales/entry_order.php?customer_lookup=${encodeURIComponent(phone)}`)
             .then(res => res.ok ? res.json() : Promise.reject('Customer lookup failed'))
             .then(data => {
                 customerResults.innerHTML = '';
@@ -520,7 +521,8 @@ function initOrderEntry() {
                 const stockType = stockTypeSelect.value;
                 if (name.length < 2) return resultsContainer.classList.add('d-none');
                 
-                fetch(`/modules/inventory/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
+                // CORRECTED: The fetch URL now points to /modules/sales/entry_order.php
+                fetch(`/modules/sales/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
                     .then(res => res.ok ? res.json() : Promise.reject())
                     .then(data => {
                         resultsContainer.innerHTML = '';
@@ -588,8 +590,6 @@ function initOrderEntry() {
             validateRowStock(row);
         }
     });
-
-    // We have REMOVED the event listener from 'otherExpensesInput' so it doesn't affect the item total display.
     
     form.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
@@ -623,12 +623,12 @@ function initOrderEntry() {
     toggleRowFields();
 }
 
+// ───── Order List Handler ─────
 function initOrderList() {
     const searchForm = document.getElementById('orderSearchForm');
     if (!searchForm) return;
 
     const tableBody = document.getElementById('orderListTableBody');
-    // CORRECTED: Query all filter controls, including the new select dropdown
     const filterControls = searchForm.querySelectorAll('input, select');
 
     const doOrderSearch = debounce(() => {
@@ -672,11 +672,11 @@ function initOrderList() {
     }, 300);
 
     filterControls.forEach(control => {
-        // Use 'input' for text/date fields and 'change' for the select dropdown
         const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
         control.addEventListener(eventType, doOrderSearch);
     });
 }
+
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
@@ -687,8 +687,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('stockAdjustmentForm')) { initStockAdjustmentEntry(); }
     if (document.getElementById('grnForm')) { initGrnEntry(); }
     if (document.getElementById('orderForm')) { initOrderEntry(); }
-    if (document.querySelector('.live-search')) { initLiveSearch(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
+    if (document.querySelector('.live-search')) { initLiveSearch(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
@@ -706,4 +706,3 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     });
 });
-
