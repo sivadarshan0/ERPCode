@@ -495,7 +495,7 @@ function update_order_details($order_id, $details) {
         // 2. Update the main order table
         $stmt = $db->prepare("UPDATE orders SET status = ?, payment_method = ?, payment_status = ?, other_expenses = ?, remarks = ? WHERE order_id = ?");
         if (!$stmt) throw new Exception("Database error: Failed to prepare statement.");
-        $stmt->bind_param("sssds", $details['order_status'], $details['payment_method'], $details['payment_status'], $details['other_expenses'], $details['remarks'], $order_id);
+        $stmt->bind_param("sssdss", $details['order_status'], $details['payment_method'], $details['payment_status'], $details['other_expenses'], $details['remarks'], $order_id);
         $stmt->execute();
 
         // 3. If the status has changed, insert a record into the history table
