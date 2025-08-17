@@ -1,6 +1,6 @@
 <?php
 // File: /modules/sales/list_orders.php
-// Corrected to fix PHP warnings and add status filter.
+// Updated to include the Status filter dropdown.
 
 session_start();
 error_reporting(E_ALL);
@@ -109,7 +109,6 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <td><?= htmlspecialchars($order['customer_name']) ?></td>
                                     <td><?= htmlspecialchars($order['customer_phone']) ?></td>
                                     <td class="text-end"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></td>
-                                    <!-- CORRECTED: Using 'status' instead of 'order_status' -->
                                     <td><span class="badge bg-primary"><?= htmlspecialchars($order['status']) ?></span></td>
                                     <td>
                                         <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-sm btn-outline-primary">

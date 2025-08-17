@@ -677,7 +677,6 @@ function initOrderList() {
     });
 }
 
-
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
