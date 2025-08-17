@@ -450,28 +450,22 @@ function get_order_details($order_id) {
     $stmt_order->execute();
     $order = $stmt_order->get_result()->fetch_assoc();
 
-    if (!$order) {
-        return false; // Order not found
-    }
+    if (!$order) return false;
 
-    // 2. Get the associated customer details
+    // 2. Get associated customer details
     $order['customer'] = get_customer($order['customer_id']);
 
-    // 3. Get all the line items for the order
-    $stmt_items = $db->prepare("
-        SELECT 
-            oi.*, 
-            i.name as item_name,
-            i.uom,
-            COALESCE(sl.quantity, 0) as stock_on_hand
-        FROM order_items oi
-        JOIN items i ON oi.item_id = i.item_id
-        LEFT JOIN stock_levels sl ON oi.item_id = sl.item_id
-        WHERE oi.order_id = ?
-    ");
+    // 3. Get all line items for the order
+    $stmt_items = $db->prepare("SELECT oi.*, i.name as item_name, i.uom, COALESCE(sl.quantity, 0) as stock_on_hand FROM order_items oi JOIN items i ON oi.item_id = i.item_id LEFT JOIN stock_levels sl ON oi.item_id = sl.item_id WHERE oi.order_id = ?");
     $stmt_items->bind_param("s", $order_id);
     $stmt_items->execute();
     $order['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // 4. NEW: Get the status history for the order
+    $stmt_history = $db->prepare("SELECT * FROM order_status_history WHERE order_id = ? ORDER BY created_at ASC");
+    $stmt_history->bind_param("s", $order_id);
+    $stmt_history->execute();
+    $order['status_history'] = $stmt_history->get_result()->fetch_all(MYSQLI_ASSOC);
 
     return $order;
 }
@@ -487,41 +481,36 @@ function get_order_details($order_id) {
 function update_order_details($order_id, $details) {
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
+    if (empty($order_id) || !is_array($details)) throw new Exception("Invalid arguments for updating order.");
 
-    // Basic validation
-    if (empty($order_id) || !is_array($details)) {
-        throw new Exception("Invalid arguments for updating order.");
-    }
+    $db->begin_transaction();
+    try {
+        // --- NEW LOGIC: Check if status is actually changing ---
+        // 1. Get the current status from the database before updating
+        $stmt_check = $db->prepare("SELECT status FROM orders WHERE order_id = ?");
+        $stmt_check->bind_param("s", $order_id);
+        $stmt_check->execute();
+        $old_status = $stmt_check->get_result()->fetch_assoc()['status'];
 
-    // Prepare the SQL update statement
-    $stmt = $db->prepare("
-        UPDATE orders 
-        SET 
-            status = ?,
-            payment_method = ?,
-            payment_status = ?,
-            other_expenses = ?,
-            remarks = ?
-        WHERE order_id = ?
-    ");
-    
-    if (!$stmt) {
-        throw new Exception("Database error: Failed to prepare statement.");
-    }
+        // 2. Update the main order table
+        $stmt = $db->prepare("UPDATE orders SET status = ?, payment_method = ?, payment_status = ?, other_expenses = ?, remarks = ? WHERE order_id = ?");
+        if (!$stmt) throw new Exception("Database error: Failed to prepare statement.");
+        $stmt->bind_param("sssds", $details['order_status'], $details['payment_method'], $details['payment_status'], $details['other_expenses'], $details['remarks'], $order_id);
+        $stmt->execute();
 
-    $stmt->bind_param("sssds", 
-        $details['order_status'], 
-        $details['payment_method'], 
-        $details['payment_status'], 
-        $details['other_expenses'], 
-        $details['remarks'], 
-        $order_id
-    );
-
-    if ($stmt->execute()) {
+        // 3. If the status has changed, insert a record into the history table
+        if ($old_status !== $details['order_status']) {
+            $stmt_history = $db->prepare("INSERT INTO order_status_history (order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
+            $stmt_history->bind_param("ssis", $order_id, $details['order_status'], $_SESSION['user_id'], $_SESSION['username']);
+            $stmt_history->execute();
+        }
+        
+        $db->commit();
         return true;
-    } else {
-        throw new Exception("Failed to execute order update.");
+
+    } catch (Exception $e) {
+        $db->rollback();
+        throw new Exception("Failed to update order: " . $e->getMessage());
     }
 }
 

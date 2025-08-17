@@ -160,6 +160,35 @@ require_once __DIR__ . '/../../includes/header.php';
             <button class="btn btn-primary btn-lg" type="submit" id="submitBtn"><i class="bi bi-<?= $is_edit ? 'floppy' : 'save' ?>"></i> <?= $is_edit ? 'Update Order' : 'Create Order & Update Stock' ?></button>
             <a href="/modules/sales/list_orders.php" class="btn btn-outline-secondary btn-lg">Back to Order List</a>
         </div>
+        <!-- NEW: Order Status History -->
+        <?php if ($is_edit && !empty($order['status_history'])): ?>
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-clock-history"></i> Order Status History
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <?php foreach ($order['status_history'] as $history): ?>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                Status set to <strong><?= htmlspecialchars($history['status']) ?></strong>
+                                <small class="d-block text-muted">
+                                    by <?= htmlspecialchars($history['created_by_name']) ?>
+                                </small>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill">
+                                <?= date("d-M-Y h:i A", strtotime($history['created_at'])) ?>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="col-12 mt-4">
+            <!-- This is your existing submit button block -->
+        </div>
     </form>
 </main>
 
