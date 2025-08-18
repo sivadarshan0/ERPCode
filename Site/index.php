@@ -1,6 +1,6 @@
 <?php
 // File: index.php
-// FINAL version with the correct two-column layout.
+// Updated to include the "Find Orders" link on the dashboard.
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -14,6 +14,7 @@ require_once __DIR__ . '/includes/functions.php';
 
 require_login();
 
+// User is authenticated - show dashboard
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -35,7 +36,7 @@ require_once __DIR__ . '/includes/header.php';
             <div class="row mt-4">
 
                 <!-- Card 1: Sales & Orders -->
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-cart-check-fill"></i> Sales & Orders
@@ -43,15 +44,20 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-body">
                             <h5 class="card-title">Order Management</h5>
                             <div class="d-grid gap-2 mt-3">
-                                <a href="/modules/sales/entry_order.php" class="btn btn-success"><i class="bi bi-cart-plus-fill"></i> New Order</a>
-                                <a href="/modules/sales/list_orders.php" class="btn btn-primary"><i class="bi bi-search"></i> Find Orders</a>
+                                <a href="/modules/sales/entry_order.php" class="btn btn-success">
+                                    <i class="bi bi-cart-plus-fill"></i> New Order
+                                </a>
+                                <!-- CORRECTED: Link is now active and points to the correct location -->
+                                <a href="/modules/sales/list_orders.php" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Find Orders
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card 2: Customer Management -->
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-people-fill"></i> Customer Management
@@ -59,15 +65,19 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-body">
                             <h5 class="card-title">Quick Actions</h5>
                             <div class="d-grid gap-2 mt-3">
-                                <a href="/modules/customer/entry_customer.php" class="btn btn-success"><i class="bi bi-plus-circle"></i> Add New Customer</a>
-                                <a href="/modules/customer/list_customers.php" class="btn btn-primary"><i class="bi bi-search"></i> Find Customer</a>
+                                <a href="/modules/customer/entry_customer.php" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Add New Customer
+                                </a>
+                                <a href="/modules/customer/list_customers.php" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Find Customer
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Card 3: Inventory -->
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-boxes"></i> Inventory
@@ -75,16 +85,22 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-body">
                             <h5 class="card-title">Manage Products</h5>
                             <div class="d-grid gap-2 mt-3">
-                                <a href="/modules/inventory/entry_item.php" class="btn btn-success"><i class="bi bi-plus-circle"></i> Add New Item</a>
-                                <a href="/modules/inventory/entry_grn.php" class="btn btn-primary"><i class="bi bi-box-arrow-in-down"></i> Receive Stock (GRN)</a>
-                                <a href="/modules/inventory/list_stock.php" class="btn btn-secondary"><i class="bi bi-card-list"></i> View Stock Levels</a>
+                                <a href="/modules/inventory/entry_item.php" class="btn btn-success">
+                                    <i class="bi bi-plus-circle"></i> Add New Item
+                                </a>
+                                <a href="/modules/inventory/entry_grn.php" class="btn btn-primary">
+                                    <i class="bi bi-box-arrow-in-down"></i> Receive Stock (GRN)
+                                </a>
+                                <a href="/modules/inventory/list_stock.php" class="btn btn-secondary">
+                                    <i class="bi bi-card-list"></i> View Stock Levels
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Card 4: Price Calculator -->
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
@@ -92,7 +108,9 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-body">
                             <h5 class="card-title">Pricing Tools</h5>
                             <div class="d-grid gap-2 mt-3">
-                                <a href="/modules/price/calculate_price.php" class="btn btn-primary"><i class="bi bi-play-circle"></i> Open Calculator</a>
+                                <a href="/modules/price/calculate_price.php" class="btn btn-primary">
+                                    <i class="bi bi-play-circle"></i> Open Calculator
+                                </a>
                             </div>
                         </div>
                     </div>
