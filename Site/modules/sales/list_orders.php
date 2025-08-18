@@ -1,6 +1,6 @@
 <?php
 // File: /modules/sales/list_orders.php
-// FINAL version with corrected full-width layout.
+// FINAL version with corrected padding for wider content area.
 
 session_start();
 error_reporting(E_ALL);
@@ -35,12 +35,12 @@ $initial_orders = search_orders();
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
-<!-- CORRECTED: Using the main application layout structure for proper width -->
 <div class="container-fluid">
     <div class="row">
         <?php require_once __DIR__ . '/../../includes/sidebar.php'; ?>
 
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <!-- CORRECTED: Changed px-md-4 to px-md-3 to reduce padding and make the content wider -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-3">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h2>Order List</h2>
                 <a href="/modules/sales/entry_order.php" class="btn btn-success">
