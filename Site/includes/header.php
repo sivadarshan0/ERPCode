@@ -1,9 +1,10 @@
 <?php
-// File: includes/header.php
+// File: /includes/header.php
+// FINAL version: This file now ONLY contains the top navigation bar.
+// The main page layout (container, row, sidebar, main) is now handled by each individual page.
 
 defined('_IN_APP_') or die('Unauthorized access');
 
-// Check if user is logged in
 $logged_in = isset($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
@@ -11,39 +12,26 @@ $logged_in = isset($_SESSION['user_id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title ?? 'My Application'); ?></title>
+    <title><?php echo htmlspecialchars($page_title ?? 'ERP System'); ?></title>
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Litepicker for Date Range -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css"/>
     
     <!-- Custom CSS with cache busting -->
-    <?php
-        $cssPath = __DIR__ . '/../assets/css/main.css';
-        $cssVersion = file_exists($cssPath) ? filemtime($cssPath) : time();
-    ?>
-    <link rel="stylesheet" href="/assets/css/main.css?v=<?= $cssVersion ?>">
-    
-    <!-- Mobile-specific CSS -->
-    <meta name="theme-color" content="#712cf9">
-    <link rel="manifest" href="/manifest.json">
-
-    <!-- Litepicker library -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
-
+    <link rel="stylesheet" href="/assets/css/main.css?v=<?= filemtime(__DIR__ . '/../assets/css/main.css') ?>">
 </head>
-<body class="d-flex flex-column min-vh-100">
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+<body>
+    <header class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand" href="/index.php">
                 <i class="bi bi-box-seam"></i> ERP System
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -54,22 +42,13 @@ $logged_in = isset($_SESSION['user_id']);
                             <a class="nav-link" href="/index.php"><i class="bi bi-speedometer2"></i> Dashboard</a>
                         </li>
 
-                        <!-- Merged and Enhanced Customers Dropdown -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="customersDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-people-fill"></i> Customers
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="customersDropdown">
-                                <li><a class="dropdown-item" href="/modules/customer/entry_customer.php">
-                                    <i class="bi bi-plus-circle"></i> New Customer
-                                </a></li>
-                                <li><a class="dropdown-item" href="/modules/customer/list_customers.php">
-                                    <i class="bi bi-list-ul"></i> View Customers
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#">
-                                    <i class="bi bi-graph-up"></i> Reports
-                                </a></li>
+                                <li><a class="dropdown-item" href="/modules/customer/entry_customer.php"><i class="bi bi-plus-circle"></i> New Customer</a></li>
+                                <li><a class="dropdown-item" href="/modules/customer/list_customers.php"><i class="bi bi-list-ul"></i> View Customers</a></li>
                             </ul>
                         </li>
                     <?php endif; ?>
@@ -78,7 +57,7 @@ $logged_in = isset($_SESSION['user_id']);
                 <ul class="navbar-nav">
                     <?php if ($logged_in): ?>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($_SESSION['username']); ?>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -98,46 +77,6 @@ $logged_in = isset($_SESSION['user_id']);
         </div>
     </nav>
 
-    <!-- Main Content Container -->
-    <div class="container-fluid flex-grow-1">
-        <div class="row">
-            <?php if ($logged_in && !isset($hide_sidebar)): ?>
-                <?php require_once __DIR__ . '/sidebar.php'; ?>
-            <?php endif; ?>
-            
-            <main class="<?php echo $logged_in && !isset($hide_sidebar) ? 'col-md-9 ms-sm-auto col-lg-10 px-md-4' : 'col-12'; ?>">
-                <!-- Breadcrumb -->
-                <?php if (isset($breadcrumbs)): ?>
-                <nav aria-label="breadcrumb" class="mt-3">
-                    <ol class="breadcrumb">
-                        <?php foreach ($breadcrumbs as $text => $url): ?>
-                            <?php if ($url): ?>
-                                <li class="breadcrumb-item"><a href="<?php echo $url; ?>"><?php echo htmlspecialchars($text); ?></a></li>
-                            <?php else: ?>
-                                <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($text); ?></li>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
-                    </ol>
-                </nav>
-                <?php endif; ?>
-                
-                <!-- Page Title -->
-                <?php if (isset($page_title)): ?>
-                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2"><?php echo htmlspecialchars($page_title); ?></h1>
-                    <?php if (isset($page_actions)): ?>
-                        <div class="btn-toolbar mb-2 mb-md-0">
-                            <div class="btn-group me-2">
-                                <?php foreach ($page_actions as $action): ?>
-                                    <a href="<?php echo $action['url']; ?>" class="btn btn-sm btn-<?php echo $action['style'] ?? 'primary'; ?>">
-                                        <?php if (isset($action['icon'])): ?>
-                                            <i class="bi bi-<?php echo $action['icon']; ?>"></i>
-                                        <?php endif; ?>
-                                        <?php echo htmlspecialchars($action['text']); ?>
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                </div>
-                <?php endif; ?>
+    <!-- NOTE: The main content container, row, sidebar, and main tags have been removed from this file. 
+         They must now be included on each individual page (e.g., index.php, list_orders.php) 
+         to ensure the correct layout. -->
