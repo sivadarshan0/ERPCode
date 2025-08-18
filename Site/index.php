@@ -1,5 +1,6 @@
 <?php
 // File: index.php
+// Updated to include the "Find Orders" link on the dashboard.
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -34,7 +35,7 @@ require_once __DIR__ . '/includes/header.php';
             <!-- Main Dashboard Cards -->
             <div class="row mt-4">
 
-                <!-- Card 1: Sales & Orders (NEW) -->
+                <!-- Card 1: Sales & Orders -->
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-primary text-white">
@@ -46,7 +47,10 @@ require_once __DIR__ . '/includes/header.php';
                                 <a href="/modules/sales/entry_order.php" class="btn btn-success">
                                     <i class="bi bi-cart-plus-fill"></i> New Order
                                 </a>
-                                <!-- Future button: <a href="/modules/inventory/list_orders.php" class="btn btn-primary"><i class="bi bi-search"></i> Find Orders</a> -->
+                                <!-- CORRECTED: Link is now active and points to the correct location -->
+                                <a href="/modules/sales/list_orders.php" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> Find Orders
+                                </a>
                             </div>
                         </div>
                     </div>
