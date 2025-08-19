@@ -482,7 +482,7 @@ function initOrderEntry() {
         itemRowsContainer.appendChild(newRow);
         toggleRowFields();
     };
-    addRowBtn.addEventListener('click', addRow);
+    if(addRowBtn) addRowBtn.addEventListener('click', addRow);
     
     itemRowsContainer.addEventListener('click', e => {
         if (e.target.closest('.remove-item-row')) {
@@ -491,7 +491,7 @@ function initOrderEntry() {
         }
     });
 
-    stockTypeSelect.addEventListener('change', () => {
+    if(stockTypeSelect) stockTypeSelect.addEventListener('change', () => {
         toggleRowFields();
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
             row.querySelector('.item-search-input').value = '';
@@ -617,7 +617,9 @@ function initOrderEntry() {
         }
     });
 
-    addRow();
+    if (itemRowsContainer.children.length === 0) {
+        addRow();
+    }
     toggleRowFields();
 }
 
@@ -702,12 +704,10 @@ function initOrderList() {
 // ----- Purchase Order Entry Handler -----
 // -----------------------------------------
 
-// CORRECTED AND FINAL VERSION
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
 
-    // --- Element References ---
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
@@ -715,40 +715,45 @@ function initPoEntry() {
     const preOrderResults = document.getElementById('preOrderResults');
     const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
 
-    // --- Add/Remove Item Rows ---
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
         newRow.querySelector('.item-search-input').focus();
     };
+
     addRow();
     addRowBtn.addEventListener('click', addRow);
+
     itemRowsContainer.addEventListener('click', function(e) {
         if (e.target.closest('.remove-item-row')) {
             e.target.closest('.po-item-row').remove();
         }
     });
 
-    // --- Live Search for Items in Each Row ---
     itemRowsContainer.addEventListener('input', debounce((e) => {
         if (e.target.classList.contains('item-search-input')) {
             const searchInput = e.target;
             const resultsContainer = searchInput.nextElementSibling;
             const name = searchInput.value.trim();
+
             if (name.length < 2) {
                 resultsContainer.classList.add('d-none');
                 return;
             }
+
             fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
                     resultsContainer.innerHTML = '';
-                    if (data && data.length > 0) {
+                    if (data.error) throw new Error(data.error);
+
+                    if (data.length > 0) {
                         data.forEach(item => {
                             const button = document.createElement('button');
                             button.type = 'button';
                             button.className = 'list-group-item list-group-item-action py-2';
                             button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
+                            
                             button.addEventListener('click', () => {
                                 const parentRow = searchInput.closest('.po-item-row');
                                 parentRow.querySelector('.item-id-input').value = item.item_id;
@@ -763,11 +768,13 @@ function initPoEntry() {
                         resultsContainer.classList.add('d-none');
                     }
                 })
-                .catch(error => console.error('[POItemLookup] Error:', error));
+                .catch(error => {
+                    console.error('[POItemLookup] Error:', error);
+                    resultsContainer.classList.add('d-none');
+                });
         }
     }, 300));
     
-    // --- Live Search for Pre-Orders ---
     preOrderSearchInput.addEventListener('input', debounce(() => {
         const query = preOrderSearchInput.value.trim();
         if (query.length < 2) {
