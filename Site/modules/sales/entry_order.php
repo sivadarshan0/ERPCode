@@ -106,7 +106,7 @@ require_once __DIR__ . '/../../includes/header.php';
 ?>
 
 <main class="container mt-4">
-    <h2><?= $is_edit ? 'Manage Order <span class="badge bg-secondary">'.htmlspecialchars($order['order_id']).'</span>' : 'New Sales Order' ?></h2>
+    <h2><?= $is_edit ? 'Manage Order <span class="badge bg-secondary">'.htmlspecialchars($order['order_id']).'</span>' : 'Sales Order' ?></h2>
     
     <?php if ($message): ?>
     <div id="alert-message" class="alert alert-<?= $message_type ?> alert-dismissible fade show" role="alert"><?= htmlspecialchars($message) ?></div>

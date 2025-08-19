@@ -45,7 +45,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <h1 class="h2">Order List</h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
                     <a href="/index.php" class="btn btn-outline-secondary me-2"><i class="bi bi-arrow-left-circle"></i> Back</a>
-                    <a href="/modules/sales/entry_order.php" class="btn btn-success"><i class="bi bi-plus-circle"></i> New Sales Order</a>
+                    <a href="/modules/sales/entry_order.php" class="btn btn-success"><i class="bi bi-plus-circle"></i> Sales Order</a>
                 </div>
             </div>
 

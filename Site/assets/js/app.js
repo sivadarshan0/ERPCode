@@ -665,6 +665,81 @@ function initPoEntry() {
     });
 }
 
+// -----------------------------------------
+// ----- GRN List Handler -----
+// -----------------------------------------
+
+function initGrnList() {
+    const searchForm = document.getElementById('grnSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('grnListTableBody');
+    const filterControls = searchForm.querySelectorAll('input');
+    const dateRangeInput = document.getElementById('search_date_range');
+
+    // --- Date Range Picker Initialization ---
+    const picker = new Litepicker({
+        element: dateRangeInput,
+        singleMode: false,
+        autoApply: true,
+        format: 'YYYY-MM-DD',
+        setup: (picker) => {
+            picker.on('selected', (date1, date2) => {
+                // When a date range is selected, trigger the search
+                doGrnSearch();
+            });
+        }
+    });
+
+    const doGrnSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+
+        // Handle the GRN ID text input
+        const grnIdInput = document.getElementById('search_grn_id');
+        if (grnIdInput.value) {
+            params.set('grn_id', grnIdInput.value);
+        }
+
+        // Handle the date range picker input
+        if (picker.getStartDate() && picker.getEndDate()) {
+            params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
+            params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
+        }
+
+        fetch(`/modules/purchase/list_grns.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = ''; // Clear existing results
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No GRNs found matching your criteria.</td></tr>`;
+                    return;
+                }
+                data.forEach(grn => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(grn.grn_id)}</td>
+                        <td>${new Date(grn.grn_date + 'T00:00:00').toLocaleDateString('en-GB')}</td>
+                        <td>${escapeHtml(grn.remarks)}</td>
+                        <td>${escapeHtml(grn.created_by_name)}</td>
+                        <td>
+                            <a href="/modules/purchase/entry_grn.php?grn_id=${escapeHtml(grn.grn_id)}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[GrnSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    // Attach event listener to the GRN ID input
+    document.getElementById('search_grn_id').addEventListener('input', doGrnSearch);
+}
+
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
@@ -677,6 +752,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
     if (document.getElementById('poForm')) { initPoEntry(); }
     if (document.querySelector('.live-search')) { initLiveSearch(); }
+    if (document.getElementById('grnSearchForm')) { initGrnList(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));

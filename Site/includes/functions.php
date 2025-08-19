@@ -721,3 +721,67 @@ function search_open_pre_orders($query) {
     $stmt->execute();
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
+
+// -----------------------------------------
+// ----- GRN Listing/Search Functions -----
+// -----------------------------------------
+
+/**
+ * Searches for GRNs based on various criteria.
+ *
+ * @param array $filters An associative array of filters (e.g., ['grn_id' => 'GRN001', 'date_from' => 'Y-m-d', 'date_to' => 'Y-m-d']).
+ * @return array An array of matching GRNs.
+ */
+function search_grns($filters = []) {
+    $db = db();
+    if (!$db) return [];
+
+    $sql = "
+        SELECT 
+            g.grn_id,
+            g.grn_date,
+            g.remarks,
+            g.created_by_name
+        FROM grn g
+        WHERE 1=1
+    ";
+
+    $params = [];
+    $types = '';
+
+    // Filter by GRN ID
+    if (!empty($filters['grn_id'])) {
+        $sql .= " AND g.grn_id LIKE ?";
+        $params[] = '%' . $filters['grn_id'] . '%';
+        $types .= 's';
+    }
+
+    // Filter by Date Range
+    if (!empty($filters['date_from'])) {
+        $sql .= " AND g.grn_date >= ?";
+        $params[] = $filters['date_from'];
+        $types .= 's';
+    }
+    if (!empty($filters['date_to'])) {
+        $sql .= " AND g.grn_date <= ?";
+        $params[] = $filters['date_to'];
+        $types .= 's';
+    }
+
+    $sql .= " ORDER BY g.grn_date DESC, g.grn_id DESC";
+    
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        // Log error and return empty array
+        error_log("GRN Search Prepare Failed: " . $db->error);
+        return [];
+    }
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
