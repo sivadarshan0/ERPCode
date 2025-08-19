@@ -1,6 +1,6 @@
 <?php
 // File: /modules/sales/list_orders.php
-// FINAL version with corrected padding for wider content area.
+// FINAL version with a "Back to Dashboard" button.
 
 session_start();
 error_reporting(E_ALL);
@@ -26,7 +26,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
         ];
         $orders = search_orders($filters);
         echo json_encode($orders);
-    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
     exit;
 }
 
@@ -39,13 +42,18 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="row">
         <?php require_once __DIR__ . '/../../includes/sidebar.php'; ?>
 
-        <!-- CORRECTED: Changed px-md-4 to px-md-3 to reduce padding and make the content wider -->
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-3">
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h2>Order List</h2>
-                <a href="/modules/sales/entry_order.php" class="btn btn-success">
-                    <i class="bi bi-plus-circle"></i> New Sales Order
-                </a>
+                <h1 class="h2">Order List</h1>
+                <!-- MODIFIED: Added a button toolbar and the Back to Dashboard button -->
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="/index.php" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+                    </a>
+                    <a href="/modules/sales/entry_order.php" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> New Sales Order
+                    </a>
+                </div>
             </div>
 
             <!-- Search Filters -->

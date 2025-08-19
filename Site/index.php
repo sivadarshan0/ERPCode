@@ -39,10 +39,10 @@ require_once __DIR__ . '/includes/header.php';
                             <i class="bi bi-cart-check-fill"></i> Sales & Orders
                         </div>
                         <div class="card-body">
-                            <h5 class="card-title">Order Management</h5>
+                            <h4 class="card-title">Order Management</h4>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/sales/entry_order.php" class="btn btn-success">
-                                    <i class="bi bi-plus-circle"></i> New Sales Order
+                                    <i class="bi bi-plus-circle"></i> Sales Order
                                 </a>
                                 <a href="/modules/sales/list_orders.php" class="btn btn-primary">
                                     <i class="bi bi-search"></i> Find Orders
@@ -62,11 +62,11 @@ require_once __DIR__ . '/includes/header.php';
                             <h5 class="card-title">Supplier & Stock In</h5>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/purchase/entry_purchase_order.php" class="btn btn-success">
-                                    <i class="bi bi-plus-circle"></i> New Purchase Order
+                                    <i class="bi bi-plus-circle"></i> Purchase Order
                                 </a>
                                 <!-- CORRECTED: Link now points to the purchase folder -->
                                 <a href="/modules/purchase/entry_grn.php" class="btn btn-primary">
-                                    <i class="bi bi-box-arrow-in-down"></i> Receive Stock (GRN)
+                                    <i class="bi bi-box-arrow-in-down"></i> Receive Stock
                                 </a>
                             </div>
                         </div>
@@ -77,13 +77,13 @@ require_once __DIR__ . '/includes/header.php';
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-success text-white">
-                            <i class="bi bi-people-fill"></i> Customer Management
+                            <i class="bi bi-people-fill"></i> CRM
                         </div>
                         <div class="card-body">
-                            <h5 class="card-title">Quick Actions</h5>
+                            <h5 class="card-title">Customer Management</h5>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/customer/entry_customer.php" class="btn btn-success">
-                                    <i class="bi bi-plus-circle"></i> Add New Customer
+                                    <i class="bi bi-plus-circle"></i> New Customer
                                 </a>
                                 <a href="/modules/customer/list_customers.php" class="btn btn-primary">
                                     <i class="bi bi-search"></i> Find Customer
