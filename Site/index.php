@@ -1,6 +1,6 @@
 <?php
 // File: index.php
-// FINAL version with a consistent green/blue color scheme for all dashboard cards.
+// FINAL version with 5-card layout and all requested link/UI updates.
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -33,7 +33,7 @@ require_once __DIR__ . '/includes/header.php';
             <div class="row mt-4">
 
                 <!-- Card 1: Sales & Orders -->
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-success text-white">
                             <i class="bi bi-cart-check-fill"></i> Sales & Orders
@@ -53,7 +53,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <!-- Card 2: Purchasing -->
-                <div class="col-xl-3 col-md-6 mb-4">
+                <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-success text-white">
                             <i class="bi bi-truck"></i> Purchasing
@@ -64,39 +64,17 @@ require_once __DIR__ . '/includes/header.php';
                                 <a href="/modules/purchase/entry_purchase_order.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> New Purchase Order
                                 </a>
-                                <a href="/modules/inventory/entry_grn.php" class="btn btn-primary">
+                                <!-- CORRECTED: Link now points to the purchase folder -->
+                                <a href="/modules/purchase/entry_grn.php" class="btn btn-primary">
                                     <i class="bi bi-box-arrow-in-down"></i> Receive Stock (GRN)
                                 </a>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Card 3: Inventory & Products -->
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-header bg-success text-white">
-                            <i class="bi bi-boxes"></i> Inventory & Products
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title">Manage Products</h5>
-                            <div class="d-grid gap-2 mt-3">
-                                <a href="/modules/inventory/list_stock.php" class="btn btn-success">
-                                    <i class="bi bi-card-list"></i> View Stock Levels
-                                </a>
-                                <a href="/modules/inventory/entry_item.php" class="btn btn-primary">
-                                    <i class="bi bi-box-seam"></i> Manage Items
-                                </a>
-                                <a href="/modules/inventory/entry_category.php" class="btn btn-primary">
-                                    <i class="bi bi-tags-fill"></i> Manage Categories
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 
-                <!-- Card 4: Customer Management -->
-                <div class="col-xl-3 col-md-6 mb-4">
+                <!-- Card 3: Customer Management -->
+                <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-success text-white">
                             <i class="bi bi-people-fill"></i> Customer Management
@@ -115,8 +93,45 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-            </div> <!-- End of the row -->
+                <!-- Card 4: Inventory & Products -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-boxes"></i> Inventory & Products
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Manage Products</h5>
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="/modules/inventory/list_stock.php" class="btn btn-success">
+                                    <i class="bi bi-card-list"></i> View Stock Levels
+                                </a>
+                                <a href="/modules/inventory/entry_item.php" class="btn btn-primary">
+                                    <i class="bi bi-box-seam"></i> Manage Items
+                                </a>
+                                <!-- REMOVED: Manage Categories button has been removed -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Card 5: Price Calculator (NEW) -->
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-calculator-fill"></i> Price Calculator
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Pricing Tools</h5>
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="/modules/price/calculate_price.php" class="btn btn-primary">
+                                    <i class="bi bi-play-circle"></i> Open Calculator
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+            </div> <!-- End of the row -->
         </main>
     </div>
 </div>
