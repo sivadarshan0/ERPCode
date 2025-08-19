@@ -271,7 +271,7 @@ function initGrnEntry() {
             const resultsContainer = searchInput.nextElementSibling;
             const name = searchInput.value.trim();
             if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
-            fetch(`/modules/inventory/entry_grn.php?item_lookup=${encodeURIComponent(name)}`)
+            fetch(`/modules/purchase/entry_grn.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
                     resultsContainer.innerHTML = '';
