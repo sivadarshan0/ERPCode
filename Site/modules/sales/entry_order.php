@@ -1,6 +1,6 @@
 <?php
 // File: /modules/sales/entry_order.php
-// FINAL version: Corrects the array key for price display in view mode.
+// FINAL version: Corrects the item table display in view/manage mode.
 
 session_start();
 error_reporting(E_ALL);
@@ -52,32 +52,42 @@ if (isset($_GET['order_id'])) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_edit) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        $order_details = [
-            'payment_method' => $_POST['payment_method'] ?? 'COD',
-            'payment_status' => $_POST['payment_status'] ?? 'Pending',
-            'order_status'   => $_POST['order_status'] ?? 'New',
-            'stock_type'     => $_POST['stock_type'] ?? 'Ex-Stock',
-            'remarks'        => $_POST['remarks'] ?? '',
-            'other_expenses' => $_POST['other_expenses'] ?? 0
-        ];
-        $items_to_process = [];
-        foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
-            if (!empty($item_id)) {
-                $items_to_process[] = [
-                    'item_id'       => $item_id,
-                    'quantity'      => $_POST['items']['quantity'][$index],
-                    'price'         => $_POST['items']['price'][$index],
-                    'cost_price'    => $_POST['items']['cost'][$index],
-                    'profit_margin' => $_POST['items']['margin'][$index]
-                ];
+        if ($is_edit) {
+            $order_id_to_update = $_POST['order_id'] ?? '';
+            $details_to_update = [
+                'order_status'   => $_POST['order_status'] ?? 'New',
+                'payment_method' => $_POST['payment_method'] ?? 'COD',
+                'payment_status' => $_POST['payment_status'] ?? 'Pending',
+                'other_expenses' => $_POST['other_expenses'] ?? 0,
+                'remarks'        => $_POST['remarks'] ?? ''
+            ];
+            if (update_order_details($order_id_to_update, $details_to_update)) {
+                $_SESSION['success_message'] = "✅ Order #$order_id_to_update successfully updated.";
+                header("Location: entry_order.php?order_id=" . $order_id_to_update);
+                exit;
             }
+        } else {
+            $order_details = [
+                'payment_method' => $_POST['payment_method'] ?? 'COD',
+                'payment_status' => $_POST['payment_status'] ?? 'Pending',
+                'order_status'   => $_POST['order_status'] ?? 'New',
+                'stock_type'     => $_POST['stock_type'] ?? 'Ex-Stock',
+                'remarks'        => $_POST['remarks'] ?? '',
+                'other_expenses' => $_POST['other_expenses'] ?? 0
+            ];
+            $items_to_process = [];
+            foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
+                if (!empty($item_id)) {
+                    $items_to_process[] = ['item_id' => $item_id, 'quantity' => $_POST['items']['quantity'][$index], 'price' => $_POST['items']['price'][$index], 'cost_price' => $_POST['items']['cost'][$index], 'profit_margin' => $_POST['items']['margin'][$index]];
+                }
+            }
+            $new_order = process_order($_POST['customer_id'], $_POST['order_date'], $items_to_process, $order_details);
+            $_SESSION['success_message'] = "✅ Order #{$new_order['id']} created successfully!";
+            header("Location: entry_order.php?order_id={$new_order['id']}");
+            exit;
         }
-        $new_order = process_order($_POST['customer_id'], $_POST['order_date'], $items_to_process, $order_details);
-        $_SESSION['success_message'] = "✅ Order #{$new_order['id']} created successfully!";
-        header("Location: entry_order.php?order_id={$new_order['id']}");
-        exit;
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
@@ -140,18 +150,18 @@ require_once __DIR__ . '/../../includes/header.php';
         <!-- Items Section -->
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><?php if (!$is_edit): ?><button type="button" class="btn btn-sm btn-success" id="addItemRow"><i class="bi bi-plus-circle"></i> Add Item</button><?php endif; ?></div>
-            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead><tbody id="orderItemRows"><?php if ($is_edit): ?><?php foreach ($order['items'] as $item): ?><tr class="order-item-row">
-                <td><?= htmlspecialchars($item['item_name']) ?></td>
-                <td><?= htmlspecialchars($item['uom']) ?></td>
-                <td class="stock-col"><?= htmlspecialchars($item['stock_on_hand']) ?></td>
-                <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
-                <td><?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?></td>
-                <!-- CORRECTED: Changed 'sell_price' to 'price' to match the database column name -->
-                <td><?= htmlspecialchars(number_format($item['price'], 2)) ?></td>
-                <td><?= htmlspecialchars($item['quantity']) ?></td>
-                <!-- CORRECTED: Changed 'sell_price' to 'price' for the calculation -->
-                <td class="text-end fw-bold"><?= htmlspecialchars(number_format($item['quantity'] * $item['price'], 2)) ?></td>
-            </tr><?php endforeach; ?><?php endif; ?></tbody><?php if($is_edit): ?><tfoot><tr><th colspan="7" class="text-end border-0">Items Total:</th><th class="text-end border-0"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></th></tr></tfoot><?php endif; ?></table></div></div>
+            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead><tbody id="orderItemRows"><?php if ($is_edit): ?><?php foreach ($order['items'] as $item): ?>
+                <tr class="order-item-row">
+                    <td><?= htmlspecialchars($item['item_name']) ?></td>
+                    <td><?= htmlspecialchars($item['uom']) ?></td>
+                    <td class="stock-col"><?= htmlspecialchars($item['stock_on_hand']) ?></td>
+                    <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
+                    <td><?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?></td>
+                    <td><?= htmlspecialchars(number_format($item['price'], 2)) ?></td>
+                    <td><?= htmlspecialchars($item['quantity']) ?></td>
+                    <td class="text-end fw-bold"><?= htmlspecialchars(number_format($item['quantity'] * $item['price'], 2)) ?></td>
+                </tr>
+            <?php endforeach; ?><?php endif; ?></tbody><?php if($is_edit): ?><tfoot><tr><th colspan="7" class="text-end border-0">Items Total:</th><th class="text-end border-0"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></th></tr></tfoot><?php endif; ?></table></div></div>
         </div>
         
         <!-- History Sections -->
