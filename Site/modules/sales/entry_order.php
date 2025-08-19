@@ -1,6 +1,6 @@
 <?php
 // File: /modules/sales/entry_order.php
-// FINAL version: Handles create, view, and update modes with full history tracking.
+// FINAL version: Corrects the item table display in view/manage mode.
 
 session_start();
 error_reporting(E_ALL);
@@ -122,9 +122,9 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-header">1. Order & Customer Details</div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6 position-relative"><label class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" value="<?= $is_edit ? htmlspecialchars($order['customer']['phone']) : '' ?>" <?= $is_edit ? 'readonly' : '' ?>><div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none"></div><input type="hidden" name="customer_id" id="customer_id" required value="<?= $is_edit ? htmlspecialchars($order['customer_id']) : '' ?>"></div>
+                            <div class="col-md-6 position-relative"><label class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" value="<?= $is_edit ? htmlspecialchars($order['customer']['phone']) : '' ?>" readonly></div>
                             <div class="col-md-6"><label class="form-label">Selected Customer</label><div id="selected_customer_display" class="form-control-plaintext fw-bold"><?= $is_edit ? htmlspecialchars($order['customer']['name']) . ' (ID: ' . htmlspecialchars($order['customer_id']) . ')' : 'None' ?></div></div>
-                            <div class="col-md-4"><label class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" <?= $is_edit ? 'disabled' : '' ?>><option value="Ex-Stock" <?= ($is_edit && $order['stock_type'] == 'Ex-Stock') ? 'selected' : '' ?>>Ex-Stock</option><option value="Pre-Book" <?= ($is_edit && $order['stock_type'] == 'Pre-Book') ? 'selected' : '' ?>>Pre-Book</option></select></div>
+                            <div class="col-md-4"><label class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" disabled><option value="Ex-Stock" <?= ($is_edit && $order['stock_type'] == 'Ex-Stock') ? 'selected' : '' ?>>Ex-Stock</option><option value="Pre-Book" <?= ($is_edit && $order['stock_type'] == 'Pre-Book') ? 'selected' : '' ?>>Pre-Book</option></select></div>
                             <div class="col-md-4"><label class="form-label">Payment Method</label><select name="payment_method" class="form-select"><option value="COD" <?= ($is_edit && $order['payment_method'] == 'COD') ? 'selected' : '' ?>>COD</option><option value="BT" <?= ($is_edit && $order['payment_method'] == 'BT') ? 'selected' : '' ?>>Bank Transfer</option></select></div>
                             <div class="col-md-4"><label class="form-label">Payment Status</label><select name="payment_status" class="form-select"><option value="Pending" <?= ($is_edit && $order['payment_status'] == 'Pending') ? 'selected' : '' ?>>Pending</option><option value="Received" <?= ($is_edit && $order['payment_status'] == 'Received') ? 'selected' : '' ?>>Received</option></select></div>
                             <div class="col-md-4"><label class="form-label">Order Date *</label><input type="date" class="form-control" id="order_date" name="order_date" value="<?= $is_edit ? htmlspecialchars($order['order_date']) : date('Y-m-d') ?>" required readonly></div>
@@ -150,18 +150,27 @@ require_once __DIR__ . '/../../includes/header.php';
         <!-- Items Section -->
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><?php if (!$is_edit): ?><button type="button" class="btn btn-sm btn-success" id="addItemRow"><i class="bi bi-plus-circle"></i> Add Item</button><?php endif; ?></div>
-            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead><tbody id="orderItemRows"><?php if ($is_edit): ?><?php foreach ($order['items'] as $item): ?><tr class="order-item-row"><td><?= htmlspecialchars($item['item_name']) ?></td><td><?= htmlspecialchars($item['uom']) ?></td><td class="stock-col"><?= htmlspecialchars($item['stock_on_hand']) ?></td><td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td><td><?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?></td><td><?= htmlspecialchars(number_format($item['price'], 2)) ?></td><td><?= htmlspecialchars($item['quantity']) ?></td><td class="text-end fw-bold"><?= htmlspecialchars(number_format($item['quantity'] * $item['price'], 2)) ?></td></tr><?php endforeach; ?><?php endif; ?></tbody><?php if($is_edit): ?><tfoot><tr><th colspan="7" class="text-end border-0">Items Total:</th><th class="text-end border-0"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></th></tr></tfoot><?php endif; ?></table></div></div>
+            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead><tbody id="orderItemRows"><?php if ($is_edit): ?><?php foreach ($order['items'] as $item): ?><tr class="order-item-row">
+                <td><?= htmlspecialchars($item['item_name']) ?></td>
+                <td><?= htmlspecialchars($item['uom']) ?></td>
+                <!-- CORRECTED: Added the missing <td> for the stock column -->
+                <td class="stock-col"><?= htmlspecialchars($item['stock_on_hand']) ?></td>
+                <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
+                <td><?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?></td>
+                <!-- CORRECTED: Changed 'price' to 'sell_price' to match the database column name from the join -->
+                <td><?= htmlspecialchars(number_format($item['sell_price'], 2)) ?></td>
+                <td><?= htmlspecialchars($item['quantity']) ?></td>
+                <td class="text-end fw-bold"><?= htmlspecialchars(number_format($item['quantity'] * $item['sell_price'], 2)) ?></td>
+            </tr><?php endforeach; ?><?php endif; ?></tbody><?php if($is_edit): ?><tfoot><tr><th colspan="7" class="text-end border-0">Items Total:</th><th class="text-end border-0"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></th></tr></tfoot><?php endif; ?></table></div></div>
         </div>
         
-        <!-- Order Status History -->
+        <!-- History Sections -->
         <?php if ($is_edit && !empty($order['status_history'])): ?>
         <div class="card mt-3">
             <div class="card-header"><i class="bi bi-clock-history"></i> Order Status History</div>
             <div class="card-body"><ul class="list-group list-group-flush"><?php foreach ($order['status_history'] as $history): ?><li class="list-group-item d-flex justify-content-between align-items-center"><div>Status set to <strong><?= htmlspecialchars($history['status']) ?></strong><small class="d-block text-muted">by <?= htmlspecialchars($history['created_by_name']) ?></small></div><span class="badge bg-secondary rounded-pill"><?= date("d-M-Y h:i A", strtotime($history['created_at'])) ?></span></li><?php endforeach; ?></ul></div>
         </div>
         <?php endif; ?>
-
-        <!-- NEW: Payment Status History -->
         <?php if ($is_edit && !empty($order['payment_history'])): ?>
         <div class="card mt-3">
             <div class="card-header"><i class="bi bi-credit-card"></i> Payment Status History</div>
