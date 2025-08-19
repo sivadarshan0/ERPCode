@@ -706,6 +706,88 @@ function initOrderList() {
     });
 }
 
+// -----------------------------------------
+// ----- Purchase Order Entry Handler -----
+// -----------------------------------------
+
+function initPoEntry() {
+    const form = document.getElementById('poForm');
+    if (!form) return;
+
+    const itemRowsContainer = document.getElementById('poItemRows');
+    const template = document.getElementById('poItemRowTemplate');
+    const addRowBtn = document.getElementById('addPoItemRow');
+
+    const addRow = () => {
+        const newRow = template.content.cloneNode(true);
+        itemRowsContainer.appendChild(newRow);
+        // Focus the new search input for a better user experience
+        newRow.querySelector('.item-search-input').focus();
+    };
+
+    // Add the first row automatically when the page loads
+    addRow();
+
+    // Add more rows when the button is clicked
+    addRowBtn.addEventListener('click', addRow);
+
+    // Use event delegation to handle events on dynamic rows
+    itemRowsContainer.addEventListener('click', function(e) {
+        // Handle removing an item row
+        if (e.target.closest('.remove-item-row')) {
+            e.target.closest('.po-item-row').remove();
+        }
+    });
+
+    itemRowsContainer.addEventListener('input', debounce((e) => {
+        // Handle the live search for items within each row
+        if (e.target.classList.contains('item-search-input')) {
+            const searchInput = e.target;
+            const resultsContainer = searchInput.nextElementSibling; // The div right after the input
+            const name = searchInput.value.trim();
+
+            if (name.length < 2) {
+                resultsContainer.classList.add('d-none');
+                return;
+            }
+
+            // The AJAX endpoint is the PO page itself
+            fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
+                .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
+                .then(data => {
+                    resultsContainer.innerHTML = '';
+                    if (data.error) throw new Error(data.error);
+
+                    if (data.length > 0) {
+                        data.forEach(item => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'list-group-item list-group-item-action py-2';
+                            button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class.text-muted="">(${escapeHtml(item.item_id)})</small>`;
+                            
+                            button.addEventListener('click', () => {
+                                const parentRow = searchInput.closest('.po-item-row');
+                                parentRow.querySelector('.item-id-input').value = item.item_id;
+                                searchInput.value = item.name;
+                                resultsContainer.classList.add('d-none'); // Hide results after selection
+                                // Move focus to the quantity input for a fast workflow
+                                parentRow.querySelector('.quantity-input').focus();
+                            });
+                            resultsContainer.appendChild(button);
+                        });
+                        resultsContainer.classList.remove('d-none');
+                    } else {
+                        resultsContainer.classList.add('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('[POItemLookup] Error:', error);
+                    resultsContainer.classList.add('d-none');
+                });
+        }
+    }, 300));
+}
+
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
@@ -717,6 +799,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
     if (document.querySelector('.live-search')) { initLiveSearch(); }
+    if (document.getElementById('poForm')) { initPoEntry(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
@@ -725,6 +808,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setupFormSubmitSpinner(document.getElementById('stockAdjustmentForm'));
     setupFormSubmitSpinner(document.getElementById('grnForm'));
     setupFormSubmitSpinner(document.getElementById('orderForm'));
+    setupFormSubmitSpinner(document.getElementById('poForm'));
 
     const staticAlerts = document.querySelectorAll('.alert-dismissible');
     staticAlerts.forEach(alert => {

@@ -609,3 +609,79 @@ function search_orders($filters = []) {
     $result = $stmt->get_result();
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
+
+// -----------------------------------------
+// ----- Purchase Order Functions -----
+// -----------------------------------------
+
+/**
+ * Processes a complete Purchase Order, creating the main record and all its item lines
+ * in a single database transaction.
+ *
+ * @param string $po_date The date of the Purchase Order.
+ * @param string $supplier_name The name of the supplier.
+ * @param array $items An array of items, each being an array with 'item_id', 'quantity', and 'cost_price'.
+ * @param string $remarks Optional remarks for the PO.
+ * @return string The ID of the newly created Purchase Order.
+ * @throws Exception On validation or database errors.
+ */
+function process_purchase_order($po_date, $supplier_name, $items, $remarks) {
+    $db = db();
+    if (!$db) {
+        throw new Exception("Database connection failed.");
+    }
+
+    // --- Validation ---
+    if (empty($po_date) || !is_array($items) || empty($items)) {
+        throw new Exception("PO date and at least one item are required.");
+    }
+    foreach ($items as $item) {
+        if (empty($item['item_id']) || !isset($item['quantity']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0) {
+            throw new Exception("Invalid data in item rows. Each item needs an ID and a valid quantity.");
+        }
+        if (!isset($item['cost_price']) || !is_numeric($item['cost_price'])) {
+            throw new Exception("Invalid data in item rows. Each item needs a valid cost price.");
+        }
+    }
+
+    $db->begin_transaction();
+
+    try {
+        // Step 1: Get user details from session
+        $user_id = $_SESSION['user_id'];
+        $user_name = $_SESSION['username'] ?? 'Unknown';
+
+        // Step 2: Create the main Purchase Order record
+        $purchase_order_id = generate_sequence_id('purchase_order_id', 'purchase_orders', 'purchase_order_id');
+        
+        $stmt_po = $db->prepare(
+            "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?)"
+        );
+        if (!$stmt_po) throw new Exception("Database prepare failed for PO header: " . $db->error);
+        
+        $stmt_po->bind_param("ssssis", $purchase_order_id, $po_date, $supplier_name, $remarks, $user_id, $user_name);
+        $stmt_po->execute();
+
+        // Step 3: Loop through each item and add it to the purchase_order_items table
+        $stmt_items = $db->prepare(
+            "INSERT INTO purchase_order_items (purchase_order_id, item_id, quantity, cost_price) VALUES (?, ?, ?, ?)"
+        );
+        if (!$stmt_items) throw new Exception("Database prepare failed for PO items: " . $db->error);
+
+        foreach ($items as $item) {
+            $stmt_items->bind_param("ssdd", $purchase_order_id, $item['item_id'], $item['quantity'], $item['cost_price']);
+            $stmt_items->execute();
+        }
+
+        // If everything was successful, commit the transaction
+        $db->commit();
+        
+        return $purchase_order_id; // Return the new PO ID
+
+    } catch (Exception $e) {
+        // If any part of the process failed, roll back everything
+        $db->rollback();
+        // Pass the error message up to the calling page
+        throw new Exception("Failed to process Purchase Order: " . $e->getMessage());
+    }
+}
