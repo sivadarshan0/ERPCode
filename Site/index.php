@@ -39,7 +39,7 @@ require_once __DIR__ . '/includes/header.php';
                             <i class="bi bi-cart-check-fill"></i> Sales & Orders
                         </div>
                         <div class="card-body">
-                            <h4 class="card-title">Order Management</h4>
+                            <h5 class="card-title">Order</h5>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/sales/entry_order.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> Sales Order
@@ -80,7 +80,7 @@ require_once __DIR__ . '/includes/header.php';
                             <i class="bi bi-people-fill"></i> CRM
                         </div>
                         <div class="card-body">
-                            <h5 class="card-title">Customer Management</h5>
+                            <h5 class="card-title">Customer</h5>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/customer/entry_customer.php" class="btn btn-success">
                                     <i class="bi bi-plus-circle"></i> New Customer
