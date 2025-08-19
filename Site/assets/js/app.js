@@ -54,13 +54,9 @@ function initCustomerEntry() {
     const phoneInput = document.getElementById('phone');
     const phoneResults = document.getElementById('phoneResults');
     if (!phoneInput) return;
-
     const doPhoneLookup = debounce(() => {
         const phone = phoneInput.value.trim();
-        if (phone.length < 3) {
-            phoneResults.classList.add('d-none');
-            return;
-        }
+        if (phone.length < 3) { phoneResults.classList.add('d-none'); return; }
         fetch(`/modules/customer/entry_customer.php?phone_lookup=${encodeURIComponent(phone)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Phone search failed'))
             .then(data => {
@@ -74,16 +70,10 @@ function initCustomerEntry() {
                         phoneResults.appendChild(item);
                     });
                     phoneResults.classList.remove('d-none');
-                } else {
-                    phoneResults.classList.add('d-none');
-                }
+                } else { phoneResults.classList.add('d-none'); }
             })
-            .catch(error => {
-                console.error('[doPhoneLookup] Error:', error);
-                phoneResults.classList.add('d-none');
-            });
+            .catch(error => { console.error('[doPhoneLookup] Error:', error); phoneResults.classList.add('d-none'); });
     }, 300);
-
     phoneInput.addEventListener('input', doPhoneLookup);
     document.addEventListener('click', (e) => {
         if (phoneResults && !phoneResults.contains(e.target) && e.target !== phoneInput) {
@@ -97,13 +87,9 @@ function initCategoryEntry() {
     const nameInput = document.getElementById('name');
     const categoryResults = document.getElementById('categoryResults');
     if (!nameInput) return;
-
     const doCategoryLookup = debounce(() => {
         const name = nameInput.value.trim();
-        if (name.length < 2) {
-            categoryResults.classList.add('d-none');
-            return;
-        }
+        if (name.length < 2) { categoryResults.classList.add('d-none'); return; }
         fetch(`/modules/inventory/entry_category.php?category_lookup=${encodeURIComponent(name)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Category search failed'))
             .then(data => {
@@ -118,16 +104,10 @@ function initCategoryEntry() {
                         categoryResults.appendChild(item);
                     });
                     categoryResults.classList.remove('d-none');
-                } else {
-                    categoryResults.classList.add('d-none');
-                }
+                } else { categoryResults.classList.add('d-none'); }
             })
-            .catch(error => {
-                console.error('[doCategoryLookup] Error:', error);
-                categoryResults.classList.add('d-none');
-            });
+            .catch(error => { console.error('[doCategoryLookup] Error:', error); categoryResults.classList.add('d-none'); });
     }, 300);
-
     nameInput.addEventListener('input', doCategoryLookup);
     document.addEventListener('click', (e) => {
         if (categoryResults && !categoryResults.contains(e.target) && e.target !== nameInput) {
@@ -141,13 +121,9 @@ function initSubCategoryEntry() {
     const nameInput = document.getElementById('name');
     const subCategoryResults = document.getElementById('subCategoryResults');
     if (!nameInput) return;
-
     const doSubCategoryLookup = debounce(() => {
         const name = nameInput.value.trim();
-        if (name.length < 2) {
-            subCategoryResults.classList.add('d-none');
-            return;
-        }
+        if (name.length < 2) { subCategoryResults.classList.add('d-none'); return; }
         fetch(`/modules/inventory/entry_category_sub.php?sub_category_lookup=${encodeURIComponent(name)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Sub-Category search failed'))
             .then(data => {
@@ -162,16 +138,10 @@ function initSubCategoryEntry() {
                         subCategoryResults.appendChild(item);
                     });
                     subCategoryResults.classList.remove('d-none');
-                } else {
-                    subCategoryResults.classList.add('d-none');
-                }
+                } else { subCategoryResults.classList.add('d-none'); }
             })
-            .catch(error => {
-                console.error('[doSubCategoryLookup] Error:', error);
-                subCategoryResults.classList.add('d-none');
-            });
+            .catch(error => { console.error('[doSubCategoryLookup] Error:', error); subCategoryResults.classList.add('d-none'); });
     }, 300);
-
     nameInput.addEventListener('input', doSubCategoryLookup);
     document.addEventListener('click', (e) => {
         if (subCategoryResults && !subCategoryResults.contains(e.target) && e.target !== nameInput) {
@@ -184,46 +154,29 @@ function initSubCategoryEntry() {
 function initItemEntry() {
     const itemForm = document.getElementById('itemForm');
     if (!itemForm) return;
-
     const categorySelect = document.getElementById('category_id');
     const subCategorySelect = document.getElementById('category_sub_id');
     const nameInput = document.getElementById('name');
     const itemResults = document.getElementById('itemResults');
-
     categorySelect.addEventListener('change', function () {
         const categoryId = this.value;
         subCategorySelect.innerHTML = '<option value="">Loading...</option>';
         subCategorySelect.disabled = true;
-
-        if (!categoryId) {
-            subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>';
-            return;
-        }
-
+        if (!categoryId) { subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>'; return; }
         fetch(`/modules/inventory/entry_item.php?get_sub_categories=${encodeURIComponent(categoryId)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Failed to load sub-categories'))
             .then(data => {
                 subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>';
                 if (data.length > 0) {
-                    data.forEach(sub_cat => {
-                        subCategorySelect.add(new Option(sub_cat.name, sub_cat.category_sub_id));
-                    });
+                    data.forEach(sub_cat => { subCategorySelect.add(new Option(sub_cat.name, sub_cat.category_sub_id)); });
                 }
                 subCategorySelect.disabled = false;
             })
-            .catch(error => {
-                console.error('[CascadingDropdown] Error:', error);
-                subCategorySelect.innerHTML = '<option value="">Error loading data</option>';
-            });
+            .catch(error => { console.error('[CascadingDropdown] Error:', error); subCategorySelect.innerHTML = '<option value="">Error loading data</option>'; });
     });
-
     const doItemLookup = debounce(() => {
         const name = nameInput.value.trim();
-        if (name.length < 2) {
-            itemResults.classList.add('d-none');
-            return;
-        }
-
+        if (name.length < 2) { itemResults.classList.add('d-none'); return; }
         fetch(`/modules/inventory/entry_item.php?item_lookup=${encodeURIComponent(name)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
             .then(data => {
@@ -238,16 +191,10 @@ function initItemEntry() {
                         itemResults.appendChild(link);
                     });
                     itemResults.classList.remove('d-none');
-                } else {
-                    itemResults.classList.add('d-none');
-                }
+                } else { itemResults.classList.add('d-none'); }
             })
-            .catch(error => {
-                console.error('[doItemLookup] Error:', error);
-                itemResults.classList.add('d-none');
-            });
+            .catch(error => { console.error('[doItemLookup] Error:', error); itemResults.classList.add('d-none'); });
     }, 300);
-
     nameInput.addEventListener('input', doItemLookup);
     document.addEventListener('click', (e) => {
         if (itemResults && !itemResults.contains(e.target) && e.target !== nameInput) {
@@ -260,25 +207,18 @@ function initItemEntry() {
 function initStockAdjustmentEntry() {
     const form = document.getElementById('stockAdjustmentForm');
     if (!form) return;
-
     const searchInput = document.getElementById('item_search');
     const resultsContainer = document.getElementById('itemResults');
     const hiddenItemId = document.getElementById('item_id');
     const selectedItemDisplay = document.getElementById('selected_item_display');
-
     const doItemLookup = debounce(() => {
         const name = searchInput.value.trim();
-        if (name.length < 2) {
-            resultsContainer.classList.add('d-none');
-            return;
-        }
-
+        if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
         fetch(`/modules/inventory/entry_stock_adjustment.php?item_lookup=${encodeURIComponent(name)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
             .then(data => {
                 resultsContainer.innerHTML = '';
                 if (data.error) throw new Error(data.error);
-
                 if (data.length > 0) {
                     data.forEach(item => {
                         const button = document.createElement('button');
@@ -295,18 +235,11 @@ function initStockAdjustmentEntry() {
                         resultsContainer.appendChild(button);
                     });
                     resultsContainer.classList.remove('d-none');
-                } else {
-                    resultsContainer.classList.add('d-none');
-                }
+                } else { resultsContainer.classList.add('d-none'); }
             })
-            .catch(error => {
-                console.error('[StockItemLookup] Error:', error);
-                resultsContainer.classList.add('d-none');
-            });
+            .catch(error => { console.error('[StockItemLookup] Error:', error); resultsContainer.classList.add('d-none'); });
     }, 300);
-
     searchInput.addEventListener('input', doItemLookup);
-
     document.addEventListener('click', (e) => {
         if (resultsContainer && !resultsContainer.contains(e.target) && e.target !== searchInput) {
             resultsContainer.classList.add('d-none');
@@ -318,37 +251,26 @@ function initStockAdjustmentEntry() {
 function initGrnEntry() {
     const form = document.getElementById('grnForm');
     if (!form) return;
-
     const itemRowsContainer = document.getElementById('grnItemRows');
     const template = document.getElementById('grnItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
-
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
     };
-
     addRow();
-
     addRowBtn.addEventListener('click', addRow);
-
     itemRowsContainer.addEventListener('click', function (e) {
         if (e.target.closest('.remove-item-row')) {
             e.target.closest('.grn-item-row').remove();
         }
     });
-
     itemRowsContainer.addEventListener('input', debounce((e) => {
         if (e.target.classList.contains('item-search-input')) {
             const searchInput = e.target;
             const resultsContainer = searchInput.nextElementSibling;
             const name = searchInput.value.trim();
-
-            if (name.length < 2) {
-                resultsContainer.classList.add('d-none');
-                return;
-            }
-
+            if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
             fetch(`/modules/inventory/entry_grn.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
@@ -360,28 +282,20 @@ function initGrnEntry() {
                             button.type = 'button';
                             button.className = 'list-group-item list-group-item-action py-2';
                             button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
-                            
                             button.addEventListener('click', () => {
                                 const parentRow = searchInput.closest('.grn-item-row');
                                 parentRow.querySelector('.item-id-input').value = item.item_id;
                                 searchInput.value = item.name;
                                 const uomInput = parentRow.querySelector('.uom-input');
-                                if (uomInput && item.uom) {
-                                    uomInput.value = item.uom;
-                                }
+                                if (uomInput && item.uom) { uomInput.value = item.uom; }
                                 resultsContainer.classList.add('d-none');
                             });
                             resultsContainer.appendChild(button);
                         });
                         resultsContainer.classList.remove('d-none');
-                    } else {
-                        resultsContainer.classList.add('d-none');
-                    }
+                    } else { resultsContainer.classList.add('d-none'); }
                 })
-                .catch(error => {
-                    console.error('[GRNItemLookup] Error:', error);
-                    resultsContainer.classList.add('d-none');
-                });
+                .catch(error => { console.error('[GRNItemLookup] Error:', error); resultsContainer.classList.add('d-none'); });
         }
     }, 300));
 }
@@ -390,7 +304,6 @@ function initGrnEntry() {
 function initOrderEntry() {
     const form = document.getElementById('orderForm');
     if (!form) return;
-
     const stockTypeSelect = document.getElementById('stock_type');
     const customerSearchInput = document.getElementById('customer_search');
     const customerResults = document.getElementById('customerResults');
@@ -402,7 +315,6 @@ function initOrderEntry() {
     const orderTotalDisplay = document.getElementById('orderTotal');
     const otherExpensesInput = document.getElementById('other_expenses');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
-
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
         form.querySelector('th.stock-col').classList.toggle('d-none', isPreBook);
@@ -414,7 +326,6 @@ function initOrderEntry() {
             priceInput.readOnly = !isPreBook;
         });
     };
-
     const validateRowStock = (row) => {
         const stockType = stockTypeSelect.value;
         const stockWarning = row.querySelector('.stock-warning');
@@ -423,11 +334,8 @@ function initOrderEntry() {
             const availableStock = parseFloat(row.querySelector('.stock-display').value) || 0;
             const orderQuantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
             stockWarning.classList.toggle('d-none', orderQuantity <= availableStock);
-        } else {
-            stockWarning.classList.add('d-none');
-        }
+        } else { stockWarning.classList.add('d-none'); }
     };
-    
     const calculateTotals = () => {
         let total = 0;
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
@@ -439,11 +347,9 @@ function initOrderEntry() {
         });
         orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(total);
     };
-
     const doCustomerLookup = debounce(() => {
         const phone = customerSearchInput.value.trim();
         if (phone.length < 3) return customerResults.classList.add('d-none');
-        
         fetch(`/modules/sales/entry_order.php?customer_lookup=${encodeURIComponent(phone)}`)
             .then(res => res.ok ? res.json() : Promise.reject('Customer lookup failed'))
             .then(data => {
@@ -463,34 +369,28 @@ function initOrderEntry() {
                         customerResults.appendChild(btn);
                     });
                     customerResults.classList.remove('d-none');
-                } else {
-                    customerResults.classList.add('d-none');
-                }
+                } else { customerResults.classList.add('d-none'); }
             })
             .catch(error => console.error('[CustomerLookup] Error:', error));
     }, 300);
-
     customerSearchInput.addEventListener('input', doCustomerLookup);
     document.addEventListener('click', e => {
         if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearchInput) {
             customerResults.classList.add('d-none');
         }
     });
-
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
         toggleRowFields();
     };
     if(addRowBtn) addRowBtn.addEventListener('click', addRow);
-    
     itemRowsContainer.addEventListener('click', e => {
         if (e.target.closest('.remove-item-row')) {
             e.target.closest('.order-item-row').remove();
             calculateTotals();
         }
     });
-
     if(stockTypeSelect) stockTypeSelect.addEventListener('change', () => {
         toggleRowFields();
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
@@ -507,11 +407,9 @@ function initOrderEntry() {
         });
         calculateTotals();
     });
-    
     itemRowsContainer.addEventListener('input', e => {
         const row = e.target.closest('.order-item-row');
         if (!row) return;
-
         if (e.target.classList.contains('item-search-input')) {
             debounce(() => {
                 const searchInput = e.target;
@@ -519,7 +417,6 @@ function initOrderEntry() {
                 const name = searchInput.value.trim();
                 const stockType = stockTypeSelect.value;
                 if (name.length < 2) return resultsContainer.classList.add('d-none');
-                
                 fetch(`/modules/sales/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
                     .then(res => res.ok ? res.json() : Promise.reject())
                     .then(data => {
@@ -531,22 +428,17 @@ function initOrderEntry() {
                                 btn.className = 'list-group-item list-group-item-action py-1';
                                 const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
                                 btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
-                                
                                 btn.addEventListener('click', () => {
                                     row.querySelector('.item-id-input').value = item.item_id;
                                     searchInput.value = item.name;
                                     row.querySelector('.uom-display').value = item.uom;
-                                    
                                     if (stockType === 'Ex-Stock') {
                                         row.querySelector('.stock-display').value = item.stock_on_hand;
                                         const cost = parseFloat(item.last_cost) || 0;
                                         row.querySelector('.cost-input').value = cost.toFixed(2);
                                         row.querySelector('.cost-display').value = cost.toFixed(2);
                                         row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
-                                    } else {
-                                         row.querySelector('.cost-display').focus();
-                                    }
-                                    
+                                    } else { row.querySelector('.cost-display').focus(); }
                                     resultsContainer.classList.add('d-none');
                                     validateRowStock(row);
                                 });
@@ -558,18 +450,12 @@ function initOrderEntry() {
             }, 300)();
             return;
         }
-        
         const costDisplayInput = row.querySelector('.cost-display');
         const costHiddenInput = row.querySelector('.cost-input');
         const marginInput = row.querySelector('.margin-input');
         const priceInput = row.querySelector('.price-input');
-        
-        if (e.target === costDisplayInput) {
-            costHiddenInput.value = costDisplayInput.value;
-        }
-
+        if (e.target === costDisplayInput) { costHiddenInput.value = costDisplayInput.value; }
         const cost = parseFloat(costHiddenInput.value) || 0;
-        
         if (e.target === marginInput || e.target === costDisplayInput) {
             const margin = parseFloat(marginInput.value) || 0;
             priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
@@ -582,44 +468,25 @@ function initOrderEntry() {
                 marginInput.value = (price > 0) ? '100.00' : '0.00';
             }
         }
-        
         if (e.target.matches('.price-input, .quantity-input, .margin-input, .cost-display')) {
             calculateTotals();
             validateRowStock(row);
         }
     });
-    
     form.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
-
         const activeElement = document.activeElement;
-
         if (activeElement === otherExpensesInput) {
             const firstItemInput = itemRowsContainer.querySelector('.item-search-input');
-            if (firstItemInput) {
-                e.preventDefault();
-                firstItemInput.focus();
-            }
+            if (firstItemInput) { e.preventDefault(); firstItemInput.focus(); }
             return;
         }
-
         const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
         const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
-        
-        if (activeElement === lastQuantityInput) {
-            e.preventDefault();
-            addRowBtn.focus();
-        }
-
-        if (activeElement === addRowBtn) {
-            e.preventDefault();
-            createOrderBtn.focus();
-        }
+        if (activeElement === lastQuantityInput) { e.preventDefault(); addRowBtn.focus(); }
+        if (activeElement === addRowBtn) { e.preventDefault(); createOrderBtn.focus(); }
     });
-
-    if (itemRowsContainer.children.length === 0) {
-        addRow();
-    }
+    if (itemRowsContainer.children.length === 0) { addRow(); }
     toggleRowFields();
 }
 
@@ -627,71 +494,46 @@ function initOrderEntry() {
 function initOrderList() {
     const searchForm = document.getElementById('orderSearchForm');
     if (!searchForm) return;
-
     const tableBody = document.getElementById('orderListTableBody');
     const filterControls = searchForm.querySelectorAll('input, select');
     const dateRangeInput = document.getElementById('search_date_range');
-
     const picker = new Litepicker({
         element: dateRangeInput,
         singleMode: false,
         autoApply: true,
         format: 'YYYY-MM-DD',
         setup: (picker) => {
-            picker.on('selected', (date1, date2) => {
-                doOrderSearch();
-            });
+            picker.on('selected', (date1, date2) => { doOrderSearch(); });
         }
     });
-
     const doOrderSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-
         searchForm.querySelectorAll('input[type="text"], select').forEach(control => {
             if (control.value) {
                 params.set(control.id.replace('search_', ''), control.value);
             }
         });
-
         if (picker.getStartDate() && picker.getEndDate()) {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
         }
-
         fetch(`/modules/sales/list_orders.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No orders found matching your criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No orders found.</td></tr>`;
                     return;
                 }
                 data.forEach(order => {
                     const paymentStatusClass = order.payment_status === 'Received' ? 'bg-success' : 'bg-warning';
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${escapeHtml(order.order_id)}</td>
-                        <td>${new Date(order.order_date + 'T00:00:00').toLocaleDateString('en-GB')}</td>
-                        <td>${escapeHtml(order.customer_name)}</td>
-                        <td>${escapeHtml(order.customer_phone)}</td>
-                        <td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td>
-                        <td><span class="badge bg-info text-dark">${escapeHtml(order.status)}</span></td>
-                        <td><span class="badge ${paymentStatusClass}">${escapeHtml(order.payment_status)}</span></td>
-                        <td>
-                            <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(order.order_id)}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-pencil"></i> View
-                            </a>
-                        </td>
-                    `;
-                    tableBody.appendChild(tr);
+                    tr.innerHTML = `<td>${escapeHtml(order.order_id)}</td><td>${new Date(order.order_date + 'T00:00:00').toLocaleDateString('en-GB')}</td><td>${escapeHtml(order.customer_name)}</td><td>${escapeHtml(order.customer_phone)}</td><td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td><td><span class="badge bg-info text-dark">${escapeHtml(order.status)}</span></td><td><span class="badge ${paymentStatusClass}">${escapeHtml(order.payment_status)}</span></td><td><a href="/modules/sales/entry_order.php?order_id=${escapeHtml(order.order_id)}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> View</a></td>`;
+                    tr.appendChild(tr);
                 });
             })
-            .catch(error => {
-                console.error('[OrderSearch] Error:', error);
-                tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Failed to load search results.</td></tr>`;
-            });
+            .catch(error => { console.error('[OrderSearch] Error:', error); tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Failed to load results.</td></tr>`; });
     }, 300);
-
     filterControls.forEach(control => {
         if (control.id !== 'search_date_range') {
             const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
@@ -707,53 +549,41 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
-
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
     const preOrderSearchInput = document.getElementById('pre_order_search');
     const preOrderResults = document.getElementById('preOrderResults');
     const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
-
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
-        newRow.querySelector('.item-search-input').focus();
+        const justAddedRow = itemRowsContainer.querySelector('.po-item-row:last-child');
+        if (justAddedRow) { justAddedRow.querySelector('.item-search-input').focus(); }
     };
-
     addRow();
     addRowBtn.addEventListener('click', addRow);
-
     itemRowsContainer.addEventListener('click', function(e) {
         if (e.target.closest('.remove-item-row')) {
             e.target.closest('.po-item-row').remove();
         }
     });
-
     itemRowsContainer.addEventListener('input', debounce((e) => {
         if (e.target.classList.contains('item-search-input')) {
             const searchInput = e.target;
             const resultsContainer = searchInput.nextElementSibling;
             const name = searchInput.value.trim();
-
-            if (name.length < 2) {
-                resultsContainer.classList.add('d-none');
-                return;
-            }
-
+            if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
             fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
                     resultsContainer.innerHTML = '';
-                    if (data.error) throw new Error(data.error);
-
-                    if (data.length > 0) {
+                    if (data && data.length > 0) {
                         data.forEach(item => {
                             const button = document.createElement('button');
                             button.type = 'button';
                             button.className = 'list-group-item list-group-item-action py-2';
                             button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
-                            
                             button.addEventListener('click', () => {
                                 const parentRow = searchInput.closest('.po-item-row');
                                 parentRow.querySelector('.item-id-input').value = item.item_id;
@@ -764,23 +594,14 @@ function initPoEntry() {
                             resultsContainer.appendChild(button);
                         });
                         resultsContainer.classList.remove('d-none');
-                    } else {
-                        resultsContainer.classList.add('d-none');
-                    }
+                    } else { resultsContainer.classList.add('d-none'); }
                 })
-                .catch(error => {
-                    console.error('[POItemLookup] Error:', error);
-                    resultsContainer.classList.add('d-none');
-                });
+                .catch(error => console.error('[POItemLookup] Error:', error));
         }
     }, 300));
-    
     preOrderSearchInput.addEventListener('input', debounce(() => {
         const query = preOrderSearchInput.value.trim();
-        if (query.length < 2) {
-            preOrderResults.classList.add('d-none');
-            return;
-        }
+        if (query.length < 2) { preOrderResults.classList.add('d-none'); return; }
         fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
             .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
             .then(data => {
@@ -799,20 +620,16 @@ function initPoEntry() {
                         preOrderResults.appendChild(btn);
                     });
                     preOrderResults.classList.remove('d-none');
-                } else {
-                    preOrderResults.classList.add('d-none');
-                }
+                } else { preOrderResults.classList.add('d-none'); }
             })
             .catch(error => console.error('[PreOrderLookup] Error:', error));
     }, 300));
-
     document.addEventListener('click', e => {
         if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
             preOrderResults.classList.add('d-none');
         }
     });
 }
-
 
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
