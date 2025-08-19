@@ -685,3 +685,33 @@ function process_purchase_order($po_date, $supplier_name, $items, $remarks) {
         throw new Exception("Failed to process Purchase Order: " . $e->getMessage());
     }
 }
+
+/**
+ * Searches for open Pre-Orders to link them to a Purchase Order.
+ *
+ * @param string $query The Order ID or Customer Name to search for.
+ * @return array An array of matching Pre-Orders.
+ */
+function search_open_pre_orders($query) {
+    $db = db();
+    if (!$db) return [];
+    
+    $search_term = "%$query%";
+    // We search for orders that are of type 'Pre-Book' and have a status that indicates they are waiting for fulfillment.
+    $stmt = $db->prepare("
+        SELECT 
+            o.order_id,
+            o.order_date,
+            c.name as customer_name
+        FROM orders o
+        JOIN customers c ON o.customer_id = c.customer_id
+        WHERE o.stock_type = 'Pre-Book' 
+          AND o.status IN ('New', 'Awaiting Stock')
+          AND (o.order_id LIKE ? OR c.name LIKE ?)
+        ORDER BY o.order_date DESC
+        LIMIT 10
+    ");
+    $stmt->bind_param("ss", $search_term, $search_term);
+    $stmt->execute();
+    return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+}

@@ -710,6 +710,8 @@ function initOrderList() {
 // ----- Purchase Order Entry Handler -----
 // -----------------------------------------
 
+// Replace the entire initPoEntry function in your app.js file
+
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
@@ -721,29 +723,22 @@ function initPoEntry() {
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
-        // Focus the new search input for a better user experience
         newRow.querySelector('.item-search-input').focus();
     };
 
-    // Add the first row automatically when the page loads
     addRow();
-
-    // Add more rows when the button is clicked
     addRowBtn.addEventListener('click', addRow);
 
-    // Use event delegation to handle events on dynamic rows
     itemRowsContainer.addEventListener('click', function(e) {
-        // Handle removing an item row
         if (e.target.closest('.remove-item-row')) {
             e.target.closest('.po-item-row').remove();
         }
     });
 
     itemRowsContainer.addEventListener('input', debounce((e) => {
-        // Handle the live search for items within each row
         if (e.target.classList.contains('item-search-input')) {
             const searchInput = e.target;
-            const resultsContainer = searchInput.nextElementSibling; // The div right after the input
+            const resultsContainer = searchInput.nextElementSibling;
             const name = searchInput.value.trim();
 
             if (name.length < 2) {
@@ -751,7 +746,7 @@ function initPoEntry() {
                 return;
             }
 
-            // The AJAX endpoint is the PO page itself
+            // CORRECTED: The fetch URL now correctly points to the PO page itself.
             fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
@@ -763,14 +758,13 @@ function initPoEntry() {
                             const button = document.createElement('button');
                             button.type = 'button';
                             button.className = 'list-group-item list-group-item-action py-2';
-                            button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class.text-muted="">(${escapeHtml(item.item_id)})</small>`;
+                            button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
                             
                             button.addEventListener('click', () => {
                                 const parentRow = searchInput.closest('.po-item-row');
                                 parentRow.querySelector('.item-id-input').value = item.item_id;
                                 searchInput.value = item.name;
-                                resultsContainer.classList.add('d-none'); // Hide results after selection
-                                // Move focus to the quantity input for a fast workflow
+                                resultsContainer.classList.add('d-none');
                                 parentRow.querySelector('.quantity-input').focus();
                             });
                             resultsContainer.appendChild(button);
