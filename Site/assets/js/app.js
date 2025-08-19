@@ -549,31 +549,38 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
+
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
-    const preOrderSearchInput = document.getElementById('pre_order_search');
-    const preOrderResults = document.getElementById('preOrderResults');
-    const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
+
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
         const justAddedRow = itemRowsContainer.querySelector('.po-item-row:last-child');
-        if (justAddedRow) { justAddedRow.querySelector('.item-search-input').focus(); }
+        if (justAddedRow) {
+            justAddedRow.querySelector('.item-search-input').focus();
+        }
     };
+
     addRow();
     addRowBtn.addEventListener('click', addRow);
+
     itemRowsContainer.addEventListener('click', function(e) {
         if (e.target.closest('.remove-item-row')) {
             e.target.closest('.po-item-row').remove();
         }
     });
+
     itemRowsContainer.addEventListener('input', debounce((e) => {
         if (e.target.classList.contains('item-search-input')) {
             const searchInput = e.target;
             const resultsContainer = searchInput.nextElementSibling;
             const name = searchInput.value.trim();
-            if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
+            if (name.length < 2) {
+                resultsContainer.classList.add('d-none');
+                return;
+            }
             fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
@@ -594,41 +601,13 @@ function initPoEntry() {
                             resultsContainer.appendChild(button);
                         });
                         resultsContainer.classList.remove('d-none');
-                    } else { resultsContainer.classList.add('d-none'); }
+                    } else {
+                        resultsContainer.classList.add('d-none');
+                    }
                 })
                 .catch(error => console.error('[POItemLookup] Error:', error));
         }
     }, 300));
-    preOrderSearchInput.addEventListener('input', debounce(() => {
-        const query = preOrderSearchInput.value.trim();
-        if (query.length < 2) { preOrderResults.classList.add('d-none'); return; }
-        fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
-            .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
-            .then(data => {
-                preOrderResults.innerHTML = '';
-                if (data && data.length > 0) {
-                    data.forEach(order => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'list-group-item list-group-item-action';
-                        btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
-                        btn.addEventListener('click', () => {
-                            preOrderSearchInput.value = `${order.order_id} - ${order.customer_name}`;
-                            hiddenLinkedOrderId.value = order.order_id;
-                            preOrderResults.classList.add('d-none');
-                        });
-                        preOrderResults.appendChild(btn);
-                    });
-                    preOrderResults.classList.remove('d-none');
-                } else { preOrderResults.classList.add('d-none'); }
-            })
-            .catch(error => console.error('[PreOrderLookup] Error:', error));
-    }, 300));
-    document.addEventListener('click', e => {
-        if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
-            preOrderResults.classList.add('d-none');
-        }
-    });
 }
 
 // ───── DOM Ready ─────

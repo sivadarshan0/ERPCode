@@ -1,6 +1,6 @@
 <?php
 // File: /modules/purchase/entry_purchase_order.php
-// FINAL version with Pre-Order linking functionality.
+// FINAL version with a dropdown for Pre-Order linking.
 
 session_start();
 error_reporting(E_ALL);
@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../includes/functions.php';
 
 require_login();
 
-// --- AJAX Endpoints ---
+// --- AJAX Endpoint for Item Search ---
 if (isset($_GET['item_lookup'])) {
     header('Content-Type: application/json');
     try {
@@ -21,27 +21,19 @@ if (isset($_GET['item_lookup'])) {
     } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
     exit;
 }
-// NEW: Endpoint to search for open Pre-Orders
-if (isset($_GET['pre_order_lookup'])) {
-    header('Content-Type: application/json');
-    try {
-        $query = trim($_GET['pre_order_lookup']);
-        echo json_encode(strlen($query) >= 2 ? search_open_pre_orders($query) : []);
-    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
-    exit;
-}
 
+// Fetch all open pre-orders for the dropdown
+$open_pre_orders = get_open_pre_orders();
 
 $message = '';
 $message_type = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        // Collect data from the form
         $po_date = $_POST['po_date'] ?? '';
         $supplier_name = $_POST['supplier_name'] ?? '';
         $remarks = $_POST['remarks'] ?? '';
-        $linked_sales_order_id = $_POST['linked_sales_order_id'] ?? null; // Get the linked order ID
+        $linked_sales_order_id = $_POST['linked_sales_order_id'] ?? null;
         $item_ids = $_POST['items']['id'] ?? [];
         $quantities = $_POST['items']['quantity'] ?? [];
         $costs = $_POST['items']['cost_price'] ?? [];
@@ -53,9 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Note: The process_purchase_order function will need to be upgraded later
-        // to handle the $linked_sales_order_id. For now, we are just building the UI.
         $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks);
+        
+        // Future logic will also handle linking the PO and the Sales Order
         
         $message = "✅ Purchase Order #$new_po_id successfully created.";
         $message_type = 'success';
@@ -95,12 +87,17 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <label for="supplier_name" class="form-label">Supplier Name</label>
                                 <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name...">
                             </div>
-                            <!-- NEW: Field to link a Pre-Order -->
-                            <div class="col-md-4 position-relative">
-                                <label for="pre_order_search" class="form-label">Link to Pre-Order (Optional)</label>
-                                <input type="text" class="form-control" id="pre_order_search" autocomplete="off" placeholder="Search Order ID or Customer...">
-                                <input type="hidden" name="linked_sales_order_id" id="linked_sales_order_id">
-                                <div id="preOrderResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
+                            <!-- CORRECTED: Changed from a text input to a select dropdown -->
+                            <div class="col-md-4">
+                                <label for="linked_sales_order_id" class="form-label">Link to Pre-Order (Optional)</label>
+                                <select class="form-select" name="linked_sales_order_id" id="linked_sales_order_id">
+                                    <option value="">-- None --</option>
+                                    <?php foreach ($open_pre_orders as $pre_order): ?>
+                                        <option value="<?= htmlspecialchars($pre_order['order_id']) ?>">
+                                            <?= htmlspecialchars($pre_order['order_id']) ?> - <?= htmlspecialchars($pre_order['customer_name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="col-12">
                                 <label for="remarks" class="form-label">Remarks</label>
