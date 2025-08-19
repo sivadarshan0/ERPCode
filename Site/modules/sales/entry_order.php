@@ -180,7 +180,7 @@ require_once __DIR__ . '/../../includes/header.php';
         
         <div class="col-12 mt-4">
             <button class="btn btn-primary btn-lg" type="submit" id="submitBtn"><i class="bi bi-<?= $is_edit ? 'floppy' : 'save' ?>"></i> <?= $is_edit ? 'Update Order' : 'Create Order & Update Stock' ?></button>
-            <a href="/modules/sales/list_orders.php" class="btn btn-outline-secondary btn-lg">Back to Order List</a>
+            <a href="/index.php" class="btn btn-outline-secondary btn-lg">Back</a>
         </div>
     </form>
 </main>

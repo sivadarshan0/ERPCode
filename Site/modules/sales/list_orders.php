@@ -48,7 +48,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <!-- MODIFIED: Added a button toolbar and the Back to Dashboard button -->
                 <div class="btn-toolbar mb-2 mb-md-0">
                     <a href="/index.php" class="btn btn-outline-secondary me-2">
-                        <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+                        <i class="bi bi-arrow-left-circle"></i> Back
                     </a>
                     <a href="/modules/sales/entry_order.php" class="btn btn-success">
                         <i class="bi bi-plus-circle"></i> New Sales Order
