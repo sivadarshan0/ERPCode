@@ -553,6 +553,9 @@ function initPoEntry() {
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
+    const preOrderSearchInput = document.getElementById('pre_order_search');
+    const preOrderResults = document.getElementById('preOrderResults');
+    const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
 
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
@@ -608,6 +611,44 @@ function initPoEntry() {
                 .catch(error => console.error('[POItemLookup] Error:', error));
         }
     }, 300));
+    
+    // --- ADDED BACK: Live Search for Pre-Orders ---
+    preOrderSearchInput.addEventListener('input', debounce(() => {
+        const query = preOrderSearchInput.value.trim();
+        if (query.length < 2) {
+            preOrderResults.classList.add('d-none');
+            return;
+        }
+        fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
+            .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
+            .then(data => {
+                preOrderResults.innerHTML = '';
+                if (data && data.length > 0) {
+                    data.forEach(order => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'list-group-item list-group-item-action';
+                        btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
+                        btn.addEventListener('click', () => {
+                            preOrderSearchInput.value = `${order.order_id} - ${order.customer_name}`;
+                            hiddenLinkedOrderId.value = order.order_id;
+                            preOrderResults.classList.add('d-none');
+                        });
+                        preOrderResults.appendChild(btn);
+                    });
+                    preOrderResults.classList.remove('d-none');
+                } else {
+                    preOrderResults.classList.add('d-none');
+                }
+            })
+            .catch(error => console.error('[PreOrderLookup] Error:', error));
+    }, 300));
+
+    document.addEventListener('click', e => {
+        if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
+            preOrderResults.classList.add('d-none');
+        }
+    });
 }
 
 // ───── DOM Ready ─────
