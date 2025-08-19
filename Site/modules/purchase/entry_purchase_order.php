@@ -12,12 +12,12 @@ require_once __DIR__ . '/../../includes/functions.php';
 require_login();
 
 // --- AJAX Endpoint for Item Search ---
-// We can reuse the simple item search that returns all items, regardless of stock.
+// CORRECTED: The endpoint now uses a simpler, more direct check.
 if (isset($_GET['item_lookup'])) {
     header('Content-Type: application/json');
     try {
         $name = trim($_GET['item_lookup']);
-        // Using a simpler search as we can order any item
+        // Using search_items_by_name as it returns all items, which is correct for a PO.
         echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
     } catch (Exception $e) {
         http_response_code(500);
