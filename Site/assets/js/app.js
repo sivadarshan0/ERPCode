@@ -504,51 +504,75 @@ function initOrderEntry() {
 function initOrderList() {
     const searchForm = document.getElementById('orderSearchForm');
     if (!searchForm) return;
+
     const tableBody = document.getElementById('orderListTableBody');
     const filterControls = searchForm.querySelectorAll('input, select');
     const dateRangeInput = document.getElementById('search_date_range');
+
     const picker = new Litepicker({
         element: dateRangeInput,
         singleMode: false,
         autoApply: true,
         format: 'YYYY-MM-DD',
         setup: (picker) => {
-            picker.on('selected', (date1, date2) => { doOrderSearch(); });
+            picker.on('selected', (date1, date2) => {
+                doOrderSearch();
+            });
         }
     });
+
     const doOrderSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-        searchForm.querySelectorAll('input[type="text"], select').forEach(control => {
+        filterControls.forEach(control => {
             if (control.value) {
                 params.set(control.id.replace('search_', ''), control.value);
             }
         });
+
         if (picker.getStartDate() && picker.getEndDate()) {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
         }
+
         fetch(`/modules/sales/list_orders.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No orders found.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">No orders found matching your criteria.</td></tr>`;
                     return;
                 }
                 data.forEach(order => {
                     const paymentStatusClass = order.payment_status === 'Received' ? 'bg-success' : 'bg-warning';
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${escapeHtml(order.order_id)}</td><td>${new Date(order.order_date + 'T00:00:00').toLocaleDateString('en-GB')}</td><td>${escapeHtml(order.customer_name)}</td><td>${escapeHtml(order.customer_phone)}</td><td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td><td><span class="badge bg-info text-dark">${escapeHtml(order.status)}</span></td><td><span class="badge ${paymentStatusClass}">${escapeHtml(order.payment_status)}</span></td><td><a href="/modules/sales/entry_order.php?order_id=${escapeHtml(order.order_id)}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> View</a></td>`;
+                    tr.innerHTML = `
+                        <td>${escapeHtml(order.order_id)}</td>
+                        <td>${new Date(order.order_date + 'T00:00:00').toLocaleDateString('en-GB')}</td>
+                        <td>${escapeHtml(order.customer_name)}</td>
+                        <td>${escapeHtml(order.customer_phone)}</td>
+                        <td class="text-end">${parseFloat(order.total_amount).toFixed(2)}</td>
+                        <td><span class="badge bg-secondary">${escapeHtml(order.stock_type)}</span></td>
+                        <td><span class="badge bg-info text-dark">${escapeHtml(order.status)}</span></td>
+                        <td><span class="badge ${paymentStatusClass}">${escapeHtml(order.payment_status)}</span></td>
+                        <td>
+                            <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(order.order_id)}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i> View
+                            </a>
+                        </td>
+                    `;
                     tableBody.appendChild(tr);
                 });
             })
-            .catch(error => { console.error('[OrderSearch] Error:', error); tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">Failed to load results.</td></tr>`; });
+            .catch(error => {
+                console.error('[OrderSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
     }, 300);
+
     filterControls.forEach(control => {
-        if (control.id !== 'search_date_range') {
-            const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
-            control.addEventListener(eventType, doOrderSearch);
-        }
+        // The event listener is smart enough to handle input and select changes already
+        const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+        control.addEventListener(eventType, doOrderSearch);
     });
 }
 

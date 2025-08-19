@@ -551,7 +551,8 @@ function search_orders($filters = []) {
             o.order_date,
             o.total_amount,
             o.status,
-            o.payment_status, -- Added payment_status to the SELECT statement
+            o.payment_status,
+            o.stock_type, -- Added stock_type to the SELECT statement
             c.name AS customer_name,
             c.phone AS customer_phone
         FROM orders o
@@ -579,10 +580,15 @@ function search_orders($filters = []) {
         $params[] = $filters['status'];
         $types .= 's';
     }
-    // ADDED: Logic for the new payment_status filter
     if (!empty($filters['payment_status'])) {
         $sql .= " AND o.payment_status = ?";
         $params[] = $filters['payment_status'];
+        $types .= 's';
+    }
+    // ADDED: Logic for the new stock_type filter
+    if (!empty($filters['stock_type'])) {
+        $sql .= " AND o.stock_type = ?";
+        $params[] = $filters['stock_type'];
         $types .= 's';
     }
     if (!empty($filters['date_from'])) {
