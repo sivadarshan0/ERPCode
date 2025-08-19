@@ -444,7 +444,6 @@ function initOrderEntry() {
         const phone = customerSearchInput.value.trim();
         if (phone.length < 3) return customerResults.classList.add('d-none');
         
-        // CORRECTED: The fetch URL now points to /modules/sales/entry_order.php
         fetch(`/modules/sales/entry_order.php?customer_lookup=${encodeURIComponent(phone)}`)
             .then(res => res.ok ? res.json() : Promise.reject('Customer lookup failed'))
             .then(data => {
@@ -521,7 +520,6 @@ function initOrderEntry() {
                 const stockType = stockTypeSelect.value;
                 if (name.length < 2) return resultsContainer.classList.add('d-none');
                 
-                // CORRECTED: The fetch URL now points to /modules/sales/entry_order.php
                 fetch(`/modules/sales/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
                     .then(res => res.ok ? res.json() : Promise.reject())
                     .then(data => {
@@ -632,7 +630,6 @@ function initOrderList() {
     const filterControls = searchForm.querySelectorAll('input, select');
     const dateRangeInput = document.getElementById('search_date_range');
 
-    // --- Date Range Picker Initialization ---
     const picker = new Litepicker({
         element: dateRangeInput,
         singleMode: false,
@@ -640,7 +637,6 @@ function initOrderList() {
         format: 'YYYY-MM-DD',
         setup: (picker) => {
             picker.on('selected', (date1, date2) => {
-                // When a date range is selected, trigger the search
                 doOrderSearch();
             });
         }
@@ -649,16 +645,13 @@ function initOrderList() {
     const doOrderSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
 
-        // Handle regular text and select inputs
         searchForm.querySelectorAll('input[type="text"], select').forEach(control => {
             if (control.value) {
                 params.set(control.id.replace('search_', ''), control.value);
             }
         });
 
-        // Handle the date range picker input
-        const dateRange = picker.getStartDate() && picker.getEndDate() ? picker.getStartDate().format('YYYY-MM-DD') + ' - ' + picker.getEndDate().format('YYYY-MM-DD') : '';
-        if (dateRange) {
+        if (picker.getStartDate() && picker.getEndDate()) {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
         }
@@ -697,7 +690,6 @@ function initOrderList() {
             });
     }, 300);
 
-    // Attach event listeners to all filter controls EXCEPT the date range picker
     filterControls.forEach(control => {
         if (control.id !== 'search_date_range') {
             const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
@@ -710,8 +702,6 @@ function initOrderList() {
 // ----- Purchase Order Entry Handler -----
 // -----------------------------------------
 
-// Replace the entire initPoEntry function in your app.js file
-
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
@@ -719,6 +709,9 @@ function initPoEntry() {
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
+    const preOrderSearchInput = document.getElementById('pre_order_search');
+    const preOrderResults = document.getElementById('preOrderResults');
+    const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
 
     const addRow = () => {
         const newRow = template.content.cloneNode(true);
@@ -746,7 +739,6 @@ function initPoEntry() {
                 return;
             }
 
-            // CORRECTED: The fetch URL now correctly points to the PO page itself.
             fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
@@ -780,6 +772,45 @@ function initPoEntry() {
                 });
         }
     }, 300));
+    
+    // --- Pre-Order Search Logic ---
+    preOrderSearchInput.addEventListener('input', debounce(() => {
+        const query = preOrderSearchInput.value.trim();
+        if (query.length < 2) {
+            preOrderResults.classList.add('d-none');
+            return;
+        }
+
+        fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
+            .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
+            .then(data => {
+                preOrderResults.innerHTML = '';
+                if (data && data.length > 0) {
+                    data.forEach(order => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'list-group-item list-group-item-action';
+                        btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
+                        btn.addEventListener('click', () => {
+                            preOrderSearchInput.value = `${order.order_id} - ${order.customer_name}`;
+                            hiddenLinkedOrderId.value = order.order_id;
+                            preOrderResults.classList.add('d-none');
+                        });
+                        preOrderResults.appendChild(btn);
+                    });
+                    preOrderResults.classList.remove('d-none');
+                } else {
+                    preOrderResults.classList.add('d-none');
+                }
+            })
+            .catch(error => console.error('[PreOrderLookup] Error:', error));
+    }, 300));
+
+    document.addEventListener('click', e => {
+        if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
+            preOrderResults.classList.add('d-none');
+        }
+    });
 }
 
 // ───── DOM Ready ─────
@@ -792,8 +823,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('grnForm')) { initGrnEntry(); }
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
-    if (document.querySelector('.live-search')) { initLiveSearch(); }
     if (document.getElementById('poForm')) { initPoEntry(); }
+    if (document.querySelector('.live-search')) { initLiveSearch(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
