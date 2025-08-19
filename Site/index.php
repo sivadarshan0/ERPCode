@@ -1,6 +1,6 @@
 <?php
 // File: index.php
-// FINAL version with updated dashboard including the Purchase module.
+// FINAL version with the corrected color scheme and layout for the dashboard.
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -13,7 +13,6 @@ require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/includes/functions.php';
 
 require_login();
-
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -53,7 +52,7 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Card 2: Purchasing (NEW) -->
+                <!-- Card 2: Purchasing -->
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-danger text-white">
@@ -73,7 +72,7 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
-                <!-- Card 3: Inventory -->
+                <!-- Card 3: Inventory & Products -->
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card h-100">
                         <div class="card-header bg-warning text-dark">
