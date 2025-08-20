@@ -751,16 +751,15 @@ function initPurchaseOrderList() {
     const tableBody = document.getElementById('purchaseOrderListTableBody');
     const poIdInput = document.getElementById('search_po_id');
     const dateRangeInput = document.getElementById('search_date_range');
+    const statusInput = document.getElementById('search_status'); // <-- ADD THIS LINE
 
-    // --- Date Range Picker Initialization (using Litepicker to match your other code) ---
     const picker = new Litepicker({
         element: dateRangeInput,
         singleMode: false,
         autoApply: true,
-        format: 'DD/MM/YYYY', // Display format
+        format: 'DD/MM/YYYY',
         setup: (picker) => {
             picker.on('selected', (date1, date2) => {
-                // When a date range is selected, trigger the search
                 doPoSearch();
             });
         }
@@ -769,12 +768,16 @@ function initPurchaseOrderList() {
     const doPoSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
 
-        // Handle the Purchase Order ID text input
         if (poIdInput.value) {
             params.set('purchase_order_id', poIdInput.value);
         }
 
-        // Handle the date range picker input
+        // --- NEW: Read value from status dropdown ---
+        if (statusInput.value) {
+            params.set('status', statusInput.value);
+        }
+        // --- END NEW ---
+
         if (picker.getStartDate() && picker.getEndDate()) {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
@@ -783,14 +786,13 @@ function initPurchaseOrderList() {
         fetch(`/modules/purchase/list_purchase_order.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
             .then(data => {
-                tableBody.innerHTML = ''; // Clear existing results
+                tableBody.innerHTML = '';
                 if (data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
                     return;
                 }
                 data.forEach(po => {
                     const tr = document.createElement('tr');
-                    // Format date from YYYY-MM-DD to DD-MM-YYYY
                     const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
                     tr.innerHTML = `
                         <td>${escapeHtml(po.purchase_order_id)}</td>
@@ -813,8 +815,8 @@ function initPurchaseOrderList() {
             });
     }, 300);
 
-    // Attach event listener to the PO ID input
     poIdInput.addEventListener('input', doPoSearch);
+    statusInput.addEventListener('change', doPoSearch); // <-- ADD THIS LINE
 }
 
 // ───── DOM Ready ─────

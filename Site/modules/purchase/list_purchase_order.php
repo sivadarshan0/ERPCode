@@ -18,10 +18,10 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
     try {
         $filters = [
             'purchase_order_id' => $_GET['purchase_order_id'] ?? null,
+            'status'            => $_GET['status'] ?? null, // <-- ADD THIS LINE
             'date_from'         => $_GET['date_from'] ?? null,
             'date_to'           => $_GET['date_to'] ?? null,
         ];
-        // Use the new function to search for purchase orders
         $purchase_orders = search_purchase_orders($filters);
         echo json_encode($purchase_orders);
     } catch (Exception $e) {
@@ -70,8 +70,21 @@ require_once __DIR__ . '/../../includes/header.php';
                             <label for="search_po_id" class="visually-hidden">PO ID</label>
                             <input type="text" class="form-control" id="search_po_id" placeholder="Search by PO ID...">
                         </div>
+                        <!-- NEW STATUS FILTER DROPDOWN -->
                         <div class="col-md-4">
-                             <label for="search_date_range" class="visually-hidden">Date Range</label>
+                            <label for="search_status" class="visually-hidden">Status</label>
+                            <select id="search_status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="Draft">Draft</option>
+                                <option value="Ordered">Ordered</option>
+                                <option value="Partially Received">Partially Received</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Canceled">Canceled</option>
+                            </select>
+                        </div>
+                        <!-- END NEW -->
+                        <div class="col-md-4">
+                            <label for="search_date_range" class="visually-hidden">Date Range</label>
                             <input type="text" class="form-control" id="search_date_range" placeholder="Select Date Range">
                         </div>
                     </form>
