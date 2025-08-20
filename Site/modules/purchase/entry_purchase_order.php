@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             if (update_purchase_order_details($po_id_to_update, $details_to_update)) {
                 $_SESSION['success_message'] = "✅ Purchase Order #$po_id_to_update successfully updated.";
-                header("Location: entry_purchase_order.php?purchase_order_id=" . $po_id_to_update);
+                header("Location: /modules/purchase/list_purchase_order.php");
                 exit;
             }
         } else {
