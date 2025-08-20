@@ -1,6 +1,6 @@
 <?php
 // File: /modules/purchase/entry_purchase_order.php
-// FINAL version with Create/Manage modes and Status Tracking.
+// FINAL VALIDATED version with Create/Manage modes, Status Tracking, and Pre-Order Linking.
 
 session_start();
 error_reporting(E_ALL);
@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $supplier_name = $_POST['supplier_name'] ?? '';
             $status = $_POST['status'] ?? 'Draft';
             $remarks = $_POST['remarks'] ?? '';
+            $linked_sales_order_id = $_POST['linked_sales_order_id'] ?? null;
             
             $item_ids = $_POST['items']['id'] ?? [];
             $quantities = $_POST['items']['quantity'] ?? [];
@@ -82,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status);
+            $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status, $linked_sales_order_id);
             
             $_SESSION['success_message'] = "✅ Purchase Order #$new_po_id successfully created.";
             header("Location: entry_purchase_order.php");
@@ -91,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
-        // Repopulate form with submitted data on error
         $po = array_merge($po ?? [], $_POST);
     }
 }
@@ -126,7 +126,7 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-header">Purchase Order Details</div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="po_date" class="form-label">PO Date *</label>
                                 <input type="date" class="form-control" id="po_date" name="po_date" value="<?= $is_edit ? htmlspecialchars($po['po_date']) : date('Y-m-d') ?>" <?= $is_edit ? 'readonly' : 'required' ?>>
                             </div>
@@ -134,7 +134,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <label for="supplier_name" class="form-label">Supplier Name</label>
                                 <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name..." value="<?= htmlspecialchars($po['supplier_name'] ?? '') ?>">
                             </div>
-                             <div class="col-md-3">
+                            <div class="col-md-4">
                                 <label for="status" class="form-label">Status</label>
                                 <select class="form-select" id="status" name="status">
                                     <option value="Draft" <?= ($is_edit && $po['status'] == 'Draft') ? 'selected' : '' ?>>Draft</option>
@@ -144,6 +144,25 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <option value="Canceled" <?= ($is_edit && $po['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option>
                                 </select>
                             </div>
+
+                            <?php if (!$is_edit): ?>
+                            <div class="col-md-6 position-relative">
+                                <label for="pre_order_search" class="form-label">Link to Pre-Order (Optional)</label>
+                                <input type="text" class="form-control" id="pre_order_search" autocomplete="off" placeholder="Search Order ID or Customer...">
+                                <input type="hidden" name="linked_sales_order_id" id="linked_sales_order_id">
+                                <div id="preOrderResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
+                            </div>
+                            <?php elseif (!empty($po['linked_sales_order_id'])): ?>
+                            <div class="col-md-6">
+                                 <label class="form-label">Linked Sales Order</label>
+                                 <div class="form-control-plaintext">
+                                     <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($po['linked_sales_order_id']) ?>" target="_blank">
+                                         <?= htmlspecialchars($po['linked_sales_order_id']) ?> <i class="bi bi-box-arrow-up-right"></i>
+                                     </a>
+                                 </div>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="col-12">
                                 <label for="remarks" class="form-label">Remarks</label>
                                 <textarea class="form-control" id="remarks" name="remarks" rows="2" placeholder="e.g., Delivery instructions..."><?= htmlspecialchars($po['remarks'] ?? '') ?></textarea>
@@ -155,7 +174,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="card mt-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <span>Items to Order</span>
-                        <?php if (!$is_edit): // Only show 'Add Item' button in create mode ?>
+                        <?php if (!$is_edit): ?>
                         <button type="button" class="btn btn-sm btn-success" id="addPoItemRow"><i class="bi bi-plus-circle"></i> Add Item</button>
                         <?php endif; ?>
                     </div>
@@ -207,7 +226,7 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
-<?php if (!$is_edit): // Only include the template in create mode ?>
+<?php if (!$is_edit): ?>
 <template id="poItemRowTemplate">
     <tr class="po-item-row">
         <td class="position-relative"><input type="hidden" name="items[id][]" class="item-id-input"><input type="text" class="form-control form-control-sm item-search-input" placeholder="Start typing item name..." required><div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div><div class="invalid-feedback">Please select an item.</div></td>

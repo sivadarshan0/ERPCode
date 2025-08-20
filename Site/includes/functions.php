@@ -631,7 +631,7 @@ function search_orders($filters = []) {
  * @return string The ID of the newly created Purchase Order.
  * @throws Exception On validation or database errors.
  */
-function process_purchase_order($po_date, $supplier_name, $items, $remarks, $status = 'Draft') { // Added $status
+function process_purchase_order($po_date, $supplier_name, $items, $remarks, $status = 'Draft', $linked_sales_order_id = null) { // Added linked_sales_order_id
     $db = db();
     if (!$db) {
         throw new Exception("Database connection failed.");
@@ -640,6 +640,7 @@ function process_purchase_order($po_date, $supplier_name, $items, $remarks, $sta
     if (empty($po_date) || !is_array($items) || empty($items)) {
         throw new Exception("PO date and at least one item are required.");
     }
+    // (Validation for items remains the same)
     foreach ($items as $item) {
         if (empty($item['item_id']) || !isset($item['quantity']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0) {
             throw new Exception("Invalid data in item rows. Each item needs an ID and a valid quantity.");
@@ -656,14 +657,16 @@ function process_purchase_order($po_date, $supplier_name, $items, $remarks, $sta
         $user_name = $_SESSION['username'] ?? 'Unknown';
         $purchase_order_id = generate_sequence_id('purchase_order_id', 'purchase_orders', 'purchase_order_id');
         
-        // MODIFIED: Added `status` to the INSERT statement
+        // MODIFIED: Added `linked_sales_order_id` and `status` to the INSERT statement
         $stmt_po = $db->prepare(
-            "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, linked_sales_order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         );
-        $stmt_po->bind_param("sssssis", $purchase_order_id, $po_date, $supplier_name, $status, $remarks, $user_id, $user_name);
+        // Use empty string if linked_sales_order_id is null for bind_param
+        $linked_id_for_db = empty($linked_sales_order_id) ? null : $linked_sales_order_id;
+        $stmt_po->bind_param("ssssssis", $purchase_order_id, $po_date, $supplier_name, $linked_id_for_db, $status, $remarks, $user_id, $user_name);
         $stmt_po->execute();
 
-        // Also log the initial status to the history table
+        // (The rest of the function remains the same)
         $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
         $stmt_history->bind_param("ssis", $purchase_order_id, $status, $user_id, $user_name);
         $stmt_history->execute();
