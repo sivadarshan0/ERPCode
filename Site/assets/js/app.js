@@ -740,6 +740,83 @@ function initGrnList() {
     document.getElementById('search_grn_id').addEventListener('input', doGrnSearch);
 }
 
+// -----------------------------------------
+// ----- Purchase Order List Handler -----
+// -----------------------------------------
+
+function initPurchaseOrderList() {
+    const searchForm = document.getElementById('poSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('purchaseOrderListTableBody');
+    const poIdInput = document.getElementById('search_po_id');
+    const dateRangeInput = document.getElementById('search_date_range');
+
+    // --- Date Range Picker Initialization (using Litepicker to match your other code) ---
+    const picker = new Litepicker({
+        element: dateRangeInput,
+        singleMode: false,
+        autoApply: true,
+        format: 'DD/MM/YYYY', // Display format
+        setup: (picker) => {
+            picker.on('selected', (date1, date2) => {
+                // When a date range is selected, trigger the search
+                doPoSearch();
+            });
+        }
+    });
+
+    const doPoSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+
+        // Handle the Purchase Order ID text input
+        if (poIdInput.value) {
+            params.set('purchase_order_id', poIdInput.value);
+        }
+
+        // Handle the date range picker input
+        if (picker.getStartDate() && picker.getEndDate()) {
+            params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
+            params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
+        }
+
+        fetch(`/modules/purchase/list_purchase_order.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = ''; // Clear existing results
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
+                    return;
+                }
+                data.forEach(po => {
+                    const tr = document.createElement('tr');
+                    // Format date from YYYY-MM-DD to DD-MM-YYYY
+                    const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(po.purchase_order_id)}</td>
+                        <td>${poDate}</td>
+                        <td>${escapeHtml(po.supplier_name)}</td>
+                        <td><span class="badge bg-info text-dark">${escapeHtml(po.status)}</span></td>
+                        <td>${escapeHtml(po.created_by_name)}</td>
+                        <td>
+                            <a href="/modules/purchase/entry_purchase_order.php?purchase_order_id=${escapeHtml(po.purchase_order_id)}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[PoSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    // Attach event listener to the PO ID input
+    poIdInput.addEventListener('input', doPoSearch);
+}
+
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
@@ -753,6 +830,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('poForm')) { initPoEntry(); }
     if (document.querySelector('.live-search')) { initLiveSearch(); }
     if (document.getElementById('grnSearchForm')) { initGrnList(); }
+    if (document.getElementById('poSearchForm')) { initPurchaseOrderList(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));

@@ -785,3 +785,48 @@ function search_grns($filters = []) {
     $result = $stmt->get_result();
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
+
+/**
+ * Searches for purchase orders in the database based on filters.
+ *
+ * @param array $filters An associative array of filters. 
+ *                       Keys can include 'purchase_order_id', 'date_from', 'date_to'.
+ * @return array The list of purchase orders found.
+ */
+function search_purchase_orders($filters = []) {
+    global $pdo;
+
+    $sql = "SELECT purchase_order_id, po_date, supplier_name, status, created_by_name 
+            FROM purchase_orders 
+            WHERE 1=1";
+            
+    $params = [];
+
+    if (!empty($filters['purchase_order_id'])) {
+        $sql .= " AND purchase_order_id LIKE ?";
+        $params[] = '%' . $filters['purchase_order_id'] . '%';
+    }
+
+    if (!empty($filters['date_from'])) {
+        $sql .= " AND po_date >= ?";
+        $params[] = $filters['date_from'];
+    }
+    
+    if (!empty($filters['date_to'])) {
+        $sql .= " AND po_date <= ?";
+        $params[] = $filters['date_to'];
+    }
+
+    $sql .= " ORDER BY po_date DESC, purchase_order_id DESC LIMIT 100";
+
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        // In a real app, you would log this error.
+        // For now, we can return an empty array on failure.
+        error_log('Search Purchase Orders Error: ' . $e->getMessage());
+        return [];
+    }
+}
