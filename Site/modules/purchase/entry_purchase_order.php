@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status);
             
             $_SESSION['success_message'] = "✅ Purchase Order #$new_po_id successfully created.";
-            header("Location: entry_purchase_order.php?purchase_order_id=" . $new_po_id);
+            header("Location: entry_purchase_order.php");
             exit;
         }
     } catch (Exception $e) {
