@@ -786,6 +786,10 @@ function search_grns($filters = []) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+// -----------------------------------------
+// ----- PO Listing/Search Functions -----
+// -----------------------------------------
+
 /**
  * Searches for purchase orders in the database based on filters.
  *
@@ -794,39 +798,54 @@ function search_grns($filters = []) {
  * @return array The list of purchase orders found.
  */
 function search_purchase_orders($filters = []) {
-    global $pdo;
+    $db = db(); // Use your existing db() function
+    if (!$db) return [];
 
-    $sql = "SELECT purchase_order_id, po_date, supplier_name, status, created_by_name 
-            FROM purchase_orders 
-            WHERE 1=1";
+    $sql = "
+        SELECT 
+            purchase_order_id, 
+            po_date, 
+            supplier_name, 
+            status, 
+            created_by_name 
+        FROM purchase_orders 
+        WHERE 1=1
+    ";
             
     $params = [];
+    $types = '';
 
     if (!empty($filters['purchase_order_id'])) {
         $sql .= " AND purchase_order_id LIKE ?";
         $params[] = '%' . $filters['purchase_order_id'] . '%';
+        $types .= 's';
     }
 
     if (!empty($filters['date_from'])) {
         $sql .= " AND po_date >= ?";
         $params[] = $filters['date_from'];
+        $types .= 's';
     }
     
     if (!empty($filters['date_to'])) {
         $sql .= " AND po_date <= ?";
         $params[] = $filters['date_to'];
+        $types .= 's';
     }
 
     $sql .= " ORDER BY po_date DESC, purchase_order_id DESC LIMIT 100";
 
-    try {
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        // In a real app, you would log this error.
-        // For now, we can return an empty array on failure.
-        error_log('Search Purchase Orders Error: ' . $e->getMessage());
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        error_log("Purchase Order Search Prepare Failed: " . $db->error);
         return [];
     }
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
