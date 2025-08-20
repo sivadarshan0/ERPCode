@@ -54,6 +54,13 @@ require_once __DIR__ . '/../../includes/header.php';
                 </div>
             </div>
 
+            <?php
+            if (isset($_SESSION['success_message'])) {
+                echo '<div class="alert alert-success alert-dismissible fade show" role="alert">' . htmlspecialchars($_SESSION['success_message']) . '</div>';
+                unset($_SESSION['success_message']);
+            }
+            ?>
+
             <!-- Search Filters -->
             <div class="card mb-4">
                 <div class="card-header"><i class="bi bi-search"></i> Find Purchase Orders</div>
