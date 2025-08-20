@@ -631,13 +631,12 @@ function search_orders($filters = []) {
  * @return string The ID of the newly created Purchase Order.
  * @throws Exception On validation or database errors.
  */
-function process_purchase_order($po_date, $supplier_name, $items, $remarks) {
+function process_purchase_order($po_date, $supplier_name, $items, $remarks, $status = 'Draft') { // Added $status
     $db = db();
     if (!$db) {
         throw new Exception("Database connection failed.");
     }
 
-    // --- Validation ---
     if (empty($po_date) || !is_array($items) || empty($items)) {
         throw new Exception("PO date and at least one item are required.");
     }
@@ -653,41 +652,33 @@ function process_purchase_order($po_date, $supplier_name, $items, $remarks) {
     $db->begin_transaction();
 
     try {
-        // Step 1: Get user details from session
         $user_id = $_SESSION['user_id'];
         $user_name = $_SESSION['username'] ?? 'Unknown';
-
-        // Step 2: Create the main Purchase Order record
         $purchase_order_id = generate_sequence_id('purchase_order_id', 'purchase_orders', 'purchase_order_id');
         
+        // MODIFIED: Added `status` to the INSERT statement
         $stmt_po = $db->prepare(
-            "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
-        if (!$stmt_po) throw new Exception("Database prepare failed for PO header: " . $db->error);
-        
-        $stmt_po->bind_param("ssssis", $purchase_order_id, $po_date, $supplier_name, $remarks, $user_id, $user_name);
+        $stmt_po->bind_param("sssssis", $purchase_order_id, $po_date, $supplier_name, $status, $remarks, $user_id, $user_name);
         $stmt_po->execute();
 
-        // Step 3: Loop through each item and add it to the purchase_order_items table
-        $stmt_items = $db->prepare(
-            "INSERT INTO purchase_order_items (purchase_order_id, item_id, quantity, cost_price) VALUES (?, ?, ?, ?)"
-        );
-        if (!$stmt_items) throw new Exception("Database prepare failed for PO items: " . $db->error);
+        // Also log the initial status to the history table
+        $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
+        $stmt_history->bind_param("ssis", $purchase_order_id, $status, $user_id, $user_name);
+        $stmt_history->execute();
 
+        $stmt_items = $db->prepare("INSERT INTO purchase_order_items (purchase_order_id, item_id, quantity, cost_price) VALUES (?, ?, ?, ?)");
         foreach ($items as $item) {
             $stmt_items->bind_param("ssdd", $purchase_order_id, $item['item_id'], $item['quantity'], $item['cost_price']);
             $stmt_items->execute();
         }
 
-        // If everything was successful, commit the transaction
         $db->commit();
-        
-        return $purchase_order_id; // Return the new PO ID
+        return $purchase_order_id;
 
     } catch (Exception $e) {
-        // If any part of the process failed, roll back everything
         $db->rollback();
-        // Pass the error message up to the calling page
         throw new Exception("Failed to process Purchase Order: " . $e->getMessage());
     }
 }
@@ -848,4 +839,81 @@ function search_purchase_orders($filters = []) {
     $stmt->execute();
     $result = $stmt->get_result();
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+/**
+ * Retrieves a single, complete purchase order with its items and history.
+ *
+ * @param string $purchase_order_id The ID of the PO to fetch.
+ * @return array|false The complete PO data, or false if not found.
+ */
+function get_purchase_order_details($purchase_order_id) {
+    $db = db();
+    if (!$db) return false;
+
+    // 1. Get the main PO details
+    $stmt_po = $db->prepare("SELECT * FROM purchase_orders WHERE purchase_order_id = ?");
+    $stmt_po->bind_param("s", $purchase_order_id);
+    $stmt_po->execute();
+    $po = $stmt_po->get_result()->fetch_assoc();
+
+    if (!$po) {
+        return false; // PO not found
+    }
+
+    // 2. Get all line items for the PO
+    $stmt_items = $db->prepare("SELECT poi.*, i.name as item_name FROM purchase_order_items poi JOIN items i ON poi.item_id = i.item_id WHERE poi.purchase_order_id = ?");
+    $stmt_items->bind_param("s", $purchase_order_id);
+    $stmt_items->execute();
+    $po['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // 3. Get the status history for the PO
+    $stmt_history = $db->prepare("SELECT * FROM purchase_order_status_history WHERE purchase_order_id = ? ORDER BY created_at ASC");
+    $stmt_history->bind_param("s", $purchase_order_id);
+    $stmt_history->execute();
+    $po['status_history'] = $stmt_history->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    return $po;
+}
+
+/**
+ * Updates the status and details of an existing PO and tracks history.
+ *
+ * @param string $purchase_order_id The ID of the PO to update.
+ * @param array $details An array of details to update (status, supplier_name, remarks).
+ * @return bool True on success, false on failure.
+ * @throws Exception On validation or database errors.
+ */
+function update_purchase_order_details($purchase_order_id, $details) {
+    $db = db();
+    if (!$db) throw new Exception("Database connection failed.");
+
+    $db->begin_transaction();
+    try {
+        // Get the current status BEFORE updating
+        $stmt_check = $db->prepare("SELECT status FROM purchase_orders WHERE purchase_order_id = ?");
+        $stmt_check->bind_param("s", $purchase_order_id);
+        $stmt_check->execute();
+        $current_state = $stmt_check->get_result()->fetch_assoc();
+        $old_status = $current_state['status'];
+
+        // Update the main purchase_orders table
+        $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
+        $stmt->bind_param("ssss", $details['status'], $details['supplier_name'], $details['remarks'], $purchase_order_id);
+        $stmt->execute();
+
+        // If the status has changed, insert a record into the history table
+        if ($old_status !== $details['status']) {
+            $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
+            $stmt_history->bind_param("ssis", $purchase_order_id, $details['status'], $_SESSION['user_id'], $_SESSION['username']);
+            $stmt_history->execute();
+        }
+        
+        $db->commit();
+        return true;
+
+    } catch (Exception $e) {
+        $db->rollback();
+        throw new Exception("Failed to update Purchase Order: " . $e->getMessage());
+    }
 }
