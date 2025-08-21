@@ -101,6 +101,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <th>PO ID</th>
                                     <th>Date</th>
                                     <th>Supplier</th>
+                                    <th>Linked Order</th> <!-- NEW HEADER -->
                                     <th>Status</th>
                                     <th>Created By</th>
                                     <th>Actions</th>
@@ -108,13 +109,24 @@ require_once __DIR__ . '/../../includes/header.php';
                             </thead>
                             <tbody id="purchaseOrderListTableBody">
                                 <?php if (empty($initial_purchase_orders)): ?>
-                                    <tr><td colspan="6" class="text-center text-muted">No Purchase Orders found.</td></tr>
+                                    <!-- Updated colspan from 6 to 7 -->
+                                    <tr><td colspan="7" class="text-center text-muted">No Purchase Orders found.</td></tr>
                                 <?php else: ?>
                                     <?php foreach ($initial_purchase_orders as $po): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($po['purchase_order_id']) ?></td>
                                             <td><?= htmlspecialchars(date("d-m-Y", strtotime($po['po_date']))) ?></td>
                                             <td><?= htmlspecialchars($po['supplier_name']) ?></td>
+                                            <!-- NEW CELL FOR LINKED ORDER -->
+                                            <td>
+                                                <?php if (!empty($po['linked_sales_order_id'])): ?>
+                                                    <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($po['linked_sales_order_id']) ?>" target="_blank">
+                                                        <?= htmlspecialchars($po['linked_sales_order_id']) ?>
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span class="text-muted">N/A</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td><span class="badge bg-info text-dark"><?= htmlspecialchars($po['status']) ?></span></td>
                                             <td><?= htmlspecialchars($po['created_by_name']) ?></td>
                                             <td>
@@ -130,8 +142,5 @@ require_once __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
-</div>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

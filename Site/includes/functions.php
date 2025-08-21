@@ -788,13 +788,6 @@ function search_grns($filters = []) {
  * Searches for purchase orders in the database based on filters.
  *
  * @param array $filters An associative array of filters. 
- *                       Keys can include 'purchase_order_id', 'date_from', 'date_to'.
- * @return array The list of purchase orders found.
- */
-/**
- * Searches for purchase orders in the database based on filters.
- *
- * @param array $filters An associative array of filters. 
  *                       Keys can include 'purchase_order_id', 'date_from', 'date_to', 'status'.
  * @return array The list of purchase orders found.
  */
@@ -807,6 +800,7 @@ function search_purchase_orders($filters = []) {
             purchase_order_id, 
             po_date, 
             supplier_name, 
+            linked_sales_order_id, -- ADDED THIS LINE
             status, 
             created_by_name 
         FROM purchase_orders 
@@ -821,21 +815,16 @@ function search_purchase_orders($filters = []) {
         $params[] = '%' . $filters['purchase_order_id'] . '%';
         $types .= 's';
     }
-
-    // --- NEW: Add logic for the status filter ---
     if (!empty($filters['status'])) {
         $sql .= " AND status = ?";
         $params[] = $filters['status'];
         $types .= 's';
     }
-    // --- END NEW ---
-
     if (!empty($filters['date_from'])) {
         $sql .= " AND po_date >= ?";
         $params[] = $filters['date_from'];
         $types .= 's';
     }
-    
     if (!empty($filters['date_to'])) {
         $sql .= " AND po_date <= ?";
         $params[] = $filters['date_to'];

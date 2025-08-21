@@ -751,7 +751,7 @@ function initPurchaseOrderList() {
     const tableBody = document.getElementById('purchaseOrderListTableBody');
     const poIdInput = document.getElementById('search_po_id');
     const dateRangeInput = document.getElementById('search_date_range');
-    const statusInput = document.getElementById('search_status'); // <-- ADD THIS LINE
+    const statusInput = document.getElementById('search_status');
 
     const picker = new Litepicker({
         element: dateRangeInput,
@@ -768,16 +768,8 @@ function initPurchaseOrderList() {
     const doPoSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
 
-        if (poIdInput.value) {
-            params.set('purchase_order_id', poIdInput.value);
-        }
-
-        // --- NEW: Read value from status dropdown ---
-        if (statusInput.value) {
-            params.set('status', statusInput.value);
-        }
-        // --- END NEW ---
-
+        if (poIdInput.value) { params.set('purchase_order_id', poIdInput.value); }
+        if (statusInput.value) { params.set('status', statusInput.value); }
         if (picker.getStartDate() && picker.getEndDate()) {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
@@ -788,16 +780,25 @@ function initPurchaseOrderList() {
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
+                    // Updated colspan from 6 to 7
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
                     return;
                 }
                 data.forEach(po => {
                     const tr = document.createElement('tr');
-                    const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
+                    const poDate = new Date(po.po_date + 'T00:00:00').toLocaleString('en-GB');
+
+                    // --- NEW LOGIC for Linked Order Cell ---
+                    const linkedOrderHtml = po.linked_sales_order_id
+                        ? `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(po.linked_sales_order_id)}" target="_blank">${escapeHtml(po.linked_sales_order_id)}</a>`
+                        : `<span class="text-muted">N/A</span>`;
+                    // --- END NEW LOGIC ---
+
                     tr.innerHTML = `
                         <td>${escapeHtml(po.purchase_order_id)}</td>
                         <td>${poDate}</td>
                         <td>${escapeHtml(po.supplier_name)}</td>
+                        <td>${linkedOrderHtml}</td>
                         <td><span class="badge bg-info text-dark">${escapeHtml(po.status)}</span></td>
                         <td>${escapeHtml(po.created_by_name)}</td>
                         <td>
@@ -811,12 +812,13 @@ function initPurchaseOrderList() {
             })
             .catch(error => {
                 console.error('[PoSearch] Error:', error);
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Failed to load search results.</td></tr>`;
+                // Updated colspan from 6 to 7
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load search results.</td></tr>`;
             });
     }, 300);
 
     poIdInput.addEventListener('input', doPoSearch);
-    statusInput.addEventListener('change', doPoSearch); // <-- ADD THIS LINE
+    statusInput.addEventListener('change', doPoSearch);
 }
 
 // ───── DOM Ready ─────
