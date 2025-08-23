@@ -102,7 +102,7 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-body">
                             <h5 class="card-title">Manage Products</h5>
                             <div class="d-grid gap-2 mt-3">
-                                <a href="/modules/inventory/list_stock.php" class="btn btn-success">
+                                <a href="/modules/inventory/list_stock_levels.php" class="btn btn-success">
                                     <i class="bi bi-card-list"></i> View Stock Levels
                                 </a>
                                 <a href="/modules/inventory/entry_item.php" class="btn btn-primary">
