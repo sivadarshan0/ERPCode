@@ -265,12 +265,12 @@ function get_all_stock_levels() {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
-function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_type = 'Ex-Stock') {
-    $db = db();
+function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_type = 'Ex-Stock', $existing_db = null) { // <-- Modified
+    $db = $existing_db ?? db(); // <-- Modified
     if (empty($item_id) || !in_array($type, ['IN', 'OUT']) || !is_numeric($quantity) || $quantity <= 0) {
         throw new Exception("Invalid arguments for stock adjustment.");
     }
-
+    //... (the rest of the function remains exactly the same)
     $transaction_id = generate_sequence_id('transaction_id', 'stock_transactions', 'transaction_id');
     $stmt_trans = $db->prepare("INSERT INTO stock_transactions (transaction_id, item_id, transaction_type, quantity_change, reason, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt_trans->bind_param("sssdsis", $transaction_id, $item_id, $type, $quantity, $reason, $_SESSION['user_id'], $_SESSION['username']);
@@ -282,8 +282,6 @@ function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_ty
     $stmt_level->bind_param("sdd", $item_id, $update_quantity, $update_quantity);
     $stmt_level->execute();
 
-    // MODIFIED LOGIC:
-    // Only throw a fatal error if the stock type is 'Ex-Stock' and the level goes negative.
     if ($type === 'OUT' && $stock_check_type === 'Ex-Stock') {
         $check_stmt = $db->prepare("SELECT quantity FROM stock_levels WHERE item_id = ?");
         $check_stmt->bind_param("s", $item_id);
@@ -293,19 +291,62 @@ function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_ty
             throw new Exception("Operation failed: Stock level for item $item_id cannot go below zero for an 'Ex-Stock' order.");
         }
     }
-    // For 'Pre-Book' orders, we allow the stock to go negative.
     
     return true;
 }
 
+/**
+ * Helper function to automatically generate a GRN from a completed Purchase Order.
+ *
+ * @param string $purchase_order_id The ID of the PO to process.
+ * @param mysqli $db The existing database connection to use within a transaction.
+ * @return string The ID of the newly created GRN.
+ * @throws Exception On failure.
+ */
+function auto_generate_grn_from_po($purchase_order_id, $db) {
+    // Step 1: Fetch all items from the purchase order
+    $stmt_items = $db->prepare("SELECT poi.item_id, i.uom, poi.quantity, poi.cost_price FROM purchase_order_items poi JOIN items i ON poi.item_id = i.item_id WHERE poi.purchase_order_id = ?");
+    if (!$stmt_items) throw new Exception("Failed to prepare statement for fetching PO items.");
+    $stmt_items->bind_param("s", $purchase_order_id);
+    $stmt_items->execute();
+    $items_result = $stmt_items->get_result();
+    $items_to_process = $items_result->fetch_all(MYSQLI_ASSOC);
+
+    if (empty($items_to_process)) {
+        throw new Exception("Cannot generate GRN: The Purchase Order has no items.");
+    }
+
+    // Prepare items array in the format process_grn() expects
+    // Note: We are setting 'weight' to 0 as it's not in the PO.
+    $grn_items = array_map(function($item) {
+        return [
+            'item_id'  => $item['item_id'],
+            'uom'      => $item['uom'],
+            'quantity' => $item['quantity'],
+            'cost'     => $item['cost_price'],
+            'weight'   => 0 
+        ];
+    }, $items_to_process);
+
+    // Step 2: Set GRN details
+    $grn_date = date('Y-m-d');
+    $remarks = "Auto-generated from completed PO #" . $purchase_order_id;
+    
+    // Step 3: Call the existing process_grn function to create the GRN and update stock
+    // We pass the existing database connection ($db) to ensure it's part of the same transaction
+    $new_grn_id = process_grn($grn_date, $grn_items, $remarks, $db);
+    
+    return $new_grn_id;
+}
 
 // -----------------------------------------
 // ----- GRN (Goods Received Note) Functions -----
 // -----------------------------------------
 
-function process_grn($grn_date, $items, $remarks) {
-    $db = db();
+function process_grn($grn_date, $items, $remarks, $existing_db = null) { // <-- Modified this line
+    $db = $existing_db ?? db(); // <-- Modified this line
     if (!$db) throw new Exception("Database connection failed.");
+    //... (the rest of the function remains exactly the same)
     if (empty($grn_date) || !is_array($items) || empty($items)) {
         throw new Exception("GRN date and at least one item are required.");
     }
@@ -313,7 +354,12 @@ function process_grn($grn_date, $items, $remarks) {
         if (empty($item['item_id']) || !isset($item['quantity']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0) { throw new Exception("Invalid data in item rows. Each item needs an ID and valid quantity."); }
         if (!isset($item['cost']) || !is_numeric($item['cost']) || !isset($item['weight']) || !is_numeric($item['weight'])) { throw new Exception("Invalid data in item rows. Cost and Weight must be valid numbers."); }
     }
-    $db->begin_transaction();
+
+    // If we are not part of an existing transaction, start a new one.
+    if (!$existing_db) {
+        $db->begin_transaction();
+    }
+    
     try {
         $user_id = $_SESSION['user_id'];
         $user_name = $_SESSION['username'] ?? 'Unknown';
@@ -328,10 +374,15 @@ function process_grn($grn_date, $items, $remarks) {
             $stock_reason = "Received via GRN #" . $grn_id;
             adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason);
         }
-        $db->commit();
+
+        if (!$existing_db) {
+            $db->commit();
+        }
         return $grn_id;
     } catch (Exception $e) {
-        $db->rollback();
+        if (!$existing_db) {
+            $db->rollback();
+        }
         throw new Exception("Failed to process GRN: " . $e->getMessage());
     }
 }
@@ -432,6 +483,60 @@ function process_order($customer_id, $order_date, $items, $details) {
         $db->rollback();
         throw new Exception("Failed to process order. Reason: " . $e->getMessage());
     }
+}
+
+/**
+ * Fulfills a linked Pre-Book sales order when stock arrives from a PO.
+ * This function should only be called from within an existing database transaction.
+ *
+ * @param string $sales_order_id The ID of the sales order to fulfill.
+ * @param string $triggering_po_id The PO that triggered this fulfillment.
+ * @param mysqli $db The existing database connection.
+ * @return void
+ * @throws Exception On failure.
+ */
+function fulfill_linked_sales_order($sales_order_id, $triggering_po_id, $db) {
+    // Step 1: Fetch all items from the sales order
+    $stmt_items = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
+    if (!$stmt_items) throw new Exception("Failed to prepare statement for fetching SO items.");
+    $stmt_items->bind_param("s", $sales_order_id);
+    $stmt_items->execute();
+    $items_result = $stmt_items->get_result();
+    $items_to_fulfill = $items_result->fetch_all(MYSQLI_ASSOC);
+
+    if (empty($items_to_fulfill)) {
+        // This is a safety check; it should not happen in a normal workflow.
+        throw new Exception("Cannot fulfill Sales Order #$sales_order_id: It has no items.");
+    }
+
+    // Step 2: Deduct stock for each item in the sales order
+    $stock_reason = "Fulfilled from stock received via PO #" . $triggering_po_id;
+    foreach ($items_to_fulfill as $item) {
+        // Use the existing adjust_stock_level function. Critically, we now use 'Ex-Stock' check.
+        adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
+    }
+
+    // Step 3: Update the main sales order record
+    $new_order_status = 'Processing';
+    $stmt_order = $db->prepare("UPDATE orders SET stock_type = 'Ex-Stock', status = ? WHERE order_id = ?");
+    if (!$stmt_order) throw new Exception("Failed to prepare statement for updating SO status.");
+    $stmt_order->bind_param("ss", $new_order_status, $sales_order_id);
+    $stmt_order->execute();
+
+    // Step 4: Create the audit trail records
+    $user_id = $_SESSION['user_id'];
+    $user_name = $_SESSION['username'] ?? 'System';
+    $history_remark = "Stock fulfilled from PO #" . $triggering_po_id;
+
+    // Log the status change
+    $stmt_status_history = $db->prepare("INSERT INTO order_status_history (order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+    $stmt_status_history->bind_param("sssis", $sales_order_id, $new_order_status, $history_remark, $user_id, $user_name);
+    $stmt_status_history->execute();
+
+    // Log the stock type change in the new history table
+    $stmt_stock_type_history = $db->prepare("INSERT INTO order_stock_type_history (order_id, stock_type, change_reason, created_by, created_by_name) VALUES (?, 'Ex-Stock', ?, ?, ?)");
+    $stmt_stock_type_history->bind_param("ssis", $sales_order_id, $history_remark, $user_id, $user_name);
+    $stmt_stock_type_history->execute();
 }
 
 /**
@@ -885,39 +990,61 @@ function get_purchase_order_details($purchase_order_id) {
 
 /**
  * Updates the status and details of an existing PO and tracks history.
+ * If status is changed to 'Completed', triggers GRN creation and order fulfillment.
  *
  * @param string $purchase_order_id The ID of the PO to update.
  * @param array $details An array of details to update (status, supplier_name, remarks).
- * @return bool True on success, false on failure.
+ * @return array An array containing a success boolean and a feedback message.
  * @throws Exception On validation or database errors.
  */
 function update_purchase_order_details($purchase_order_id, $details) {
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
 
+    $feedback_message = "✅ Purchase Order #$purchase_order_id successfully updated.";
+
     $db->begin_transaction();
     try {
-        // Get the current status BEFORE updating
-        $stmt_check = $db->prepare("SELECT status FROM purchase_orders WHERE purchase_order_id = ?");
+        $stmt_check = $db->prepare("SELECT status, linked_sales_order_id FROM purchase_orders WHERE purchase_order_id = ?");
         $stmt_check->bind_param("s", $purchase_order_id);
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
-        $old_status = $current_state['status'];
+        
+        if (!$current_state) {
+            throw new Exception("Purchase Order not found.");
+        }
 
-        // Update the main purchase_orders table
+        $old_status = $current_state['status'];
+        $new_status = $details['status'];
+        $linked_order_id = $current_state['linked_sales_order_id'];
+
         $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
-        $stmt->bind_param("ssss", $details['status'], $details['supplier_name'], $details['remarks'], $purchase_order_id);
+        $stmt->bind_param("ssss", $new_status, $details['supplier_name'], $details['remarks'], $purchase_order_id);
         $stmt->execute();
 
-        // If the status has changed, insert a record into the history table
-        if ($old_status !== $details['status']) {
+        if ($old_status !== $new_status) {
             $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
-            $stmt_history->bind_param("ssis", $purchase_order_id, $details['status'], $_SESSION['user_id'], $_SESSION['username']);
+            $stmt_history->bind_param("ssis", $purchase_order_id, $new_status, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_history->execute();
         }
         
+        $is_completed = ($new_status === 'Completed' && $old_status !== 'Completed');
+
+        if ($is_completed) {
+            // Step 2: Automatically generate the GRN and update stock levels.
+            $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
+            $feedback_message .= " GRN #$new_grn_id was automatically created.";
+
+            // Step 3: If a sales order is linked, fulfill it.
+            if (!empty($linked_order_id)) {
+                fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
+                $feedback_message .= " Linked Sales Order #$linked_order_id was fulfilled.";
+            }
+        }
+        
         $db->commit();
-        return true;
+        
+        return ['success' => true, 'message' => $feedback_message];
 
     } catch (Exception $e) {
         $db->rollback();
