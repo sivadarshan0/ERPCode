@@ -334,7 +334,9 @@ function auto_generate_grn_from_po($purchase_order_id, $db) {
     
     // Step 3: Call the existing process_grn function to create the GRN and update stock
     // We pass the existing database connection ($db) to ensure it's part of the same transaction
-    $new_grn_id = process_grn($grn_date, $grn_items, $remarks, $db);
+    // Pass the correctly formatted actor name to the process_grn function
+    $actor_name = 'System for ' . ($_SESSION['username'] ?? 'Unknown');
+    $new_grn_id = process_grn($grn_date, $grn_items, $remarks, $db, $actor_name);
     
     return $new_grn_id;
 }
@@ -343,10 +345,10 @@ function auto_generate_grn_from_po($purchase_order_id, $db) {
 // ----- GRN (Goods Received Note) Functions -----
 // -----------------------------------------
 
-function process_grn($grn_date, $items, $remarks, $existing_db = null) { // <-- Modified this line
-    $db = $existing_db ?? db(); // <-- Modified this line
+function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_name = null) { // <-- Modified this line
+    $db = $existing_db ?? db();
     if (!$db) throw new Exception("Database connection failed.");
-    //... (the rest of the function remains exactly the same)
+    
     if (empty($grn_date) || !is_array($items) || empty($items)) {
         throw new Exception("GRN date and at least one item are required.");
     }
@@ -355,23 +357,28 @@ function process_grn($grn_date, $items, $remarks, $existing_db = null) { // <-- 
         if (!isset($item['cost']) || !is_numeric($item['cost']) || !isset($item['weight']) || !is_numeric($item['weight'])) { throw new Exception("Invalid data in item rows. Cost and Weight must be valid numbers."); }
     }
 
-    // If we are not part of an existing transaction, start a new one.
     if (!$existing_db) {
         $db->begin_transaction();
     }
     
     try {
+        // --- CORRECTED USER LOGIC ---
         $user_id = $_SESSION['user_id'];
-        $user_name = $_SESSION['username'] ?? 'Unknown';
+        // If an actor_name is passed (from automation), use it. Otherwise, use the session username.
+        $user_name = $actor_name ?? ($_SESSION['username'] ?? 'Unknown');
+        // --- END CORRECTION ---
+        
         $grn_id = generate_sequence_id('grn_id', 'grn', 'grn_id');
         $stmt_grn = $db->prepare("INSERT INTO grn (grn_id, grn_date, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
         $stmt_grn->bind_param("sssis", $grn_id, $grn_date, $remarks, $user_id, $user_name);
         $stmt_grn->execute();
+
         $stmt_items = $db->prepare("INSERT INTO grn_items (grn_id, item_id, uom, quantity, cost, weight) VALUES (?, ?, ?, ?, ?, ?)");
         foreach ($items as $item) {
             $stmt_items->bind_param("sssddd", $grn_id, $item['item_id'], $item['uom'], $item['quantity'], $item['cost'], $item['weight']);
             $stmt_items->execute();
             $stock_reason = "Received via GRN #" . $grn_id;
+            // Note: We don't need to change adjust_stock_level, as it correctly uses the logged-in user's name, which is what we want.
             adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason);
         }
 
@@ -525,7 +532,7 @@ function fulfill_linked_sales_order($sales_order_id, $triggering_po_id, $db) {
 
     // Step 4: Create the audit trail records
     $user_id = $_SESSION['user_id'];
-    $user_name = $_SESSION['username'] ?? 'System';
+    $user_name = 'System for ' . ($_SESSION['username'] ?? 'Unknown');
     $history_remark = "Stock fulfilled from PO #" . $triggering_po_id;
 
     // Log the status change
