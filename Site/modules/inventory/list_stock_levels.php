@@ -1,6 +1,6 @@
 <?php
 // File: /modules/inventory/list_stock_levels.php
-// Page to display and filter all item stock levels.
+// FINAL version with cascading sub-category filter.
 
 session_start();
 error_reporting(E_ALL);
@@ -12,16 +12,29 @@ require_once __DIR__ . '/../../includes/functions.php';
 
 require_login();
 
-// --- AJAX Endpoint for Live Search ---
-if (isset($_GET['action']) && $_GET['action'] === 'search') {
+// --- AJAX Endpoints ---
+if (isset($_GET['action'])) {
     header('Content-Type: application/json');
     try {
-        $filters = [
-            'item_name'   => $_GET['item_name'] ?? null,
-            'category_id' => $_GET['category_id'] ?? null,
-        ];
-        // Use the new function to search for stock levels
-        echo json_encode(search_stock_levels($filters));
+        switch ($_GET['action']) {
+            case 'search':
+                $filters = [
+                    'item_name'       => $_GET['item_name'] ?? null,
+                    'category_id'     => $_GET['category_id'] ?? null,
+                    'sub_category_id' => $_GET['sub_category_id'] ?? null, // Added sub-category
+                ];
+                echo json_encode(search_stock_levels($filters));
+                break;
+            
+            case 'get_sub_categories':
+                $category_id = $_GET['category_id'] ?? null;
+                if ($category_id) {
+                    echo json_encode(get_sub_categories_by_category_id($category_id));
+                } else {
+                    echo json_encode([]);
+                }
+                break;
+        }
     } catch (Exception $e) { 
         http_response_code(500); 
         echo json_encode(['error' => $e->getMessage()]); 
@@ -29,7 +42,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
     exit;
 }
 
-// Initial page load - get all stock levels and all categories for the filter dropdown
+// Initial page load data
 $initial_stock_levels = search_stock_levels();
 $all_categories = get_all_categories();
 
@@ -55,10 +68,10 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="card-header"><i class="bi bi-search"></i> Find Stock</div>
                 <div class="card-body">
                     <form id="stockSearchForm" class="row gx-3 gy-2 align-items-center">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <input type="text" class="form-control" id="search_item_name" placeholder="Search by Item Name...">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <select id="search_category_id" class="form-select">
                                 <option value="">All Categories</option>
                                 <?php foreach ($all_categories as $category): ?>
@@ -66,6 +79,12 @@ require_once __DIR__ . '/../../includes/header.php';
                                         <?= htmlspecialchars($category['name']) ?>
                                     </option>
                                 <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <!-- ADDED: Sub-Category Filter -->
+                        <div class="col-md-4">
+                            <select id="search_sub_category_id" class="form-select" disabled>
+                                <option value="">All Sub-Categories</option>
                             </select>
                         </div>
                     </form>

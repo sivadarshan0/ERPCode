@@ -832,22 +832,19 @@ function initStockLevelList() {
     const tableBody = document.getElementById('stockListTableBody');
     const itemNameInput = document.getElementById('search_item_name');
     const categoryIdInput = document.getElementById('search_category_id');
+    const subCategoryIdInput = document.getElementById('search_sub_category_id'); // Added sub-category input
 
     const doStockSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
 
-        // Read values from both filters
-        if (itemNameInput.value) {
-            params.set('item_name', itemNameInput.value);
-        }
-        if (categoryIdInput.value) {
-            params.set('category_id', categoryIdInput.value);
-        }
+        if (itemNameInput.value) { params.set('item_name', itemNameInput.value); }
+        if (categoryIdInput.value) { params.set('category_id', categoryIdInput.value); }
+        if (subCategoryIdInput.value) { params.set('sub_category_id', subCategoryIdInput.value); } // Read from sub-category
 
         fetch(`/modules/inventory/list_stock_levels.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
             .then(data => {
-                tableBody.innerHTML = ''; // Clear existing results
+                tableBody.innerHTML = '';
                 if (data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No items found matching your criteria.</td></tr>`;
                     return;
@@ -870,9 +867,33 @@ function initStockLevelList() {
             });
     }, 300);
 
-    // Attach event listeners to both filter controls
+    // --- CASCADING DROPDOWN LOGIC ---
+    categoryIdInput.addEventListener('change', function() {
+        const categoryId = this.value;
+        // Reset and disable sub-category dropdown
+        subCategoryIdInput.innerHTML = '<option value="">All Sub-Categories</option>';
+        subCategoryIdInput.disabled = true;
+
+        // If a category is selected, fetch its sub-categories
+        if (categoryId) {
+            fetch(`/modules/inventory/list_stock_levels.php?action=get_sub_categories&category_id=${categoryId}`)
+                .then(response => response.ok ? response.json() : Promise.reject('Failed to load sub-categories'))
+                .then(data => {
+                    data.forEach(sub_cat => {
+                        subCategoryIdInput.add(new Option(sub_cat.name, sub_cat.category_sub_id));
+                    });
+                    subCategoryIdInput.disabled = false; // Enable the dropdown
+                })
+                .catch(error => console.error('[SubCategoryFetch] Error:', error));
+        }
+        
+        // Trigger a search whenever the main category changes
+        doStockSearch();
+    });
+
+    // Attach event listeners to all filter controls
     itemNameInput.addEventListener('input', doStockSearch);
-    categoryIdInput.addEventListener('change', doStockSearch);
+    subCategoryIdInput.addEventListener('change', doStockSearch);
 }
 
 // ───── DOM Ready ─────

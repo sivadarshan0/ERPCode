@@ -300,15 +300,13 @@ function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_ty
  * Joins items with categories, sub-categories, and stock levels.
  *
  * @param array $filters An associative array of filters. 
- *                       Keys can include 'item_name', 'category_id'.
+ *                       Keys can include 'item_name', 'category_id', 'sub_category_id'.
  * @return array The list of items with their stock levels.
  */
 function search_stock_levels($filters = []) {
     $db = db();
     if (!$db) return [];
 
-    // The base query joins all necessary tables.
-    // LEFT JOIN on stock_levels is crucial to include items with no stock record yet.
     $sql = "
         SELECT 
             i.item_id, 
@@ -326,21 +324,24 @@ function search_stock_levels($filters = []) {
     $params = [];
     $types = '';
 
-    // Add filter for item name search
     if (!empty($filters['item_name'])) {
         $sql .= " AND i.name LIKE ?";
         $params[] = '%' . $filters['item_name'] . '%';
         $types .= 's';
     }
-
-    // Add filter for category dropdown
     if (!empty($filters['category_id'])) {
         $sql .= " AND c.category_id = ?";
         $params[] = $filters['category_id'];
         $types .= 's';
     }
+    // --- ADDED: Sub-category filter logic ---
+    if (!empty($filters['sub_category_id'])) {
+        $sql .= " AND cs.category_sub_id = ?";
+        $params[] = $filters['sub_category_id'];
+        $types .= 's';
+    }
+    // --- END ---
 
-    // Order the results for a clean, grouped display
     $sql .= " ORDER BY c.name, cs.name, i.name";
     
     $stmt = $db->prepare($sql);
