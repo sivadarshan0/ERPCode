@@ -1,6 +1,6 @@
 <?php
 // File: /modules/sales/entry_order.php
-// FINAL version: Corrects the item table display in view/manage mode.
+// FINAL VALIDATED version: Adds missing customer search elements and corrects form field attributes.
 
 session_start();
 error_reporting(E_ALL);
@@ -122,13 +122,46 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-header">1. Order & Customer Details</div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6 position-relative"><label class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" value="<?= $is_edit ? htmlspecialchars($order['customer']['phone']) : '' ?>" <?= $is_edit ? 'readonly' : '' ?>></div>
-                            <div class="col-md-6"><label class="form-label">Selected Customer</label><div id="selected_customer_display" class="form-control-plaintext fw-bold"><?= $is_edit ? htmlspecialchars($order['customer']['name']) . ' (ID: ' . htmlspecialchars($order['customer_id']) . ')' : 'None' ?></div></div>
-                            <div class="col-md-4"><label class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" disabled><option value="Ex-Stock" <?= ($is_edit && $order['stock_type'] == 'Ex-Stock') ? 'selected' : '' ?>>Ex-Stock</option><option value="Pre-Book" <?= ($is_edit && $order['stock_type'] == 'Pre-Book') ? 'selected' : '' ?>>Pre-Book</option></select></div>
-                            <div class="col-md-4"><label class="form-label">Payment Method</label><select name="payment_method" class="form-select"><option value="COD" <?= ($is_edit && $order['payment_method'] == 'COD') ? 'selected' : '' ?>>COD</option><option value="BT" <?= ($is_edit && $order['payment_method'] == 'BT') ? 'selected' : '' ?>>Bank Transfer</option></select></div>
-                            <div class="col-md-4"><label class="form-label">Payment Status</label><select name="payment_status" class="form-select"><option value="Pending" <?= ($is_edit && $order['payment_status'] == 'Pending') ? 'selected' : '' ?>>Pending</option><option value="Received" <?= ($is_edit && $order['payment_status'] == 'Received') ? 'selected' : '' ?>>Received</option></select></div>
-                            <div class="col-md-4"><label class="form-label">Order Date *</label><input type="date" class="form-control" id="order_date" name="order_date" value="<?= $is_edit ? htmlspecialchars($order['order_date']) : date('Y-m-d') ?>" required readonly></div>
-                            <div class="col-md-8"><label class="form-label">Remarks</label><input type="text" class="form-control" id="remarks" name="remarks" placeholder="e.g., Delivery notes..." value="<?= $is_edit ? htmlspecialchars($order['remarks']) : '' ?>"></div>
+                            <div class="col-md-6 position-relative">
+                                <label for="customer_search" class="form-label">Search Customer by Phone *</label>
+                                <input type="text" class="form-control" id="customer_search" required autocomplete="off" value="<?= $is_edit ? htmlspecialchars($order['customer']['phone']) : '' ?>" <?= $is_edit ? 'readonly' : '' ?>>
+                                <!-- ADDED: Missing elements for customer search to work -->
+                                <div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
+                                <input type="hidden" name="customer_id" id="customer_id" value="<?= $is_edit ? htmlspecialchars($order['customer_id']) : '' ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Selected Customer</label>
+                                <div id="selected_customer_display" class="form-control-plaintext fw-bold"><?= $is_edit ? htmlspecialchars($order['customer']['name']) . ' (ID: ' . htmlspecialchars($order['customer_id']) . ')' : 'None' ?></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="stock_type" class="form-label">Stock Type</label>
+                                <!-- CORRECTED: Used a conditional to make field readonly in edit mode instead of disabled -->
+                                <select name="stock_type" id="stock_type" class="form-select" <?= $is_edit ? 'onclick="return false;" onkeydown="return false;"' : '' ?>>
+                                    <option value="Ex-Stock" <?= ($is_edit && $order['stock_type'] == 'Ex-Stock') ? 'selected' : '' ?>>Ex-Stock</option>
+                                    <option value="Pre-Book" <?= ($is_edit && $order['stock_type'] == 'Pre-Book') ? 'selected' : '' ?>>Pre-Book</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Payment Method</label>
+                                <select name="payment_method" class="form-select">
+                                    <option value="COD" <?= ($is_edit && $order['payment_method'] == 'COD') ? 'selected' : '' ?>>COD</option>
+                                    <option value="BT" <?= ($is_edit && $order['payment_method'] == 'BT') ? 'selected' : '' ?>>Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Payment Status</label>
+                                <select name="payment_status" class="form-select">
+                                    <option value="Pending" <?= ($is_edit && $order['payment_status'] == 'Pending') ? 'selected' : '' ?>>Pending</option>
+                                    <option value="Received" <?= ($is_edit && $order['payment_status'] == 'Received') ? 'selected' : '' ?>>Received</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Order Date *</label>
+                                <input type="date" class="form-control" id="order_date" name="order_date" value="<?= $is_edit ? htmlspecialchars($order['order_date']) : date('Y-m-d') ?>" required readonly>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Remarks</label>
+                                <input type="text" class="form-control" id="remarks" name="remarks" placeholder="e.g., Delivery notes..." value="<?= $is_edit ? htmlspecialchars($order['remarks']) : '' ?>"></div>
                         </div>
                     </div>
                 </div>
@@ -138,8 +171,21 @@ require_once __DIR__ . '/../../includes/header.php';
                  <div class="card h-100">
                      <div class="card-header">2. Status & Totals</div>
                      <div class="card-body">
-                         <div class="mb-3"><label class="form-label">Order Status</label><select name="order_status" id="order_status" class="form-select"><option value="New" <?= ($is_edit && $order['status'] == 'New') ? 'selected' : '' ?>>New</option><option value="Processing" <?= ($is_edit && $order['status'] == 'Processing') ? 'selected' : '' ?>>Processing</option><option value="With Courier" <?= ($is_edit && $order['status'] == 'With Courier') ? 'selected' : '' ?>>With Courier</option><option value="Delivered" <?= ($is_edit && $order['status'] == 'Delivered') ? 'selected' : '' ?>>Delivered</option><option value="Canceled" <?= ($is_edit && $order['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option></select></div>
-                         <div class="mb-3"><label class="form-label">Other Expenses</label><input type="number" class="form-control" id="other_expenses" name="other_expenses" value="<?= $is_edit ? htmlspecialchars($order['other_expenses']) : '0.00' ?>" min="0.00" step="0.01"></div>
+                         <div class="mb-3">
+                             <label class="form-label">Order Status</label>
+                             <select name="order_status" id="order_status" class="form-select">
+                                 <option value="New" <?= ($is_edit && $order['status'] == 'New') ? 'selected' : '' ?>>New</option>
+                                 <option value="Processing" <?= ($is_edit && $order['status'] == 'Processing') ? 'selected' : '' ?>>Processing</option>
+                                 <option value="Awaiting Stock" <?= ($is_edit && $order['status'] == 'Awaiting Stock') ? 'selected' : '' ?>>Awaiting Stock</option>
+                                 <option value="With Courier" <?= ($is_edit && $order['status'] == 'With Courier') ? 'selected' : '' ?>>With Courier</option>
+                                 <option value="Delivered" <?= ($is_edit && $order['status'] == 'Delivered') ? 'selected' : '' ?>>Delivered</option>
+                                 <option value="Canceled" <?= ($is_edit && $order['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option>
+                             </select>
+                         </div>
+                         <div class="mb-3">
+                             <label class="form-label">Other Expenses</label>
+                             <input type="number" class="form-control" id="other_expenses" name="other_expenses" value="<?= $is_edit ? htmlspecialchars($order['other_expenses']) : '0.00' ?>" min="0.00" step="0.01">
+                         </div>
                          <hr>
                          <h3 class="text-end">Total: <span id="orderTotal"><?= $is_edit ? htmlspecialchars(number_format($order['total_amount'], 2)) : '0.00' ?></span></h3>
                      </div>
