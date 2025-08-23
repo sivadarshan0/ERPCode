@@ -296,6 +296,69 @@ function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_ty
 }
 
 /**
+ * Searches and filters stock levels for all items.
+ * Joins items with categories, sub-categories, and stock levels.
+ *
+ * @param array $filters An associative array of filters. 
+ *                       Keys can include 'item_name', 'category_id'.
+ * @return array The list of items with their stock levels.
+ */
+function search_stock_levels($filters = []) {
+    $db = db();
+    if (!$db) return [];
+
+    // The base query joins all necessary tables.
+    // LEFT JOIN on stock_levels is crucial to include items with no stock record yet.
+    $sql = "
+        SELECT 
+            i.item_id, 
+            i.name AS item_name, 
+            c.name AS category_name, 
+            cs.name AS sub_category_name, 
+            COALESCE(sl.quantity, 0.00) AS quantity 
+        FROM items i
+        LEFT JOIN stock_levels sl ON i.item_id = sl.item_id 
+        JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id 
+        JOIN categories c ON cs.category_id = c.category_id
+        WHERE 1=1
+    ";
+
+    $params = [];
+    $types = '';
+
+    // Add filter for item name search
+    if (!empty($filters['item_name'])) {
+        $sql .= " AND i.name LIKE ?";
+        $params[] = '%' . $filters['item_name'] . '%';
+        $types .= 's';
+    }
+
+    // Add filter for category dropdown
+    if (!empty($filters['category_id'])) {
+        $sql .= " AND c.category_id = ?";
+        $params[] = $filters['category_id'];
+        $types .= 's';
+    }
+
+    // Order the results for a clean, grouped display
+    $sql .= " ORDER BY c.name, cs.name, i.name";
+    
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        error_log("Stock Level Search Prepare Failed: " . $db->error);
+        return [];
+    }
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+/**
  * Helper function to automatically generate a GRN from a completed Purchase Order.
  *
  * @param string $purchase_order_id The ID of the PO to process.

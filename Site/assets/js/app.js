@@ -821,6 +821,60 @@ function initPurchaseOrderList() {
     statusInput.addEventListener('change', doPoSearch);
 }
 
+// -----------------------------------------
+// ----- Stock Level List Handler -----
+// -----------------------------------------
+
+function initStockLevelList() {
+    const searchForm = document.getElementById('stockSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('stockListTableBody');
+    const itemNameInput = document.getElementById('search_item_name');
+    const categoryIdInput = document.getElementById('search_category_id');
+
+    const doStockSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+
+        // Read values from both filters
+        if (itemNameInput.value) {
+            params.set('item_name', itemNameInput.value);
+        }
+        if (categoryIdInput.value) {
+            params.set('category_id', categoryIdInput.value);
+        }
+
+        fetch(`/modules/inventory/list_stock_levels.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = ''; // Clear existing results
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No items found matching your criteria.</td></tr>`;
+                    return;
+                }
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(item.item_id)}</td>
+                        <td>${escapeHtml(item.item_name)}</td>
+                        <td>${escapeHtml(item.category_name)}</td>
+                        <td>${escapeHtml(item.sub_category_name)}</td>
+                        <td class="text-end fw-bold">${parseFloat(item.quantity).toFixed(2)}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[StockSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    // Attach event listeners to both filter controls
+    itemNameInput.addEventListener('input', doStockSearch);
+    categoryIdInput.addEventListener('change', doStockSearch);
+}
+
 // ───── DOM Ready ─────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
@@ -835,6 +889,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.querySelector('.live-search')) { initLiveSearch(); }
     if (document.getElementById('grnSearchForm')) { initGrnList(); }
     if (document.getElementById('poSearchForm')) { initPurchaseOrderList(); }
+    if (document.getElementById('stockSearchForm')) { initStockLevelList(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
