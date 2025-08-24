@@ -583,20 +583,46 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
+
+    // --- NEW: Set initial focus on the PO Date field ---
+    const poDateInput = document.getElementById('po_date');
+    // We only set focus if the form is for a NEW PO (i.e., the date field is not readonly)
+    if (poDateInput && !poDateInput.readOnly) {
+        poDateInput.focus();
+    }
+    // --- END NEW ---
+
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
     const preOrderSearchInput = document.getElementById('pre_order_search');
     const preOrderResults = document.getElementById('preOrderResults');
     const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
-    const addRow = () => {
+
+    // MODIFIED: This function now accepts a 'shouldFocus' parameter
+    const addRow = (shouldFocus = true) => {
+        // This check is important: only add rows if the template exists (i.e., in create mode)
+        if (!template) return; 
+        
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
         const justAddedRow = itemRowsContainer.querySelector('.po-item-row:last-child');
-        if (justAddedRow) { justAddedRow.querySelector('.item-search-input').focus(); }
+        
+        // MODIFIED: The item input field will only be focused if shouldFocus is true
+        if (shouldFocus && justAddedRow) {
+            justAddedRow.querySelector('.item-search-input').focus();
+        }
     };
-    addRow();
-    addRowBtn.addEventListener('click', addRow);
+    
+    // MODIFIED: The first row is added without focus
+    addRow(false); 
+    
+    // Check if addRowBtn exists before adding a listener (it only exists in create mode)
+    if (addRowBtn) {
+        // MODIFIED: Subsequent rows added by the button click will get focus as normal
+        addRowBtn.addEventListener('click', () => addRow(true));
+    }
+
     itemRowsContainer.addEventListener('click', function(e) {
         if (e.target.closest('.remove-item-row')) {
             e.target.closest('.po-item-row').remove();
@@ -633,36 +659,41 @@ function initPoEntry() {
                 .catch(error => console.error('[POItemLookup] Error:', error));
         }
     }, 300));
-    preOrderSearchInput.addEventListener('input', debounce(() => {
-        const query = preOrderSearchInput.value.trim();
-        if (query.length < 2) { preOrderResults.classList.add('d-none'); return; }
-        fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
-            .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
-            .then(data => {
-                preOrderResults.innerHTML = '';
-                if (data && data.length > 0) {
-                    data.forEach(order => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'list-group-item list-group-item-action';
-                        btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
-                        btn.addEventListener('click', () => {
-                            preOrderSearchInput.value = `${order.order_id} - ${order.customer_name}`;
-                            hiddenLinkedOrderId.value = order.order_id;
-                            preOrderResults.classList.add('d-none');
+    
+    // Check if the pre-order search input exists on the page (it only exists in create mode)
+    if (preOrderSearchInput) {
+        preOrderSearchInput.addEventListener('input', debounce(() => {
+            const query = preOrderSearchInput.value.trim();
+            if (query.length < 2) { preOrderResults.classList.add('d-none'); return; }
+            fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
+                .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
+                .then(data => {
+                    preOrderResults.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(order => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'list-group-item list-group-item-action';
+                            btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
+                            btn.addEventListener('click', () => {
+                                preOrderSearchInput.value = `${order.order_id} - ${order.customer_name}`;
+                                hiddenLinkedOrderId.value = order.order_id;
+                                preOrderResults.classList.add('d-none');
+                            });
+                            preOrderResults.appendChild(btn);
                         });
-                        preOrderResults.appendChild(btn);
-                    });
-                    preOrderResults.classList.remove('d-none');
-                } else { preOrderResults.classList.add('d-none'); }
-            })
-            .catch(error => console.error('[PreOrderLookup] Error:', error));
-    }, 300));
-    document.addEventListener('click', e => {
-        if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
-            preOrderResults.classList.add('d-none');
-        }
-    });
+                        preOrderResults.classList.remove('d-none');
+                    } else { preOrderResults.classList.add('d-none'); }
+                })
+                .catch(error => console.error('[PreOrderLookup] Error:', error));
+        }, 300));
+
+        document.addEventListener('click', e => {
+            if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
+                preOrderResults.classList.add('d-none');
+            }
+        });
+    }
 }
 
 // -----------------------------------------
