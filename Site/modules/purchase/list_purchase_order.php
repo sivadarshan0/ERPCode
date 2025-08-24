@@ -77,8 +77,10 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <option value="">All Statuses</option>
                                 <option value="Draft">Draft</option>
                                 <option value="Ordered">Ordered</option>
-                                <option value="Partially Received">Partially Received</option>
-                                <option value="Completed">Completed</option>
+                                <option value="Paid">Paid</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="With int courier">With int courier</option>
+                                <option value="Received">Received</option>
                                 <option value="Canceled">Canceled</option>
                             </select>
                         </div>

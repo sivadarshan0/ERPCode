@@ -1095,7 +1095,7 @@ function get_purchase_order_details($purchase_order_id) {
     $po['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
 
     // 3. Get the status history for the PO
-    $stmt_history = $db->prepare("SELECT * FROM purchase_order_status_history WHERE purchase_order_id = ? ORDER BY created_at ASC");
+    $stmt_history = $db->prepare("SELECT * FROM purchase_order_status_history WHERE purchase_order_id = ? ORDER BY COALESCE(event_date, created_at) ASC");
     $stmt_history->bind_param("s", $purchase_order_id);
     $stmt_history->execute();
     $po['status_history'] = $stmt_history->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -1105,14 +1105,15 @@ function get_purchase_order_details($purchase_order_id) {
 
 /**
  * Updates the status and details of an existing PO and tracks history.
- * If status is changed to 'Completed', triggers GRN creation and order fulfillment.
+ * Now handles optional event dates for status changes.
  *
  * @param string $purchase_order_id The ID of the PO to update.
  * @param array $details An array of details to update (status, supplier_name, remarks).
+ * @param array $post_data The raw POST data to access the new event date field.
  * @return array An array containing a success boolean and a feedback message.
  * @throws Exception On validation or database errors.
  */
-function update_purchase_order_details($purchase_order_id, $details) {
+function update_purchase_order_details($purchase_order_id, $details, $post_data) { // Added $post_data
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
 
@@ -1125,9 +1126,7 @@ function update_purchase_order_details($purchase_order_id, $details) {
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
         
-        if (!$current_state) {
-            throw new Exception("Purchase Order not found.");
-        }
+        if (!$current_state) throw new Exception("Purchase Order not found.");
 
         $old_status = $current_state['status'];
         $new_status = $details['status'];
@@ -1138,19 +1137,21 @@ function update_purchase_order_details($purchase_order_id, $details) {
         $stmt->execute();
 
         if ($old_status !== $new_status) {
-            $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
-            $stmt_history->bind_param("ssis", $purchase_order_id, $new_status, $_SESSION['user_id'], $_SESSION['username']);
+            // Get the event date from POST data, default to NULL if not set or empty
+            $po_event_date = !empty($post_data['po_status_event_date']) ? $post_data['po_status_event_date'] : null;
+            
+            // MODIFIED: Added the new event_date column to the INSERT statement
+            $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+            $stmt_history->bind_param("sssis", $purchase_order_id, $new_status, $po_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_history->execute();
         }
         
         $is_completed = ($new_status === 'Completed' && $old_status !== 'Completed');
 
         if ($is_completed) {
-            // Step 2: Automatically generate the GRN and update stock levels.
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
 
-            // Step 3: If a sales order is linked, fulfill it.
             if (!empty($linked_order_id)) {
                 fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
                 $feedback_message .= " Linked Sales Order #$linked_order_id was fulfilled.";

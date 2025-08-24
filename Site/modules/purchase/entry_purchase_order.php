@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'supplier_name' => $_POST['supplier_name'] ?? '',
                 'remarks'       => $_POST['remarks'] ?? ''
             ];
-            if (update_purchase_order_details($po_id_to_update, $details_to_update)) {
+            if (update_purchase_order_details($po_id_to_update, $details_to_update, $_POST)) {
                 $_SESSION['success_message'] = "✅ Purchase Order #$po_id_to_update successfully updated.";
                 header("Location: /modules/purchase/list_purchase_order.php");
                 exit;
@@ -139,10 +139,17 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <select class="form-select" id="status" name="status">
                                     <option value="Draft" <?= ($is_edit && $po['status'] == 'Draft') ? 'selected' : '' ?>>Draft</option>
                                     <option value="Ordered" <?= ($is_edit && $po['status'] == 'Ordered') ? 'selected' : '' ?>>Ordered</option>
-                                    <option value="Partially Received" <?= ($is_edit && $po['status'] == 'Partially Received') ? 'selected' : '' ?>>Partially Received</option>
-                                    <option value="Completed" <?= ($is_edit && $po['status'] == 'Completed') ? 'selected' : '' ?>>Completed</option>
+                                    <option value="Paid" <?= ($is_edit && $po['status'] == 'Paid') ? 'selected' : '' ?>>Paid</option>
+                                    <option value="Delivered" <?= ($is_edit && $po['status'] == 'Delivered') ? 'selected' : '' ?>>Delivered</option>
+                                    <option value="With int courier" <?= ($is_edit && $po['status'] == 'With int courier') ? 'selected' : '' ?>>With int courier</option>
+                                    <option value="Received" <?= ($is_edit && $po['status'] == 'Received') ? 'selected' : '' ?>>Received</option>
                                     <option value="Canceled" <?= ($is_edit && $po['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option>
                                 </select>
+                            </div>
+                            <!-- ADD THIS NEW DIV FOR THE HIDDEN DATE INPUT -->
+                            <div class="col-md-4 d-none" id="po_status_date_wrapper">
+                                <label for="po_status_event_date" class="form-label">Status Date</label>
+                                <input type="datetime-local" class="form-control" id="po_status_event_date" name="po_status_event_date">
                             </div>
 
                             <?php if (!$is_edit): ?>
@@ -208,7 +215,9 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <div>Status set to <strong><?= htmlspecialchars($history['status']) ?></strong>
                                     <small class="d-block text-muted">by <?= htmlspecialchars($history['created_by_name']) ?></small>
                                 </div>
-                                <span class="badge bg-secondary rounded-pill"><?= date("d-M-Y h:i A", strtotime($history['created_at'])) ?></span>
+                                <span class="badge bg-secondary rounded-pill">
+                                    <?= date("d-M-Y h:i A", strtotime($history['event_date'] ?? $history['created_at'])) ?>
+                                </span>
                             </li>
                             <?php endforeach; ?>
                         </ul>

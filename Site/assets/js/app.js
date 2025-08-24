@@ -677,9 +677,31 @@ function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
 
+    const isEditMode = !document.getElementById('addPoItemRow'); // A reliable way to check if we are in manage mode
+    const statusSelect = document.getElementById('status');
     const poDateInput = document.getElementById('po_date');
     if (poDateInput && !poDateInput.readOnly) {
         poDateInput.focus();
+    }
+
+    if (isEditMode && statusSelect) {
+        const statusDateWrapper = document.getElementById('po_status_date_wrapper');
+        
+        if (statusDateWrapper) {
+            // Store the original status from when the page loaded
+            const originalStatus = statusSelect.value;
+
+            // Listen for any change on the status dropdown
+            statusSelect.addEventListener('change', function() {
+                // If the new status is different from the original, show the date input
+                if (this.value !== originalStatus) {
+                    statusDateWrapper.classList.remove('d-none');
+                } else {
+                    // If the user selects the original status again, hide it
+                    statusDateWrapper.classList.add('d-none');
+                }
+            });
+        }
     }
 
     const itemRowsContainer = document.getElementById('poItemRows');
