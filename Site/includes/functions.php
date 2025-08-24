@@ -648,13 +648,13 @@ function get_order_details($order_id) {
     $order['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
 
     // 4. Get the order status history for the order
-    $stmt_history = $db->prepare("SELECT * FROM order_status_history WHERE order_id = ? ORDER BY created_at ASC");
+    $stmt_history = $db->prepare("SELECT * FROM order_status_history WHERE order_id = ? ORDER BY COALESCE(event_date, created_at) ASC");
     $stmt_history->bind_param("s", $order_id);
     $stmt_history->execute();
     $order['status_history'] = $stmt_history->get_result()->fetch_all(MYSQLI_ASSOC);
 
     // 5. NEW: Get the payment status history for the order
-    $stmt_payment_history = $db->prepare("SELECT * FROM payment_status_history WHERE order_id = ? ORDER BY created_at ASC");
+    $stmt_payment_history = $db->prepare("SELECT * FROM payment_status_history WHERE order_id = ? ORDER BY COALESCE(event_date, created_at) ASC");
     $stmt_payment_history->bind_param("s", $order_id);
     $stmt_payment_history->execute();
     $order['payment_history'] = $stmt_payment_history->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -664,13 +664,15 @@ function get_order_details($order_id) {
 
 /**
  * Updates the status and details of an existing order and tracks history.
+ * Now handles optional event dates for status changes.
  *
  * @param string $order_id The ID of the order to update.
  * @param array $details An array of details to update (status, payment_method, etc.).
+ * @param array $post_data The raw POST data, to access new event date fields.
  * @return bool True on success, false on failure.
  * @throws Exception On validation or database errors.
  */
-function update_order_details($order_id, $details) {
+function update_order_details($order_id, $details, $post_data) { // Added $post_data parameter
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
     if (empty($order_id) || !is_array($details)) throw new Exception("Invalid arguments for updating order.");
@@ -682,6 +684,9 @@ function update_order_details($order_id, $details) {
         $stmt_check->bind_param("s", $order_id);
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
+        if (!$current_state) {
+            throw new Exception("Order not found.");
+        }
         $old_order_status = $current_state['status'];
         $old_payment_status = $current_state['payment_status'];
 
@@ -693,15 +698,22 @@ function update_order_details($order_id, $details) {
 
         // --- Create history records ONLY if the status has actually changed ---
         if ($old_order_status !== $details['order_status']) {
-            $stmt_history = $db->prepare("INSERT INTO order_status_history (order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
-            $stmt_history->bind_param("ssis", $order_id, $details['order_status'], $_SESSION['user_id'], $_SESSION['username']);
+            // Get the event date from POST data, default to NULL if not set or empty
+            $order_event_date = !empty($post_data['order_status_event_date']) ? $post_data['order_status_event_date'] : null;
+            
+            // MODIFIED: Added the new event_date column to the INSERT statement
+            $stmt_history = $db->prepare("INSERT INTO order_status_history (order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+            $stmt_history->bind_param("sssis", $order_id, $details['order_status'], $order_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_history->execute();
         }
         
-        // NEW: Check and record payment status history
         if ($old_payment_status !== $details['payment_status']) {
-            $stmt_payment_history = $db->prepare("INSERT INTO payment_status_history (order_id, payment_status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
-            $stmt_payment_history->bind_param("ssis", $order_id, $details['payment_status'], $_SESSION['user_id'], $_SESSION['username']);
+            // Get the event date from POST data, default to NULL if not set or empty
+            $payment_event_date = !empty($post_data['payment_status_event_date']) ? $post_data['payment_status_event_date'] : null;
+            
+            // MODIFIED: Added the new event_date column to the INSERT statement
+            $stmt_payment_history = $db->prepare("INSERT INTO payment_status_history (order_id, payment_status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+            $stmt_payment_history->bind_param("sssis", $order_id, $details['payment_status'], $payment_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_payment_history->execute();
         }
         

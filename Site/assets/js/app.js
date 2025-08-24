@@ -56,10 +56,11 @@ function initCustomerEntry() {
     if (!phoneInput) return;
     const doPhoneLookup = debounce(() => {
         const phone = phoneInput.value.trim();
-        if (phone.length < 3) { phoneResults.classList.add('d-none'); return; }
+        if (phone.length < 3) { if (phoneResults) phoneResults.classList.add('d-none'); return; }
         fetch(`/modules/customer/entry_customer.php?phone_lookup=${encodeURIComponent(phone)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Phone search failed'))
             .then(data => {
+                if (!phoneResults) return;
                 phoneResults.innerHTML = '';
                 if (data.length > 0) {
                     data.forEach(customer => {
@@ -72,7 +73,7 @@ function initCustomerEntry() {
                     phoneResults.classList.remove('d-none');
                 } else { phoneResults.classList.add('d-none'); }
             })
-            .catch(error => { console.error('[doPhoneLookup] Error:', error); phoneResults.classList.add('d-none'); });
+            .catch(error => { console.error('[doPhoneLookup] Error:', error); if (phoneResults) phoneResults.classList.add('d-none'); });
     }, 300);
     phoneInput.addEventListener('input', doPhoneLookup);
     document.addEventListener('click', (e) => {
@@ -89,10 +90,11 @@ function initCategoryEntry() {
     if (!nameInput) return;
     const doCategoryLookup = debounce(() => {
         const name = nameInput.value.trim();
-        if (name.length < 2) { categoryResults.classList.add('d-none'); return; }
+        if (name.length < 2) { if (categoryResults) categoryResults.classList.add('d-none'); return; }
         fetch(`/modules/inventory/entry_category.php?category_lookup=${encodeURIComponent(name)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Category search failed'))
             .then(data => {
+                if (!categoryResults) return;
                 categoryResults.innerHTML = '';
                 if (data.error) throw new Error(data.error);
                 if (data.length > 0) {
@@ -106,7 +108,7 @@ function initCategoryEntry() {
                     categoryResults.classList.remove('d-none');
                 } else { categoryResults.classList.add('d-none'); }
             })
-            .catch(error => { console.error('[doCategoryLookup] Error:', error); categoryResults.classList.add('d-none'); });
+            .catch(error => { console.error('[doCategoryLookup] Error:', error); if (categoryResults) categoryResults.classList.add('d-none'); });
     }, 300);
     nameInput.addEventListener('input', doCategoryLookup);
     document.addEventListener('click', (e) => {
@@ -123,10 +125,11 @@ function initSubCategoryEntry() {
     if (!nameInput) return;
     const doSubCategoryLookup = debounce(() => {
         const name = nameInput.value.trim();
-        if (name.length < 2) { subCategoryResults.classList.add('d-none'); return; }
+        if (name.length < 2) { if (subCategoryResults) subCategoryResults.classList.add('d-none'); return; }
         fetch(`/modules/inventory/entry_category_sub.php?sub_category_lookup=${encodeURIComponent(name)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Sub-Category search failed'))
             .then(data => {
+                if (!subCategoryResults) return;
                 subCategoryResults.innerHTML = '';
                 if (data.error) throw new Error(data.error);
                 if (data.length > 0) {
@@ -140,7 +143,7 @@ function initSubCategoryEntry() {
                     subCategoryResults.classList.remove('d-none');
                 } else { subCategoryResults.classList.add('d-none'); }
             })
-            .catch(error => { console.error('[doSubCategoryLookup] Error:', error); subCategoryResults.classList.add('d-none'); });
+            .catch(error => { console.error('[doSubCategoryLookup] Error:', error); if (subCategoryResults) subCategoryResults.classList.add('d-none'); });
     }, 300);
     nameInput.addEventListener('input', doSubCategoryLookup);
     document.addEventListener('click', (e) => {
@@ -158,44 +161,52 @@ function initItemEntry() {
     const subCategorySelect = document.getElementById('category_sub_id');
     const nameInput = document.getElementById('name');
     const itemResults = document.getElementById('itemResults');
-    categorySelect.addEventListener('change', function () {
-        const categoryId = this.value;
-        subCategorySelect.innerHTML = '<option value="">Loading...</option>';
-        subCategorySelect.disabled = true;
-        if (!categoryId) { subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>'; return; }
-        fetch(`/modules/inventory/entry_item.php?get_sub_categories=${encodeURIComponent(categoryId)}`)
-            .then(response => response.ok ? response.json() : Promise.reject('Failed to load sub-categories'))
-            .then(data => {
-                subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>';
-                if (data.length > 0) {
-                    data.forEach(sub_cat => { subCategorySelect.add(new Option(sub_cat.name, sub_cat.category_sub_id)); });
-                }
-                subCategorySelect.disabled = false;
-            })
-            .catch(error => { console.error('[CascadingDropdown] Error:', error); subCategorySelect.innerHTML = '<option value="">Error loading data</option>'; });
-    });
-    const doItemLookup = debounce(() => {
-        const name = nameInput.value.trim();
-        if (name.length < 2) { itemResults.classList.add('d-none'); return; }
-        fetch(`/modules/inventory/entry_item.php?item_lookup=${encodeURIComponent(name)}`)
-            .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
-            .then(data => {
-                itemResults.innerHTML = '';
-                if (data.error) throw new Error(data.error);
-                if (data.length > 0) {
-                    data.forEach(item => {
-                        const link = document.createElement('a');
-                        link.href = `entry_item.php?item_id=${encodeURIComponent(item.item_id)}`;
-                        link.className = 'list-group-item list-group-item-action py-2';
-                        link.innerHTML = `<div class="d-flex justify-content-between"><span><strong>${escapeHtml(item.name)}</strong><br><small class="text-muted">${escapeHtml(item.parent_category_name)} > ${escapeHtml(item.sub_category_name)}</small></span><span class="badge bg-primary align-self-center">${escapeHtml(item.item_id)}</span></div>`;
-                        itemResults.appendChild(link);
-                    });
-                    itemResults.classList.remove('d-none');
-                } else { itemResults.classList.add('d-none'); }
-            })
-            .catch(error => { console.error('[doItemLookup] Error:', error); itemResults.classList.add('d-none'); });
-    }, 300);
-    nameInput.addEventListener('input', doItemLookup);
+
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function () {
+            const categoryId = this.value;
+            subCategorySelect.innerHTML = '<option value="">Loading...</option>';
+            subCategorySelect.disabled = true;
+            if (!categoryId) { subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>'; return; }
+            fetch(`/modules/inventory/entry_item.php?get_sub_categories=${encodeURIComponent(categoryId)}`)
+                .then(response => response.ok ? response.json() : Promise.reject('Failed to load sub-categories'))
+                .then(data => {
+                    subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>';
+                    if (data.length > 0) {
+                        data.forEach(sub_cat => { subCategorySelect.add(new Option(sub_cat.name, sub_cat.category_sub_id)); });
+                    }
+                    subCategorySelect.disabled = false;
+                })
+                .catch(error => { console.error('[CascadingDropdown] Error:', error); subCategorySelect.innerHTML = '<option value="">Error loading data</option>'; });
+        });
+    }
+
+    if (nameInput) {
+        const doItemLookup = debounce(() => {
+            const name = nameInput.value.trim();
+            if (name.length < 2) { if (itemResults) itemResults.classList.add('d-none'); return; }
+            fetch(`/modules/inventory/entry_item.php?item_lookup=${encodeURIComponent(name)}`)
+                .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
+                .then(data => {
+                    if (!itemResults) return;
+                    itemResults.innerHTML = '';
+                    if (data.error) throw new Error(data.error);
+                    if (data.length > 0) {
+                        data.forEach(item => {
+                            const link = document.createElement('a');
+                            link.href = `entry_item.php?item_id=${encodeURIComponent(item.item_id)}`;
+                            link.className = 'list-group-item list-group-item-action py-2';
+                            link.innerHTML = `<div class="d-flex justify-content-between"><span><strong>${escapeHtml(item.name)}</strong><br><small class="text-muted">${escapeHtml(item.parent_category_name)} > ${escapeHtml(item.sub_category_name)}</small></span><span class="badge bg-primary align-self-center">${escapeHtml(item.item_id)}</span></div>`;
+                            itemResults.appendChild(link);
+                        });
+                        itemResults.classList.remove('d-none');
+                    } else { itemResults.classList.add('d-none'); }
+                })
+                .catch(error => { console.error('[doItemLookup] Error:', error); if (itemResults) itemResults.classList.add('d-none'); });
+        }, 300);
+        nameInput.addEventListener('input', doItemLookup);
+    }
+
     document.addEventListener('click', (e) => {
         if (itemResults && !itemResults.contains(e.target) && e.target !== nameInput) {
             itemResults.classList.add('d-none');
@@ -316,6 +327,8 @@ function initOrderEntry() {
     const orderTotalDisplay = document.getElementById('orderTotal');
     const otherExpensesInput = document.getElementById('other_expenses');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
+    const orderStatusSelect = document.getElementById('order_status');
+    const paymentStatusSelect = document.getElementById('payment_status');
 
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
@@ -326,7 +339,6 @@ function initOrderEntry() {
             if (stockDisplay) { stockDisplay.closest('td').classList.toggle('d-none', isPreBook); }
             const costDisplayInput = row.querySelector('.cost-display');
             const priceInput = row.querySelector('.price-input');
-            // CORRECTED LOGIC: Fields should be readonly IF it IS a PreBook order.
             if (costDisplayInput) costDisplayInput.readOnly = isPreBook;
             if (priceInput) priceInput.readOnly = isPreBook;
         });
@@ -337,10 +349,12 @@ function initOrderEntry() {
         const stockWarning = row.querySelector('.stock-warning');
         if (!stockWarning) return;
         if (stockType === 'Ex-Stock') {
-            const availableStock = parseFloat(row.querySelector('.stock-display').value) || 0;
-            const orderQuantity = parseFloat(row.querySelector('.quantity-input').value) || 0;
+            const availableStock = parseFloat(row.querySelector('.stock-display')?.value) || 0;
+            const orderQuantity = parseFloat(row.querySelector('.quantity-input')?.value) || 0;
             stockWarning.classList.toggle('d-none', orderQuantity <= availableStock);
-        } else { stockWarning.classList.add('d-none'); }
+        } else {
+            stockWarning.classList.add('d-none');
+        }
     };
 
     const calculateTotals = () => {
@@ -357,16 +371,49 @@ function initOrderEntry() {
                 total += subtotal;
             }
         });
+        const otherExpenses = parseFloat(otherExpensesInput.value) || 0;
+        total += otherExpenses;
         orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(total);
     };
 
+    if (otherExpensesInput) {
+        otherExpensesInput.addEventListener('input', calculateTotals);
+    }
+    
+    // --- LOGIC FOR EDIT MODE (Backdating Statuses) ---
+    if (isEditMode) {
+        const orderStatusDateWrapper = document.getElementById('order_status_date_wrapper');
+        const paymentStatusDateWrapper = document.getElementById('payment_status_date_wrapper');
+
+        if (orderStatusSelect && orderStatusDateWrapper) {
+            const originalOrderStatus = orderStatusSelect.value;
+            orderStatusSelect.addEventListener('change', function() {
+                if (this.value !== originalOrderStatus) {
+                    orderStatusDateWrapper.classList.remove('d-none');
+                } else {
+                    orderStatusDateWrapper.classList.add('d-none');
+                }
+            });
+        }
+
+        if (paymentStatusSelect && paymentStatusDateWrapper) {
+            const originalPaymentStatus = paymentStatusSelect.value;
+            paymentStatusSelect.addEventListener('change', function() {
+                if (this.value !== originalPaymentStatus) {
+                    paymentStatusDateWrapper.classList.remove('d-none');
+                } else {
+                    paymentStatusDateWrapper.classList.add('d-none');
+                }
+            });
+        }
+    }
+
+    // --- LOGIC FOR CREATE MODE ---
     if (!isEditMode) {
         const doCustomerLookup = debounce(() => {
             const phone = customerSearchInput.value.trim();
-            // Added a check for customerResults to prevent errors
-            if (!customerResults) return; 
+            if (!customerResults) return;
             if (phone.length < 3) return customerResults.classList.add('d-none');
-
             fetch(`/modules/sales/entry_order.php?customer_lookup=${encodeURIComponent(phone)}`)
                 .then(res => res.ok ? res.json() : Promise.reject('Customer lookup failed'))
                 .then(data => {
@@ -386,12 +433,16 @@ function initOrderEntry() {
                             customerResults.appendChild(btn);
                         });
                         customerResults.classList.remove('d-none');
-                    } else { customerResults.classList.add('d-none'); }
+                    } else {
+                        customerResults.classList.add('d-none');
+                    }
                 })
                 .catch(error => console.error('[CustomerLookup] Error:', error));
         }, 300);
 
-        customerSearchInput.addEventListener('input', doCustomerLookup);
+        if (customerSearchInput) {
+            customerSearchInput.addEventListener('input', doCustomerLookup);
+        }
         document.addEventListener('click', e => {
             if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearchInput) {
                 customerResults.classList.add('d-none');
@@ -399,6 +450,7 @@ function initOrderEntry() {
         });
 
         const addRow = () => {
+            if (!template) return;
             const newRow = template.content.cloneNode(true);
             itemRowsContainer.appendChild(newRow);
             toggleRowFields();
@@ -406,132 +458,131 @@ function initOrderEntry() {
 
         if (addRowBtn) addRowBtn.addEventListener('click', addRow);
         
-        itemRowsContainer.addEventListener('click', e => {
-            if (e.target.closest('.remove-item-row')) {
-                e.target.closest('.order-item-row').remove();
-                calculateTotals();
-            }
-        });
-
-        if (stockTypeSelect) stockTypeSelect.addEventListener('change', () => {
-            toggleRowFields();
-            itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                row.querySelector('.item-search-input').value = '';
-                row.querySelector('.item-id-input').value = '';
-                row.querySelector('.uom-display').value = '';
-                row.querySelector('.stock-display').value = '';
-                row.querySelector('.cost-input').value = '0';
-                row.querySelector('.cost-display').value = '0.00';
-                row.querySelector('.margin-input').value = '0';
-                row.querySelector('.price-input').value = '0.00';
-                row.querySelector('.quantity-input').value = '1';
-                validateRowStock(row);
-            });
-            calculateTotals();
-        });
-
-        itemRowsContainer.addEventListener('input', e => {
-            const row = e.target.closest('.order-item-row');
-            if (!row) return;
-            if (e.target.classList.contains('item-search-input')) {
-                debounce(() => {
-                    const searchInput = e.target;
-                    const resultsContainer = row.querySelector('.item-results');
-                    const name = searchInput.value.trim();
-                    const stockType = stockTypeSelect.value;
-                    if (name.length < 2) return resultsContainer.classList.add('d-none');
-                    fetch(`/modules/sales/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
-                        .then(res => res.ok ? res.json() : Promise.reject())
-                        .then(data => {
-                            resultsContainer.innerHTML = '';
-                            if (data && data.length > 0) {
-                                data.forEach(item => {
-                                    const btn = document.createElement('button');
-                                    btn.type = 'button';
-                                    btn.className = 'list-group-item list-group-item-action py-1';
-                                    const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
-                                    btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
-                                    btn.addEventListener('click', () => {
-                                        row.querySelector('.item-id-input').value = item.item_id;
-                                        searchInput.value = item.name;
-                                        row.querySelector('.uom-display').value = item.uom;
-                                        if (stockType === 'Ex-Stock') {
-                                            row.querySelector('.stock-display').value = item.stock_on_hand;
-                                            const cost = parseFloat(item.last_cost) || 0;
-                                            row.querySelector('.cost-input').value = cost.toFixed(2);
-                                            row.querySelector('.cost-display').value = cost.toFixed(2);
-                                            row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
-                                        } else { row.querySelector('.cost-display').focus(); }
-                                        resultsContainer.classList.add('d-none');
-                                        validateRowStock(row);
-                                    });
-                                    resultsContainer.appendChild(btn);
-                                });
-                                resultsContainer.classList.remove('d-none');
-                            }
-                        });
-                }, 300)();
-                return;
-            }
-            const costDisplayInput = row.querySelector('.cost-display');
-            const costHiddenInput = row.querySelector('.cost-input');
-            const marginInput = row.querySelector('.margin-input');
-            const priceInput = row.querySelector('.price-input');
-            if (e.target === costDisplayInput) { costHiddenInput.value = costDisplayInput.value; }
-            const cost = parseFloat(costHiddenInput.value) || 0;
-            if (e.target === marginInput || e.target === costDisplayInput) {
-                // This part is for calculating Price from Margin (no change here)
-                const margin = parseFloat(marginInput.value) || 0;
-                priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
-            } 
-            else if (e.target === priceInput) {
-                // This part is for calculating Margin from Price
-                const price = parseFloat(priceInput.value) || 0;
-                
-                // Safety check: only calculate margin if cost is a positive number
-                if (cost > 0) {
-                    // Formula: Margin % = ((Sell Price / Cost Price) - 1) * 100
-                    const newMargin = (((price / cost) - 1) * 100);
-                    marginInput.value = newMargin.toFixed(2);
-                } else {
-                    // Handle the edge case where cost is 0
-                    // If price is also 0, margin is 0. If price is > 0, it's infinite profit, so we can show 100% or more.
-                    // A simple rule is to just set it to 0 if cost is 0, to avoid errors.
-                    marginInput.value = '0.00';
+        if (itemRowsContainer) {
+            itemRowsContainer.addEventListener('click', e => {
+                if (e.target.closest('.remove-item-row')) {
+                    e.target.closest('.order-item-row').remove();
+                    calculateTotals();
                 }
-            }
-            if (e.target.matches('.price-input, .quantity-input, .margin-input, .cost-display')) {
+            });
+        }
+
+        if (stockTypeSelect) {
+            stockTypeSelect.addEventListener('change', () => {
+                toggleRowFields();
+                itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+                    row.querySelector('.item-search-input').value = '';
+                    row.querySelector('.item-id-input').value = '';
+                    row.querySelector('.uom-display').value = '';
+                    row.querySelector('.stock-display').value = '';
+                    row.querySelector('.cost-input').value = '0';
+                    row.querySelector('.cost-display').value = '0.00';
+                    row.querySelector('.margin-input').value = '0';
+                    row.querySelector('.price-input').value = '0.00';
+                    row.querySelector('.quantity-input').value = '1';
+                    validateRowStock(row);
+                });
                 calculateTotals();
-                validateRowStock(row);
-            }
-        });
+            });
+        }
 
-        // --- NEW: Added 'focus' event listener to auto-select text ---
-        itemRowsContainer.addEventListener('focus', (e) => {
-            // Check if the focused element is a cost price or margin input
-            if (e.target.classList.contains('cost-display') || e.target.classList.contains('margin-input')) {
-                // If it is, select all the text inside it
-                e.target.select();
-            }
-        }, true); // Use event capturing to ensure this fires reliably
-        // --- END NEW ---
+        if (itemRowsContainer) {
+            itemRowsContainer.addEventListener('input', e => {
+                const row = e.target.closest('.order-item-row');
+                if (!row) return;
+                if (e.target.classList.contains('item-search-input')) {
+                    debounce(() => {
+                        const searchInput = e.target;
+                        const resultsContainer = row.querySelector('.item-results');
+                        const name = searchInput.value.trim();
+                        const stockType = stockTypeSelect.value;
+                        if (name.length < 2) return resultsContainer.classList.add('d-none');
+                        fetch(`/modules/sales/entry_order.php?item_lookup=${encodeURIComponent(name)}&type=${stockType}`)
+                            .then(res => res.ok ? res.json() : Promise.reject('Item lookup failed'))
+                            .then(data => {
+                                resultsContainer.innerHTML = '';
+                                if (data && data.length > 0) {
+                                    data.forEach(item => {
+                                        const btn = document.createElement('button');
+                                        btn.type = 'button';
+                                        btn.className = 'list-group-item list-group-item-action py-1';
+                                        const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
+                                        btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
+                                        btn.addEventListener('click', () => {
+                                            row.querySelector('.item-id-input').value = item.item_id;
+                                            searchInput.value = item.name;
+                                            row.querySelector('.uom-display').value = item.uom;
+                                            if (stockType === 'Ex-Stock') {
+                                                row.querySelector('.stock-display').value = item.stock_on_hand;
+                                                const cost = parseFloat(item.last_cost) || 0;
+                                                row.querySelector('.cost-input').value = cost.toFixed(2);
+                                                row.querySelector('.cost-display').value = cost.toFixed(2);
+                                                row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
+                                            } else {
+                                                row.querySelector('.cost-display').focus();
+                                            }
+                                            resultsContainer.classList.add('d-none');
+                                            validateRowStock(row);
+                                        });
+                                        resultsContainer.appendChild(btn);
+                                    });
+                                    resultsContainer.classList.remove('d-none');
+                                }
+                            })
+                            .catch(err => console.error(err));
+                    }, 300)();
+                    return;
+                }
+                const costDisplayInput = row.querySelector('.cost-display');
+                const costHiddenInput = row.querySelector('.cost-input');
+                const marginInput = row.querySelector('.margin-input');
+                const priceInput = row.querySelector('.price-input');
+                if (e.target === costDisplayInput) { costHiddenInput.value = costDisplayInput.value; }
+                const cost = parseFloat(costHiddenInput.value) || 0;
+                if (e.target === marginInput || e.target === costDisplayInput) {
+                    const margin = parseFloat(marginInput.value) || 0;
+                    priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
+                } else if (e.target === priceInput) {
+                    const price = parseFloat(priceInput.value) || 0;
+                    if (cost > 0) {
+                        marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
+                    } else {
+                        marginInput.value = '0.00';
+                    }
+                }
+                if (e.target.matches('.price-input, .quantity-input, .margin-input, .cost-display')) {
+                    calculateTotals();
+                    validateRowStock(row);
+                }
+            });
 
-        form.addEventListener('keydown', (e) => {
-            if (e.key !== 'Tab') return;
-            const activeElement = document.activeElement;
-            if (activeElement === otherExpensesInput) {
-                const firstItemInput = itemRowsContainer.querySelector('.item-search-input');
-                if (firstItemInput) { e.preventDefault(); firstItemInput.focus(); }
-                return;
-            }
-            const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
-            const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
-            if (activeElement === lastQuantityInput) { e.preventDefault(); addRowBtn.focus(); }
-            if (activeElement === addRowBtn) { e.preventDefault(); createOrderBtn.focus(); }
-        });
+            itemRowsContainer.addEventListener('focus', (e) => {
+                if (e.target.classList.contains('cost-display') || e.target.classList.contains('margin-input')) {
+                    e.target.select();
+                }
+            }, true);
+        }
 
-        if (itemRowsContainer.children.length === 0) { addRow(); }
-        toggleRowFields();
+        if (form) {
+            form.addEventListener('keydown', (e) => {
+                if (e.key !== 'Tab') return;
+                const activeElement = document.activeElement;
+                if (activeElement === otherExpensesInput) {
+                    const firstItemInput = itemRowsContainer.querySelector('.item-search-input');
+                    if (firstItemInput) { e.preventDefault(); firstItemInput.focus(); }
+                    return;
+                }
+                if (addRowBtn) {
+                    const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
+                    const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
+                    if (activeElement === lastQuantityInput) { e.preventDefault(); addRowBtn.focus(); }
+                    if (activeElement === addRowBtn) { e.preventDefault(); createOrderBtn.focus(); }
+                }
+            });
+        }
+
+        if (itemRowsContainer && itemRowsContainer.children.length === 0) { addRow(); }
+        if (stockTypeSelect) { toggleRowFields(); }
     }
 }
 
@@ -605,7 +656,6 @@ function initOrderList() {
     }, 300);
 
     filterControls.forEach(control => {
-        // The event listener is smart enough to handle input and select changes already
         const eventType = control.tagName.toLowerCase() === 'select' ? 'change' : 'input';
         control.addEventListener(eventType, doOrderSearch);
     });
@@ -619,13 +669,10 @@ function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
 
-    // --- NEW: Set initial focus on the PO Date field ---
     const poDateInput = document.getElementById('po_date');
-    // We only set focus if the form is for a NEW PO (i.e., the date field is not readonly)
     if (poDateInput && !poDateInput.readOnly) {
         poDateInput.focus();
     }
-    // --- END NEW ---
 
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
@@ -634,75 +681,69 @@ function initPoEntry() {
     const preOrderResults = document.getElementById('preOrderResults');
     const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
 
-    // MODIFIED: This function now accepts a 'shouldFocus' parameter
     const addRow = (shouldFocus = true) => {
-        // This check is important: only add rows if the template exists (i.e., in create mode)
         if (!template) return; 
-        
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
         const justAddedRow = itemRowsContainer.querySelector('.po-item-row:last-child');
-        
-        // MODIFIED: The item input field will only be focused if shouldFocus is true
         if (shouldFocus && justAddedRow) {
             justAddedRow.querySelector('.item-search-input').focus();
         }
     };
     
-    // MODIFIED: The first row is added without focus
     addRow(false); 
     
-    // Check if addRowBtn exists before adding a listener (it only exists in create mode)
     if (addRowBtn) {
-        // MODIFIED: Subsequent rows added by the button click will get focus as normal
         addRowBtn.addEventListener('click', () => addRow(true));
     }
 
-    itemRowsContainer.addEventListener('click', function(e) {
-        if (e.target.closest('.remove-item-row')) {
-            e.target.closest('.po-item-row').remove();
-        }
-    });
-    itemRowsContainer.addEventListener('input', debounce((e) => {
-        if (e.target.classList.contains('item-search-input')) {
-            const searchInput = e.target;
-            const resultsContainer = searchInput.nextElementSibling;
-            const name = searchInput.value.trim();
-            if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
-            fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
-                .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
-                .then(data => {
-                    resultsContainer.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            const button = document.createElement('button');
-                            button.type = 'button';
-                            button.className = 'list-group-item list-group-item-action py-2';
-                            button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
-                            button.addEventListener('click', () => {
-                                const parentRow = searchInput.closest('.po-item-row');
-                                parentRow.querySelector('.item-id-input').value = item.item_id;
-                                searchInput.value = item.name;
-                                resultsContainer.classList.add('d-none');
-                                parentRow.querySelector('.quantity-input').focus();
+    if (itemRowsContainer) {
+        itemRowsContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-item-row')) {
+                e.target.closest('.po-item-row').remove();
+            }
+        });
+        itemRowsContainer.addEventListener('input', debounce((e) => {
+            if (e.target.classList.contains('item-search-input')) {
+                const searchInput = e.target;
+                const resultsContainer = searchInput.nextElementSibling;
+                const name = searchInput.value.trim();
+                if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
+                fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
+                    .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
+                    .then(data => {
+                        resultsContainer.innerHTML = '';
+                        if (data && data.length > 0) {
+                            data.forEach(item => {
+                                const button = document.createElement('button');
+                                button.type = 'button';
+                                button.className = 'list-group-item list-group-item-action py-2';
+                                button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
+                                button.addEventListener('click', () => {
+                                    const parentRow = searchInput.closest('.po-item-row');
+                                    parentRow.querySelector('.item-id-input').value = item.item_id;
+                                    searchInput.value = item.name;
+                                    resultsContainer.classList.add('d-none');
+                                    parentRow.querySelector('.quantity-input').focus();
+                                });
+                                resultsContainer.appendChild(button);
                             });
-                            resultsContainer.appendChild(button);
-                        });
-                        resultsContainer.classList.remove('d-none');
-                    } else { resultsContainer.classList.add('d-none'); }
-                })
-                .catch(error => console.error('[POItemLookup] Error:', error));
-        }
-    }, 300));
+                            resultsContainer.classList.remove('d-none');
+                        } else { resultsContainer.classList.add('d-none'); }
+                    })
+                    .catch(error => console.error('[POItemLookup] Error:', error));
+            }
+        }, 300));
+    }
     
-    // Check if the pre-order search input exists on the page (it only exists in create mode)
     if (preOrderSearchInput) {
         preOrderSearchInput.addEventListener('input', debounce(() => {
             const query = preOrderSearchInput.value.trim();
-            if (query.length < 2) { preOrderResults.classList.add('d-none'); return; }
+            if (query.length < 2) { if (preOrderResults) preOrderResults.classList.add('d-none'); return; }
             fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
                 .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
                 .then(data => {
+                    if (!preOrderResults) return;
                     preOrderResults.innerHTML = '';
                     if (data && data.length > 0) {
                         data.forEach(order => {
@@ -712,13 +753,15 @@ function initPoEntry() {
                             btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
                             btn.addEventListener('click', () => {
                                 preOrderSearchInput.value = `${order.order_id} - ${order.customer_name}`;
-                                hiddenLinkedOrderId.value = order.order_id;
+                                if (hiddenLinkedOrderId) hiddenLinkedOrderId.value = order.order_id;
                                 preOrderResults.classList.add('d-none');
                             });
                             preOrderResults.appendChild(btn);
                         });
                         preOrderResults.classList.remove('d-none');
-                    } else { preOrderResults.classList.add('d-none'); }
+                    } else {
+                        preOrderResults.classList.add('d-none');
+                    }
                 })
                 .catch(error => console.error('[PreOrderLookup] Error:', error));
         }, 300));
@@ -740,10 +783,9 @@ function initGrnList() {
     if (!searchForm) return;
 
     const tableBody = document.getElementById('grnListTableBody');
-    const filterControls = searchForm.querySelectorAll('input');
+    const grnIdInput = document.getElementById('search_grn_id');
     const dateRangeInput = document.getElementById('search_date_range');
 
-    // --- Date Range Picker Initialization ---
     const picker = new Litepicker({
         element: dateRangeInput,
         singleMode: false,
@@ -751,7 +793,6 @@ function initGrnList() {
         format: 'YYYY-MM-DD',
         setup: (picker) => {
             picker.on('selected', (date1, date2) => {
-                // When a date range is selected, trigger the search
                 doGrnSearch();
             });
         }
@@ -759,14 +800,7 @@ function initGrnList() {
 
     const doGrnSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-
-        // Handle the GRN ID text input
-        const grnIdInput = document.getElementById('search_grn_id');
-        if (grnIdInput.value) {
-            params.set('grn_id', grnIdInput.value);
-        }
-
-        // Handle the date range picker input
+        if (grnIdInput.value) { params.set('grn_id', grnIdInput.value); }
         if (picker.getStartDate() && picker.getEndDate()) {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
@@ -775,7 +809,7 @@ function initGrnList() {
         fetch(`/modules/purchase/list_grns.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
             .then(data => {
-                tableBody.innerHTML = ''; // Clear existing results
+                tableBody.innerHTML = '';
                 if (data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No GRNs found matching your criteria.</td></tr>`;
                     return;
@@ -802,8 +836,7 @@ function initGrnList() {
             });
     }, 300);
 
-    // Attach event listener to the GRN ID input
-    document.getElementById('search_grn_id').addEventListener('input', doGrnSearch);
+    grnIdInput.addEventListener('input', doGrnSearch);
 }
 
 // -----------------------------------------
@@ -833,7 +866,6 @@ function initPurchaseOrderList() {
 
     const doPoSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-
         if (poIdInput.value) { params.set('purchase_order_id', poIdInput.value); }
         if (statusInput.value) { params.set('status', statusInput.value); }
         if (picker.getStartDate() && picker.getEndDate()) {
@@ -846,20 +878,15 @@ function initPurchaseOrderList() {
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    // Updated colspan from 6 to 7
                     tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
                     return;
                 }
                 data.forEach(po => {
                     const tr = document.createElement('tr');
-                    const poDate = new Date(po.po_date + 'T00:00:00').toLocaleString('en-GB');
-
-                    // --- NEW LOGIC for Linked Order Cell ---
+                    const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
                     const linkedOrderHtml = po.linked_sales_order_id
                         ? `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(po.linked_sales_order_id)}" target="_blank">${escapeHtml(po.linked_sales_order_id)}</a>`
                         : `<span class="text-muted">N/A</span>`;
-                    // --- END NEW LOGIC ---
-
                     tr.innerHTML = `
                         <td>${escapeHtml(po.purchase_order_id)}</td>
                         <td>${poDate}</td>
@@ -878,7 +905,6 @@ function initPurchaseOrderList() {
             })
             .catch(error => {
                 console.error('[PoSearch] Error:', error);
-                // Updated colspan from 6 to 7
                 tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load search results.</td></tr>`;
             });
     }, 300);
@@ -899,15 +925,14 @@ function initStockLevelList() {
     const itemNameInput = document.getElementById('search_item_name');
     const categoryIdInput = document.getElementById('search_category_id');
     const subCategoryIdInput = document.getElementById('search_sub_category_id');
-    const stockStatusInput = document.getElementById('search_stock_status'); // Added stock status input
+    const stockStatusInput = document.getElementById('search_stock_status');
 
     const doStockSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-
         if (itemNameInput.value) { params.set('item_name', itemNameInput.value); }
         if (categoryIdInput.value) { params.set('category_id', categoryIdInput.value); }
         if (subCategoryIdInput.value) { params.set('sub_category_id', subCategoryIdInput.value); }
-        if (stockStatusInput.value) { params.set('stock_status', stockStatusInput.value); } // Read from stock status
+        if (stockStatusInput.value) { params.set('stock_status', stockStatusInput.value); }
 
         fetch(`/modules/inventory/list_stock_levels.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
@@ -935,7 +960,6 @@ function initStockLevelList() {
             });
     }, 300);
 
-    // --- CASCADING DROPDOWN LOGIC ---
     categoryIdInput.addEventListener('change', function() {
         const categoryId = this.value;
         subCategoryIdInput.innerHTML = '<option value="">All Sub-Categories</option>';
@@ -956,10 +980,9 @@ function initStockLevelList() {
         doStockSearch();
     });
 
-    // Attach event listeners to all filter controls
     itemNameInput.addEventListener('input', doStockSearch);
     subCategoryIdInput.addEventListener('change', doStockSearch);
-    stockStatusInput.addEventListener('change', doStockSearch); // Added listener for stock status
+    stockStatusInput.addEventListener('change', doStockSearch);
 }
 
 // ───── DOM Ready ─────
@@ -973,7 +996,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
     if (document.getElementById('poForm')) { initPoEntry(); }
-    if (document.querySelector('.live-search')) { initLiveSearch(); }
+    // REMOVED: Redundant live-search call
     if (document.getElementById('grnSearchForm')) { initGrnList(); }
     if (document.getElementById('poSearchForm')) { initPurchaseOrderList(); }
     if (document.getElementById('stockSearchForm')) { initStockLevelList(); }
