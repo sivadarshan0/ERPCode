@@ -566,7 +566,7 @@ function process_order($customer_id, $order_date, $items, $details) {
 
 /**
  * Fulfills a linked Pre-Book sales order when stock arrives from a PO.
- * This function should only be called from within an existing database transaction.
+ * This function now also updates the cost price and margin on the original order items.
  *
  * @param string $sales_order_id The ID of the sales order to fulfill.
  * @param string $triggering_po_id The PO that triggered this fulfillment.
@@ -575,44 +575,68 @@ function process_order($customer_id, $order_date, $items, $details) {
  * @throws Exception On failure.
  */
 function fulfill_linked_sales_order($sales_order_id, $triggering_po_id, $db) {
-    // Step 1: Fetch all items from the sales order
-    $stmt_items = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
-    if (!$stmt_items) throw new Exception("Failed to prepare statement for fetching SO items.");
-    $stmt_items->bind_param("s", $sales_order_id);
-    $stmt_items->execute();
-    $items_result = $stmt_items->get_result();
+    // --- Step 1: Fetch items and their TRUE costs from the Purchase Order ---
+    $stmt_po_items = $db->prepare("SELECT item_id, cost_price FROM purchase_order_items WHERE purchase_order_id = ?");
+    if (!$stmt_po_items) throw new Exception("Failed to prepare statement for fetching PO costs.");
+    $stmt_po_items->bind_param("s", $triggering_po_id);
+    $stmt_po_items->execute();
+    $po_items_result = $stmt_po_items->get_result();
+    // Create a simple map of [item_id => cost_price] for easy lookup
+    $actual_costs = [];
+    while ($item = $po_items_result->fetch_assoc()) {
+        $actual_costs[$item['item_id']] = $item['cost_price'];
+    }
+
+    // --- Step 2: Fetch all items from the sales order ---
+    $stmt_so_items = $db->prepare("SELECT item_id, quantity, price FROM order_items WHERE order_id = ?");
+    if (!$stmt_so_items) throw new Exception("Failed to prepare statement for fetching SO items.");
+    $stmt_so_items->bind_param("s", $sales_order_id);
+    $stmt_so_items->execute();
+    $items_result = $stmt_so_items->get_result();
     $items_to_fulfill = $items_result->fetch_all(MYSQLI_ASSOC);
 
     if (empty($items_to_fulfill)) {
-        // This is a safety check; it should not happen in a normal workflow.
         throw new Exception("Cannot fulfill Sales Order #$sales_order_id: It has no items.");
     }
 
-    // Step 2: Deduct stock for each item in the sales order
+    // --- Step 3: Loop through sales order items to deduct stock AND update costs ---
     $stock_reason = "Fulfilled from stock received via PO #" . $triggering_po_id;
+    $stmt_update_item = $db->prepare("UPDATE order_items SET cost_price = ?, profit_margin = ? WHERE order_id = ? AND item_id = ?");
+    if (!$stmt_update_item) throw new Exception("Failed to prepare statement for updating order items.");
+
     foreach ($items_to_fulfill as $item) {
-        // Use the existing adjust_stock_level function. Critically, we now use 'Ex-Stock' check.
+        // A. Deduct stock using the existing function
         adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
+
+        // B. Update the cost and margin for this item
+        $cost_price = $actual_costs[$item['item_id']] ?? 0; // Get cost from our PO map
+        $sell_price = $item['price'];
+        $profit_margin = 0;
+
+        if ($cost_price > 0 && $sell_price > 0) {
+            $profit_margin = (($sell_price / $cost_price) - 1) * 100;
+        }
+
+        $stmt_update_item->bind_param("ddss", $cost_price, $profit_margin, $sales_order_id, $item['item_id']);
+        $stmt_update_item->execute();
     }
 
-    // Step 3: Update the main sales order record
+    // --- Step 4: Update the main sales order record (status and stock type) ---
     $new_order_status = 'Processing';
     $stmt_order = $db->prepare("UPDATE orders SET stock_type = 'Ex-Stock', status = ? WHERE order_id = ?");
     if (!$stmt_order) throw new Exception("Failed to prepare statement for updating SO status.");
     $stmt_order->bind_param("ss", $new_order_status, $sales_order_id);
     $stmt_order->execute();
 
-    // Step 4: Create the audit trail records
+    // --- Step 5: Create the audit trail records ---
     $user_id = $_SESSION['user_id'];
     $user_name = 'System for ' . ($_SESSION['username'] ?? 'Unknown');
     $history_remark = "Stock fulfilled from PO #" . $triggering_po_id;
 
-    // Log the status change
     $stmt_status_history = $db->prepare("INSERT INTO order_status_history (order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
     $stmt_status_history->bind_param("sssis", $sales_order_id, $new_order_status, $history_remark, $user_id, $user_name);
     $stmt_status_history->execute();
 
-    // Log the stock type change in the new history table
     $stmt_stock_type_history = $db->prepare("INSERT INTO order_stock_type_history (order_id, stock_type, change_reason, created_by, created_by_name) VALUES (?, 'Ex-Stock', ?, ?, ?)");
     $stmt_stock_type_history->bind_param("ssis", $sales_order_id, $history_remark, $user_id, $user_name);
     $stmt_stock_type_history->execute();

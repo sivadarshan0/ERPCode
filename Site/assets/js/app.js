@@ -224,10 +224,11 @@ function initStockAdjustmentEntry() {
     const selectedItemDisplay = document.getElementById('selected_item_display');
     const doItemLookup = debounce(() => {
         const name = searchInput.value.trim();
-        if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
+        if (name.length < 2) { if (resultsContainer) resultsContainer.classList.add('d-none'); return; }
         fetch(`/modules/inventory/entry_stock_adjustment.php?item_lookup=${encodeURIComponent(name)}`)
             .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
             .then(data => {
+                if (!resultsContainer) return;
                 resultsContainer.innerHTML = '';
                 if (data.error) throw new Error(data.error);
                 if (data.length > 0) {
@@ -248,7 +249,7 @@ function initStockAdjustmentEntry() {
                     resultsContainer.classList.remove('d-none');
                 } else { resultsContainer.classList.add('d-none'); }
             })
-            .catch(error => { console.error('[StockItemLookup] Error:', error); resultsContainer.classList.add('d-none'); });
+            .catch(error => { console.error('[StockItemLookup] Error:', error); if (resultsContainer) resultsContainer.classList.add('d-none'); });
     }, 300);
     searchInput.addEventListener('input', doItemLookup);
     document.addEventListener('click', (e) => {
@@ -266,49 +267,53 @@ function initGrnEntry() {
     const template = document.getElementById('grnItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
     const addRow = () => {
+        if (!template) return;
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
     };
     addRow();
-    addRowBtn.addEventListener('click', addRow);
-    itemRowsContainer.addEventListener('click', function (e) {
-        if (e.target.closest('.remove-item-row')) {
-            e.target.closest('.grn-item-row').remove();
-        }
-    });
-    itemRowsContainer.addEventListener('input', debounce((e) => {
-        if (e.target.classList.contains('item-search-input')) {
-            const searchInput = e.target;
-            const resultsContainer = searchInput.nextElementSibling;
-            const name = searchInput.value.trim();
-            if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
-            fetch(`/modules/purchase/entry_grn.php?item_lookup=${encodeURIComponent(name)}`)
-                .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
-                .then(data => {
-                    resultsContainer.innerHTML = '';
-                    if (data.error) throw new Error(data.error);
-                    if (data.length > 0) {
-                        data.forEach(item => {
-                            const button = document.createElement('button');
-                            button.type = 'button';
-                            button.className = 'list-group-item list-group-item-action py-2';
-                            button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
-                            button.addEventListener('click', () => {
-                                const parentRow = searchInput.closest('.grn-item-row');
-                                parentRow.querySelector('.item-id-input').value = item.item_id;
-                                searchInput.value = item.name;
-                                const uomInput = parentRow.querySelector('.uom-input');
-                                if (uomInput && item.uom) { uomInput.value = item.uom; }
-                                resultsContainer.classList.add('d-none');
+    if (addRowBtn) addRowBtn.addEventListener('click', addRow);
+    
+    if (itemRowsContainer) {
+        itemRowsContainer.addEventListener('click', function (e) {
+            if (e.target.closest('.remove-item-row')) {
+                e.target.closest('.grn-item-row').remove();
+            }
+        });
+        itemRowsContainer.addEventListener('input', debounce((e) => {
+            if (e.target.classList.contains('item-search-input')) {
+                const searchInput = e.target;
+                const resultsContainer = searchInput.nextElementSibling;
+                const name = searchInput.value.trim();
+                if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
+                fetch(`/modules/purchase/entry_grn.php?item_lookup=${encodeURIComponent(name)}`)
+                    .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
+                    .then(data => {
+                        resultsContainer.innerHTML = '';
+                        if (data.error) throw new Error(data.error);
+                        if (data.length > 0) {
+                            data.forEach(item => {
+                                const button = document.createElement('button');
+                                button.type = 'button';
+                                button.className = 'list-group-item list-group-item-action py-2';
+                                button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
+                                button.addEventListener('click', () => {
+                                    const parentRow = searchInput.closest('.grn-item-row');
+                                    parentRow.querySelector('.item-id-input').value = item.item_id;
+                                    searchInput.value = item.name;
+                                    const uomInput = parentRow.querySelector('.uom-input');
+                                    if (uomInput && item.uom) { uomInput.value = item.uom; }
+                                    resultsContainer.classList.add('d-none');
+                                });
+                                resultsContainer.appendChild(button);
                             });
-                            resultsContainer.appendChild(button);
-                        });
-                        resultsContainer.classList.remove('d-none');
-                    } else { resultsContainer.classList.add('d-none'); }
-                })
-                .catch(error => { console.error('[GRNItemLookup] Error:', error); resultsContainer.classList.add('d-none'); });
-        }
-    }, 300));
+                            resultsContainer.classList.remove('d-none');
+                        } else { resultsContainer.classList.add('d-none'); }
+                    })
+                    .catch(error => { console.error('[GRNItemLookup] Error:', error); resultsContainer.classList.add('d-none'); });
+            }
+        }, 300));
+    }
 }
 
 // ───── Order Entry Handler ─────
@@ -331,6 +336,7 @@ function initOrderEntry() {
     const paymentStatusSelect = document.getElementById('payment_status');
 
     const toggleRowFields = () => {
+        if (!stockTypeSelect) return;
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
         const stockHeader = form.querySelector('th.stock-col');
         if (stockHeader) { stockHeader.classList.toggle('d-none', isPreBook); }
@@ -338,13 +344,14 @@ function initOrderEntry() {
             const stockDisplay = row.querySelector('.stock-display');
             if (stockDisplay) { stockDisplay.closest('td').classList.toggle('d-none', isPreBook); }
             const costDisplayInput = row.querySelector('.cost-display');
-            const priceInput = row.querySelector('.price-input');
-            if (costDisplayInput) costDisplayInput.readOnly = isPreBook;
-            if (priceInput) priceInput.readOnly = isPreBook;
+            if (costDisplayInput) {
+                costDisplayInput.readOnly = !isPreBook;
+            }
         });
     };
 
     const validateRowStock = (row) => {
+        if (!stockTypeSelect) return;
         const stockType = stockTypeSelect.value;
         const stockWarning = row.querySelector('.stock-warning');
         if (!stockWarning) return;
@@ -358,29 +365,26 @@ function initOrderEntry() {
     };
 
     const calculateTotals = () => {
-    let itemsTotal = 0; // Use a dedicated variable for the items subtotal
-    itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-        const priceInput = row.querySelector('.price-input');
-        const quantityInput = row.querySelector('.quantity-input');
-        const subtotalDisplay = row.querySelector('.subtotal-display');
-        if (priceInput && quantityInput && subtotalDisplay) {
-            const price = parseFloat(priceInput.value) || 0;
-            const quantity = parseFloat(quantityInput.value) || 0;
-            const subtotal = price * quantity;
-            subtotalDisplay.textContent = subtotal.toFixed(2);
-            itemsTotal += subtotal; // Add to the itemsTotal
+        let itemsTotal = 0;
+        if (itemRowsContainer) {
+            itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+                const priceInput = row.querySelector('.price-input');
+                const quantityInput = row.querySelector('.quantity-input');
+                const subtotalDisplay = row.querySelector('.subtotal-display');
+                if (priceInput && quantityInput && subtotalDisplay) {
+                    const price = parseFloat(priceInput.value) || 0;
+                    const quantity = parseFloat(quantityInput.value) || 0;
+                    const subtotal = price * quantity;
+                    subtotalDisplay.textContent = subtotal.toFixed(2);
+                    itemsTotal += subtotal;
+                }
+            });
         }
-    });
+        if (orderTotalDisplay) {
+            orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(itemsTotal);
+        }
+    };
 
-    // The main "Total" display in the top-right card will now ONLY show the total of the items.
-    // "Other Expenses" will not be added to this display.
-    orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(itemsTotal);
-};
-
-    if (otherExpensesInput) {
-        otherExpensesInput.addEventListener('input', calculateTotals);
-    }
-    
     // --- LOGIC FOR EDIT MODE (Backdating Statuses) ---
     if (isEditMode) {
         const orderStatusDateWrapper = document.getElementById('order_status_date_wrapper');
@@ -471,18 +475,20 @@ function initOrderEntry() {
         if (stockTypeSelect) {
             stockTypeSelect.addEventListener('change', () => {
                 toggleRowFields();
-                itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                    row.querySelector('.item-search-input').value = '';
-                    row.querySelector('.item-id-input').value = '';
-                    row.querySelector('.uom-display').value = '';
-                    row.querySelector('.stock-display').value = '';
-                    row.querySelector('.cost-input').value = '0';
-                    row.querySelector('.cost-display').value = '0.00';
-                    row.querySelector('.margin-input').value = '0';
-                    row.querySelector('.price-input').value = '0.00';
-                    row.querySelector('.quantity-input').value = '1';
-                    validateRowStock(row);
-                });
+                if (itemRowsContainer) {
+                    itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+                        row.querySelector('.item-search-input').value = '';
+                        row.querySelector('.item-id-input').value = '';
+                        row.querySelector('.uom-display').value = '';
+                        row.querySelector('.stock-display').value = '';
+                        row.querySelector('.cost-input').value = '0';
+                        row.querySelector('.cost-display').value = '0.00';
+                        row.querySelector('.margin-input').value = '0';
+                        row.querySelector('.price-input').value = '0.00';
+                        row.querySelector('.quantity-input').value = '1';
+                        validateRowStock(row);
+                    });
+                }
                 calculateTotals();
             });
         }
@@ -495,6 +501,7 @@ function initOrderEntry() {
                     debounce(() => {
                         const searchInput = e.target;
                         const resultsContainer = row.querySelector('.item-results');
+                        if (!resultsContainer || !stockTypeSelect) return;
                         const name = searchInput.value.trim();
                         const stockType = stockTypeSelect.value;
                         if (name.length < 2) return resultsContainer.classList.add('d-none');
@@ -569,7 +576,7 @@ function initOrderEntry() {
                 if (e.key !== 'Tab') return;
                 const activeElement = document.activeElement;
                 if (activeElement === otherExpensesInput) {
-                    const firstItemInput = itemRowsContainer.querySelector('.item-search-input');
+                    const firstItemInput = itemRowsContainer?.querySelector('.item-search-input');
                     if (firstItemInput) { e.preventDefault(); firstItemInput.focus(); }
                     return;
                 }
@@ -997,7 +1004,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
     if (document.getElementById('poForm')) { initPoEntry(); }
-    // REMOVED: Redundant live-search call
     if (document.getElementById('grnSearchForm')) { initGrnList(); }
     if (document.getElementById('poSearchForm')) { initPurchaseOrderList(); }
     if (document.getElementById('stockSearchForm')) { initStockLevelList(); }
