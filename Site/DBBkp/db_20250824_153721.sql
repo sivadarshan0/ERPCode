@@ -52,10 +52,6 @@ CREATE TABLE `categories` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-INSERT INTO `categories` VALUES
-('CAT00001','Saree','Saree category update 20250809 1331','2025-08-08 21:31:55',1,'admin','2025-08-09 08:02:25',1,'admin'),
-('CAT00002','Kurithi','Kuruthi category','2025-08-09 07:55:30',1,'admin',NULL,NULL,NULL),
-('CAT00003','Shalwar','Shalwar category','2025-08-09 08:04:27',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -90,9 +86,6 @@ CREATE TABLE `categories_sub` (
 
 LOCK TABLES `categories_sub` WRITE;
 /*!40000 ALTER TABLE `categories_sub` DISABLE KEYS */;
-INSERT INTO `categories_sub` VALUES
-('SUB00001','CAT00001','Cotton Saree','Cotto Saree sub category 20250809 1438','2025-08-09 09:08:25',1,'admin','2025-08-09 09:18:35',1,'admin'),
-('SUB00002','CAT00002','Cotton Kurithi','Cotton Kurithi category','2025-08-09 09:19:17',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `categories_sub` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -137,21 +130,66 @@ CREATE TABLE `customers` (
 
 LOCK TABLES `customers` WRITE;
 /*!40000 ALTER TABLE `customers` DISABLE KEYS */;
-INSERT INTO `customers` VALUES
-('CUS00001','0771060853','Siva','Kotahena street, Colombo 13','Kotahena','Colombo','01300','Instagram','sivadarshan@gmail.com','2025-07-06','Test updated','Insta','2025-07-10 15:09:08',1,'admin','2025-07-19 10:09:56',1,'admin'),
-('CUS00002','0768406545','Thivya','Kotahena','Colombo 13','Colombo','01400','Instagram','thivya@abc.com','2025-07-08','Test 2','Insta','2025-07-10 15:10:45',1,'admin','2025-07-19 10:09:43',1,'admin'),
-('CUS00003','0773100853','Agarvin','Jaffna street','Jaffna','Colombo','02100','Instagram','agarvin@abc.com','2025-07-09','Update entry 20250720 1900','Insta','2025-07-13 01:36:13',1,'admin','2025-07-20 13:31:05',1,'admin'),
-('CUS00004','0772190853','Aathi','Chullipurm east','Chullipuram','Colombo','02110','Instagram','aathi@abc.com','2025-07-06','Update entry 20250809 1434','Instagram','2025-07-13 01:45:02',1,'admin','2025-08-09 09:05:49',1,'admin'),
-('CUS00005','0777123456','Latha','Main street, Kandy','Kandy','Colombo','08100','Instagram','latha@abc.com','2025-07-01','Test customer First update','Insta','2025-07-13 10:25:32',1,'admin','2025-07-20 10:59:40',1,'admin'),
-('CUS00006','0777654321','Anupriya','Main road','Rathota','Colombo','06012','Instagram','anupriya@abc.com','2025-07-02','Test record','Insta','2025-07-13 11:02:23',1,'admin','2025-07-19 10:08:50',1,'admin'),
-('CUS00007','1234567890','dsdfg','afvadf','dfvdvdf','dvdvadfva','1234','SearchEngine','abc@xyz.com','2025-07-14','vsdas','sgaerqg','2025-07-19 18:52:29',1,'admin',NULL,NULL,NULL),
-('CUS00008','0766123456','vjannjnj','ndjnsdkcvjn','jnkdnckn','Kandy','08111','SearchEngine','ABC@123','2025-07-18','SFQWFQWEF','sdfsvsdvqwe','2025-07-19 17:24:24',1,'admin',NULL,NULL,NULL),
-('CUS00009','0777771111','fgergwe','gerwter','adfgsd','sdfaerfa','09111','SearchEngine','abc@xyz.com','2025-07-14','dfgae Update 20250720 2325','New update 20250723 1955','2025-07-19 18:16:18',1,'admin','2025-07-22 14:26:07',1,'admin'),
-('CUS00010','0222222222','sdfgqr','svaedgaerb dafgeg','efgwe','dvedge','2222','Facebook','cnf@cbd.com','2025-07-14','adfwfeqwfqwf','sdfqwdfqw','2025-07-19 19:10:17',1,'admin',NULL,NULL,NULL),
-('CUS00011','0333333333','dfshs','aegehsh','fsdsdg','dfgsdgsd','04444','Friends','bda@ghg.com','2025-07-14','dfgdfgad','dgadgd','2025-07-20 04:09:34',1,'admin',NULL,NULL,NULL),
-('CUS00012','0444444444','dfgdfger','fadfgadfvge','fvadfva','dvdfv','88888','Other','abc@bnd.com','2025-07-08','wfqwfqwf','sdfaswfdqw','2025-07-20 11:02:12',1,'admin',NULL,NULL,NULL),
-('CUS00013','0987654321','bhvkjdfk','fbga;kdj;ak','Galle','Galle','09876','Friends','abc@dbc.com','2025-07-15','kg;LH;GOAHER 20250720 2327','ADJNGAKN','2025-07-20 17:57:20',1,'admin','2025-07-20 17:58:01',1,'admin');
 /*!40000 ALTER TABLE `customers` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grn`
+--
+
+DROP TABLE IF EXISTS `grn`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `grn` (
+  `grn_id` varchar(10) NOT NULL,
+  `grn_date` date NOT NULL,
+  `remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`grn_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grn`
+--
+
+LOCK TABLES `grn` WRITE;
+/*!40000 ALTER TABLE `grn` DISABLE KEYS */;
+/*!40000 ALTER TABLE `grn` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `grn_items`
+--
+
+DROP TABLE IF EXISTS `grn_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `grn_items` (
+  `grn_item_id` int(11) NOT NULL AUTO_INCREMENT,
+  `grn_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) NOT NULL,
+  `uom` enum('No','Set','Pair') NOT NULL,
+  `quantity` int(11) NOT NULL DEFAULT 0,
+  `cost` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `weight` int(11) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`grn_item_id`),
+  KEY `grn_id` (`grn_id`),
+  KEY `item_id` (`item_id`),
+  CONSTRAINT `fk_grn_header` FOREIGN KEY (`grn_id`) REFERENCES `grn` (`grn_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_grn_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `grn_items`
+--
+
+LOCK TABLES `grn_items` WRITE;
+/*!40000 ALTER TABLE `grn_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `grn_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -165,6 +203,7 @@ CREATE TABLE `items` (
   `item_id` varchar(10) NOT NULL,
   `category_sub_id` varchar(10) NOT NULL,
   `name` varchar(150) NOT NULL,
+  `uom` varchar(20) NOT NULL DEFAULT 'No',
   `description` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
@@ -185,9 +224,309 @@ CREATE TABLE `items` (
 
 LOCK TABLES `items` WRITE;
 /*!40000 ALTER TABLE `items` DISABLE KEYS */;
-INSERT INTO `items` VALUES
-('ITM00001','SUB00001','Maheshwari cotton saree','Maheshwari cotton saree Update 20250810 0026','2025-08-09 18:55:29',1,'admin','2025-08-09 18:57:00',1,'admin');
 /*!40000 ALTER TABLE `items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `order_items`
+--
+
+DROP TABLE IF EXISTS `order_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `order_items` (
+  `order_item_id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `quantity` decimal(10,2) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `cost_price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `profit_margin` decimal(5,2) NOT NULL DEFAULT 0.00,
+  PRIMARY KEY (`order_item_id`),
+  KEY `order_id` (`order_id`),
+  KEY `item_id` (`item_id`),
+  CONSTRAINT `fk_order_header` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_order_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `order_items`
+--
+
+LOCK TABLES `order_items` WRITE;
+/*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `order_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `order_status_history`
+--
+
+DROP TABLE IF EXISTS `order_status_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `order_status_history` (
+  `order_status_history_id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` varchar(10) NOT NULL,
+  `status` varchar(50) NOT NULL,
+  `remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`order_status_history_id`),
+  KEY `order_id` (`order_id`),
+  CONSTRAINT `fk_order_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `order_status_history`
+--
+
+LOCK TABLES `order_status_history` WRITE;
+/*!40000 ALTER TABLE `order_status_history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `order_status_history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `order_stock_type_history`
+--
+
+DROP TABLE IF EXISTS `order_stock_type_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `order_stock_type_history` (
+  `history_id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` varchar(10) NOT NULL,
+  `stock_type` enum('Ex-Stock','Pre-Book') NOT NULL,
+  `change_reason` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`history_id`),
+  KEY `order_id_idx` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `order_stock_type_history`
+--
+
+LOCK TABLES `order_stock_type_history` WRITE;
+/*!40000 ALTER TABLE `order_stock_type_history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `order_stock_type_history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `orders`
+--
+
+DROP TABLE IF EXISTS `orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `orders` (
+  `order_id` varchar(10) NOT NULL,
+  `customer_id` varchar(10) NOT NULL,
+  `order_date` date NOT NULL,
+  `status` enum('New','Processing','Awaiting Stock','With Courier','Delivered','Canceled') NOT NULL DEFAULT 'New',
+  `stock_type` enum('Ex-Stock','Pre-Book') NOT NULL DEFAULT 'Ex-Stock',
+  `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `other_expenses` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `payment_method` enum('BT','COD') NOT NULL DEFAULT 'COD',
+  `payment_status` enum('Pending','Received') NOT NULL DEFAULT 'Pending',
+  `remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`order_id`),
+  KEY `customer_id` (`customer_id`),
+  CONSTRAINT `fk_order_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customer_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `orders`
+--
+
+LOCK TABLES `orders` WRITE;
+/*!40000 ALTER TABLE `orders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `payment_status_history`
+--
+
+DROP TABLE IF EXISTS `payment_status_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payment_status_history` (
+  `payment_history_id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` varchar(10) NOT NULL,
+  `payment_status` varchar(50) NOT NULL,
+  `remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`payment_history_id`),
+  KEY `order_id` (`order_id`),
+  CONSTRAINT `fk_payment_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `payment_status_history`
+--
+
+LOCK TABLES `payment_status_history` WRITE;
+/*!40000 ALTER TABLE `payment_status_history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `payment_status_history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `purchase_order_items`
+--
+
+DROP TABLE IF EXISTS `purchase_order_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_order_items` (
+  `po_item_id` int(11) NOT NULL AUTO_INCREMENT,
+  `purchase_order_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` varchar(10) NOT NULL,
+  `quantity` decimal(10,2) NOT NULL,
+  `cost_price` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`po_item_id`),
+  KEY `purchase_order_id` (`purchase_order_id`),
+  KEY `item_id` (`item_id`),
+  CONSTRAINT `fk_po_header` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`purchase_order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_po_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `purchase_order_items`
+--
+
+LOCK TABLES `purchase_order_items` WRITE;
+/*!40000 ALTER TABLE `purchase_order_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `purchase_order_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `purchase_order_status_history`
+--
+
+DROP TABLE IF EXISTS `purchase_order_status_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_order_status_history` (
+  `history_id` int(11) NOT NULL AUTO_INCREMENT,
+  `purchase_order_id` varchar(10) NOT NULL,
+  `status` enum('Draft','Ordered','Partially Received','Completed','Canceled') NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`history_id`),
+  KEY `po_id_idx` (`purchase_order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `purchase_order_status_history`
+--
+
+LOCK TABLES `purchase_order_status_history` WRITE;
+/*!40000 ALTER TABLE `purchase_order_status_history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `purchase_order_status_history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `purchase_orders`
+--
+
+DROP TABLE IF EXISTS `purchase_orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_orders` (
+  `purchase_order_id` varchar(10) NOT NULL,
+  `po_date` date NOT NULL,
+  `supplier_name` varchar(255) DEFAULT NULL,
+  `linked_sales_order_id` varchar(10) DEFAULT NULL,
+  `status` enum('Draft','Ordered','Partially Received','Completed','Canceled') NOT NULL DEFAULT 'Draft',
+  `remarks` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`purchase_order_id`),
+  KEY `idx_linked_sales_order` (`linked_sales_order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `purchase_orders`
+--
+
+LOCK TABLES `purchase_orders` WRITE;
+/*!40000 ALTER TABLE `purchase_orders` DISABLE KEYS */;
+/*!40000 ALTER TABLE `purchase_orders` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `stock_levels`
+--
+
+DROP TABLE IF EXISTS `stock_levels`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `stock_levels` (
+  `item_id` varchar(10) NOT NULL,
+  `quantity` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `last_updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`item_id`),
+  CONSTRAINT `fk_stock_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `stock_levels`
+--
+
+LOCK TABLES `stock_levels` WRITE;
+/*!40000 ALTER TABLE `stock_levels` DISABLE KEYS */;
+/*!40000 ALTER TABLE `stock_levels` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `stock_transactions`
+--
+
+DROP TABLE IF EXISTS `stock_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `stock_transactions` (
+  `transaction_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) NOT NULL,
+  `transaction_type` enum('IN','OUT') NOT NULL,
+  `quantity_change` decimal(10,2) NOT NULL,
+  `reason` varchar(255) DEFAULT NULL,
+  `transaction_date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) DEFAULT NULL,
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`transaction_id`),
+  KEY `item_id` (`item_id`),
+  CONSTRAINT `fk_transaction_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `stock_transactions`
+--
+
+LOCK TABLES `stock_transactions` WRITE;
+/*!40000 ALTER TABLE `stock_transactions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `stock_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -216,10 +555,14 @@ CREATE TABLE `system_sequences` (
 LOCK TABLES `system_sequences` WRITE;
 /*!40000 ALTER TABLE `system_sequences` DISABLE KEYS */;
 INSERT INTO `system_sequences` VALUES
-('category_id','CAT',4,5,'Category IDs','2025-08-09 08:04:27','1'),
-('category_sub_id','SUB',3,5,'Sub-Category IDs','2025-08-09 09:19:17','1'),
-('customer_id','CUS',14,5,'Customer IDs','2025-07-20 17:57:20','1'),
-('item_id','ITM',2,5,'Item IDs','2025-08-09 18:55:29','1');
+('category_id','CAT',1,5,'Category IDs','2025-08-09 08:04:27','1'),
+('category_sub_id','SUB',1,5,'Sub-Category IDs','2025-08-09 09:19:17','1'),
+('customer_id','CUS',1,5,'Customer IDs','2025-08-09 19:55:50','1'),
+('grn_id','GRN',1,6,'Goods Received Note IDs','2025-08-24 07:43:45','1'),
+('item_id','ITM',1,5,'Item IDs','2025-08-24 07:31:57','1'),
+('order_id','ORD',1,6,'Sales Order IDs','2025-08-24 07:33:39','1'),
+('purchase_order_id','PUR',1,6,'Purchase Order IDs','2025-08-24 07:40:05','1'),
+('transaction_id','TRN',1,6,'Stock Transaction IDs','2025-08-24 07:43:45','1');
 /*!40000 ALTER TABLE `system_sequences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -239,7 +582,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -248,107 +591,6 @@ CREATE TABLE `user_login_audit` (
 
 LOCK TABLES `user_login_audit` WRITE;
 /*!40000 ALTER TABLE `user_login_audit` DISABLE KEYS */;
-INSERT INTO `user_login_audit` VALUES
-(1,1,'2025-07-10 02:39:34','10.0.7.122',0),
-(2,1,'2025-07-10 02:39:42','10.0.7.122',1),
-(3,1,'2025-07-10 02:41:54','10.0.7.122',0),
-(4,1,'2025-07-10 02:42:04','10.0.7.122',1),
-(5,1,'2025-07-10 16:58:40','10.0.6.100',1),
-(6,1,'2025-07-10 17:11:19','10.0.6.100',0),
-(7,1,'2025-07-10 17:11:27','10.0.6.100',1),
-(8,1,'2025-07-10 17:12:32','10.0.6.102',1),
-(9,1,'2025-07-10 18:43:57','10.0.6.100',1),
-(10,1,'2025-07-10 19:21:12','10.0.6.100',1),
-(11,1,'2025-07-10 19:22:33','10.0.6.100',1),
-(12,1,'2025-07-10 19:29:41','10.0.6.100',1),
-(13,1,'2025-07-10 19:32:29','10.0.6.100',1),
-(14,1,'2025-07-10 19:42:23','10.0.6.100',1),
-(15,1,'2025-07-10 20:13:10','10.0.6.100',1),
-(16,1,'2025-07-12 19:06:45','10.0.7.133',1),
-(17,1,'2025-07-12 19:41:42','10.0.7.123',1),
-(18,1,'2025-07-12 21:22:09','10.0.7.123',1),
-(19,1,'2025-07-12 22:53:30','10.0.7.123',1),
-(20,1,'2025-07-12 23:08:17','10.0.7.123',1),
-(21,1,'2025-07-12 23:08:21','10.0.7.123',1),
-(22,1,'2025-07-13 06:35:44','10.0.7.133',1),
-(23,1,'2025-07-13 06:44:25','10.0.7.133',1),
-(24,1,'2025-07-13 07:03:30','10.0.7.122',1),
-(25,1,'2025-07-13 07:04:53','10.0.7.122',1),
-(26,1,'2025-07-13 07:13:19','10.0.7.122',1),
-(27,1,'2025-07-13 08:12:22','10.0.7.122',1),
-(28,1,'2025-07-13 08:20:15','10.0.7.122',1),
-(29,1,'2025-07-13 08:29:40','10.0.7.122',1),
-(30,1,'2025-07-13 15:52:55','10.0.7.133',1),
-(31,1,'2025-07-13 16:14:37','10.0.7.122',1),
-(32,1,'2025-07-13 16:30:52','10.0.7.122',1),
-(33,1,'2025-07-14 20:20:08','10.0.7.133',1),
-(34,1,'2025-07-14 20:25:24','10.0.7.133',1),
-(35,1,'2025-07-14 21:53:36','10.0.7.124',1),
-(36,1,'2025-07-14 22:07:59','10.0.7.124',1),
-(37,1,'2025-07-14 22:09:11','10.0.7.124',1),
-(38,1,'2025-07-14 22:53:15','10.0.7.124',1),
-(39,1,'2025-07-14 23:04:13','10.0.7.124',1),
-(40,1,'2025-07-14 23:13:47','10.0.7.124',1),
-(41,1,'2025-07-14 23:23:44','10.0.7.124',1),
-(42,1,'2025-07-14 23:36:46','10.0.7.133',1),
-(43,1,'2025-07-14 23:59:09','10.0.7.133',1),
-(44,1,'2025-07-16 21:38:26','10.0.7.125',1),
-(45,1,'2025-07-16 21:39:31','10.0.7.125',1),
-(46,1,'2025-07-16 21:54:31','10.0.7.125',0),
-(47,1,'2025-07-16 21:54:40','10.0.7.125',1),
-(48,1,'2025-07-16 22:06:52','10.0.7.125',1),
-(49,1,'2025-07-16 22:09:30','10.0.7.125',1),
-(50,1,'2025-07-19 20:49:10','10.0.7.124',1),
-(51,1,'2025-07-19 20:50:10','10.0.7.124',1),
-(52,1,'2025-07-19 21:17:43','10.0.7.124',1),
-(53,1,'2025-07-19 21:22:28','10.0.7.124',1),
-(54,1,'2025-07-19 21:53:36','10.0.7.124',1),
-(55,1,'2025-07-19 21:56:25','10.0.7.124',1),
-(56,1,'2025-07-19 22:04:32','10.0.7.124',1),
-(57,1,'2025-07-19 22:42:58','10.0.7.124',1),
-(58,1,'2025-07-19 23:43:38','10.0.7.124',1),
-(59,1,'2025-07-20 00:21:25','10.0.7.124',1),
-(60,1,'2025-07-20 00:38:56','10.0.7.124',1),
-(61,1,'2025-07-20 01:22:46','10.0.7.124',1),
-(62,1,'2025-07-20 01:24:35','10.0.7.124',1),
-(63,1,'2025-07-20 09:32:22','10.0.7.133',1),
-(64,1,'2025-07-20 09:34:16','10.0.7.133',1),
-(65,1,'2025-07-20 09:37:29','10.0.7.133',1),
-(66,1,'2025-07-20 16:28:58','10.0.7.124',1),
-(67,1,'2025-07-20 17:04:11','10.0.7.124',1),
-(68,1,'2025-07-20 17:18:45','10.0.7.124',1),
-(69,1,'2025-07-20 17:32:37','10.0.7.124',1),
-(70,1,'2025-07-20 18:19:21','10.0.7.124',1),
-(71,1,'2025-07-20 18:33:07','10.0.7.124',1),
-(72,1,'2025-07-20 18:36:50','10.0.7.124',1),
-(73,1,'2025-07-20 18:41:24','10.0.7.124',1),
-(74,1,'2025-07-20 19:33:41','10.0.7.124',1),
-(75,1,'2025-07-20 23:17:54','10.0.7.125',1),
-(76,1,'2025-07-20 23:25:18','10.0.7.125',1),
-(77,1,'2025-07-22 19:55:14','10.0.6.102',1),
-(78,1,'2025-07-29 19:54:36','172.20.10.4',1),
-(79,1,'2025-08-06 02:12:19','172.20.10.4',1),
-(80,1,'2025-08-06 02:32:42','172.20.10.4',1),
-(81,1,'2025-08-06 02:38:12','172.20.10.4',1),
-(82,1,'2025-08-06 02:48:50','172.20.10.4',1),
-(83,1,'2025-08-06 02:50:59','172.20.10.4',1),
-(84,1,'2025-08-06 03:01:59','172.20.10.4',0),
-(85,1,'2025-08-06 03:02:04','172.20.10.4',1),
-(86,1,'2025-08-06 03:06:26','172.20.10.4',1),
-(87,1,'2025-08-06 03:14:45','172.20.10.4',1),
-(88,1,'2025-08-06 03:19:06','172.20.10.4',1),
-(89,1,'2025-08-08 23:08:01','172.20.10.5',0),
-(90,1,'2025-08-08 23:08:24','172.20.10.5',0),
-(91,1,'2025-08-08 23:08:30','172.20.10.5',1),
-(92,1,'2025-08-09 01:24:06','172.20.10.5',1),
-(93,1,'2025-08-09 02:55:11','172.20.10.5',1),
-(94,1,'2025-08-09 12:59:07','10.0.7.133',1),
-(95,1,'2025-08-09 14:34:10','10.0.7.129',1),
-(96,1,'2025-08-10 00:21:56','10.0.7.120',1),
-(97,1,'2025-08-10 00:23:45','10.0.7.120',1),
-(98,1,'2025-08-10 00:28:53','10.0.7.120',1),
-(99,1,'2025-08-10 00:34:55','10.0.7.120',1),
-(100,1,'2025-08-10 00:40:28','10.0.7.120',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -413,7 +655,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-08-10 00:40:28','2025-08-09 19:10:28',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-08-24 13:41:50','2025-08-24 08:11:50',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2572,4 +2814,4 @@ USE `mysql`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-10  1:08:26
+-- Dump completed on 2025-08-24 15:37:21
