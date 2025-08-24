@@ -326,8 +326,9 @@ function initOrderEntry() {
             if (stockDisplay) { stockDisplay.closest('td').classList.toggle('d-none', isPreBook); }
             const costDisplayInput = row.querySelector('.cost-display');
             const priceInput = row.querySelector('.price-input');
-            if (costDisplayInput) costDisplayInput.readOnly = !isPreBook;
-            if (priceInput) priceInput.readOnly = !isPreBook;
+            // CORRECTED LOGIC: Fields should be readonly IF it IS a PreBook order.
+            if (costDisplayInput) costDisplayInput.readOnly = isPreBook;
+            if (priceInput) priceInput.readOnly = isPreBook;
         });
     };
 
@@ -479,14 +480,24 @@ function initOrderEntry() {
             if (e.target === costDisplayInput) { costHiddenInput.value = costDisplayInput.value; }
             const cost = parseFloat(costHiddenInput.value) || 0;
             if (e.target === marginInput || e.target === costDisplayInput) {
+                // This part is for calculating Price from Margin (no change here)
                 const margin = parseFloat(marginInput.value) || 0;
                 priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
-            } else if (e.target === priceInput) {
+            } 
+            else if (e.target === priceInput) {
+                // This part is for calculating Margin from Price
                 const price = parseFloat(priceInput.value) || 0;
+                
+                // Safety check: only calculate margin if cost is a positive number
                 if (cost > 0) {
-                    marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
+                    // Formula: Margin % = ((Sell Price / Cost Price) - 1) * 100
+                    const newMargin = (((price / cost) - 1) * 100);
+                    marginInput.value = newMargin.toFixed(2);
                 } else {
-                    marginInput.value = (price > 0) ? '100.00' : '0.00';
+                    // Handle the edge case where cost is 0
+                    // If price is also 0, margin is 0. If price is > 0, it's infinite profit, so we can show 100% or more.
+                    // A simple rule is to just set it to 0 if cost is 0, to avoid errors.
+                    marginInput.value = '0.00';
                 }
             }
             if (e.target.matches('.price-input, .quantity-input, .margin-input, .cost-display')) {

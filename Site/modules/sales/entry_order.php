@@ -157,7 +157,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Order Date *</label>
-                                <input type="date" class="form-control" id="order_date" name="order_date" value="<?= $is_edit ? htmlspecialchars($order['order_date']) : date('Y-m-d') ?>" required readonly>
+                                <input type="date" class="form-control" id="order_date" name="order_date" value="<?= $is_edit ? htmlspecialchars($order['order_date']) : date('Y-m-d') ?>" required <?= $is_edit ? 'readonly' : '' ?>>
                             </div>
                             <div class="col-md-8">
                                 <label class="form-label">Remarks</label>
