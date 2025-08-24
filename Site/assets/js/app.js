@@ -316,6 +316,7 @@ function initOrderEntry() {
     const orderTotalDisplay = document.getElementById('orderTotal');
     const otherExpensesInput = document.getElementById('other_expenses');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
+
     const toggleRowFields = () => {
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
         const stockHeader = form.querySelector('th.stock-col');
@@ -325,10 +326,11 @@ function initOrderEntry() {
             if (stockDisplay) { stockDisplay.closest('td').classList.toggle('d-none', isPreBook); }
             const costDisplayInput = row.querySelector('.cost-display');
             const priceInput = row.querySelector('.price-input');
-            if(costDisplayInput) costDisplayInput.readOnly = !isPreBook;
-            if(priceInput) priceInput.readOnly = !isPreBook;
+            if (costDisplayInput) costDisplayInput.readOnly = !isPreBook;
+            if (priceInput) priceInput.readOnly = !isPreBook;
         });
     };
+
     const validateRowStock = (row) => {
         const stockType = stockTypeSelect.value;
         const stockWarning = row.querySelector('.stock-warning');
@@ -339,13 +341,14 @@ function initOrderEntry() {
             stockWarning.classList.toggle('d-none', orderQuantity <= availableStock);
         } else { stockWarning.classList.add('d-none'); }
     };
+
     const calculateTotals = () => {
         let total = 0;
         itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
             const priceInput = row.querySelector('.price-input');
             const quantityInput = row.querySelector('.quantity-input');
             const subtotalDisplay = row.querySelector('.subtotal-display');
-            if(priceInput && quantityInput && subtotalDisplay) {
+            if (priceInput && quantityInput && subtotalDisplay) {
                 const price = parseFloat(priceInput.value) || 0;
                 const quantity = parseFloat(quantityInput.value) || 0;
                 const subtotal = price * quantity;
@@ -355,10 +358,14 @@ function initOrderEntry() {
         });
         orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(total);
     };
+
     if (!isEditMode) {
         const doCustomerLookup = debounce(() => {
             const phone = customerSearchInput.value.trim();
+            // Added a check for customerResults to prevent errors
+            if (!customerResults) return; 
             if (phone.length < 3) return customerResults.classList.add('d-none');
+
             fetch(`/modules/sales/entry_order.php?customer_lookup=${encodeURIComponent(phone)}`)
                 .then(res => res.ok ? res.json() : Promise.reject('Customer lookup failed'))
                 .then(data => {
@@ -382,25 +389,30 @@ function initOrderEntry() {
                 })
                 .catch(error => console.error('[CustomerLookup] Error:', error));
         }, 300);
+
         customerSearchInput.addEventListener('input', doCustomerLookup);
         document.addEventListener('click', e => {
             if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearchInput) {
                 customerResults.classList.add('d-none');
             }
         });
+
         const addRow = () => {
             const newRow = template.content.cloneNode(true);
             itemRowsContainer.appendChild(newRow);
             toggleRowFields();
         };
-        if(addRowBtn) addRowBtn.addEventListener('click', addRow);
+
+        if (addRowBtn) addRowBtn.addEventListener('click', addRow);
+        
         itemRowsContainer.addEventListener('click', e => {
             if (e.target.closest('.remove-item-row')) {
                 e.target.closest('.order-item-row').remove();
                 calculateTotals();
             }
         });
-        if(stockTypeSelect) stockTypeSelect.addEventListener('change', () => {
+
+        if (stockTypeSelect) stockTypeSelect.addEventListener('change', () => {
             toggleRowFields();
             itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
                 row.querySelector('.item-search-input').value = '';
@@ -416,6 +428,7 @@ function initOrderEntry() {
             });
             calculateTotals();
         });
+
         itemRowsContainer.addEventListener('input', e => {
             const row = e.target.closest('.order-item-row');
             if (!row) return;
@@ -468,8 +481,7 @@ function initOrderEntry() {
             if (e.target === marginInput || e.target === costDisplayInput) {
                 const margin = parseFloat(marginInput.value) || 0;
                 priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
-            } 
-            else if (e.target === priceInput) {
+            } else if (e.target === priceInput) {
                 const price = parseFloat(priceInput.value) || 0;
                 if (cost > 0) {
                     marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
@@ -482,6 +494,17 @@ function initOrderEntry() {
                 validateRowStock(row);
             }
         });
+
+        // --- NEW: Added 'focus' event listener to auto-select text ---
+        itemRowsContainer.addEventListener('focus', (e) => {
+            // Check if the focused element is a cost price or margin input
+            if (e.target.classList.contains('cost-display') || e.target.classList.contains('margin-input')) {
+                // If it is, select all the text inside it
+                e.target.select();
+            }
+        }, true); // Use event capturing to ensure this fires reliably
+        // --- END NEW ---
+
         form.addEventListener('keydown', (e) => {
             if (e.key !== 'Tab') return;
             const activeElement = document.activeElement;
@@ -495,6 +518,7 @@ function initOrderEntry() {
             if (activeElement === lastQuantityInput) { e.preventDefault(); addRowBtn.focus(); }
             if (activeElement === addRowBtn) { e.preventDefault(); createOrderBtn.focus(); }
         });
+
         if (itemRowsContainer.children.length === 0) { addRow(); }
         toggleRowFields();
     }
