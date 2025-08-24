@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $new_order = process_order($_POST['customer_id'], $_POST['order_date'], $items_to_process, $order_details);
             $_SESSION['success_message'] = "✅ Order #{$new_order['id']} created successfully!";
-            header("Location: entry_order.php?order_id={$new_order['id']}");
+            header("Location: entry_order.php");
             exit;
         }
     } catch (Exception $e) {
