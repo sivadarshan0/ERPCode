@@ -358,23 +358,24 @@ function initOrderEntry() {
     };
 
     const calculateTotals = () => {
-        let total = 0;
-        itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-            const priceInput = row.querySelector('.price-input');
-            const quantityInput = row.querySelector('.quantity-input');
-            const subtotalDisplay = row.querySelector('.subtotal-display');
-            if (priceInput && quantityInput && subtotalDisplay) {
-                const price = parseFloat(priceInput.value) || 0;
-                const quantity = parseFloat(quantityInput.value) || 0;
-                const subtotal = price * quantity;
-                subtotalDisplay.textContent = subtotal.toFixed(2);
-                total += subtotal;
-            }
-        });
-        const otherExpenses = parseFloat(otherExpensesInput.value) || 0;
-        total += otherExpenses;
-        orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(total);
-    };
+    let itemsTotal = 0; // Use a dedicated variable for the items subtotal
+    itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+        const priceInput = row.querySelector('.price-input');
+        const quantityInput = row.querySelector('.quantity-input');
+        const subtotalDisplay = row.querySelector('.subtotal-display');
+        if (priceInput && quantityInput && subtotalDisplay) {
+            const price = parseFloat(priceInput.value) || 0;
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const subtotal = price * quantity;
+            subtotalDisplay.textContent = subtotal.toFixed(2);
+            itemsTotal += subtotal; // Add to the itemsTotal
+        }
+    });
+
+    // The main "Total" display in the top-right card will now ONLY show the total of the items.
+    // "Other Expenses" will not be added to this display.
+    orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(itemsTotal);
+};
 
     if (otherExpensesInput) {
         otherExpensesInput.addEventListener('input', calculateTotals);

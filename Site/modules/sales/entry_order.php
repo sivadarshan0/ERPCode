@@ -195,7 +195,7 @@ require_once __DIR__ . '/../../includes/header.php';
                              <input type="number" class="form-control" id="other_expenses" name="other_expenses" value="<?= $is_edit ? htmlspecialchars($order['other_expenses'] ?? '0.00') : '0.00' ?>" min="0.00" step="0.01">
                          </div>
                          <hr>
-                         <h3 class="text-end">Total: <span id="orderTotal"><?= $is_edit ? htmlspecialchars(number_format(($order['total_amount'] ?? 0) + ($order['other_expenses'] ?? 0), 2)) : '0.00' ?></span></h3>
+                         <h3 class="text-end">Total: <span id="orderTotal"><?= $is_edit ? htmlspecialchars(number_format($order['total_amount'], 2)) : '0.00' ?></span></h3>
                      </div>
                  </div>
             </div>
