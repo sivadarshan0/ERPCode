@@ -1146,7 +1146,7 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             $stmt_history->execute();
         }
         
-        $is_completed = ($new_status === 'Completed' && $old_status !== 'Completed');
+        $is_completed = ($new_status === 'Received' && $old_status !== 'Received');
 
         if ($is_completed) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
