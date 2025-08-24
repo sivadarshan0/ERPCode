@@ -237,7 +237,7 @@ require_once __DIR__ . '/../../includes/header.php';
         <td><input type="text" class="form-control form-control-sm uom-display" readonly tabindex="-1"></td>
         <td class="stock-col"><input type="text" class="form-control form-control-sm stock-display" readonly tabindex="-1"></td>
         <td class="cost-col"><input type="number" class="form-control form-control-sm cost-display" min="0.00" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm margin-input" name="items[margin][]" value="0" step="1"></td>
+        <td><input type="number" class="form-control form-control-sm margin-input" name="items[margin][]" value="0" step="0.01"></td>
         <td><input type="number" class="form-control form-control-sm price-input" name="items[price][]" min="0.00" step="0.01" required></td>
         <td><input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required></td>
         <td class="text-end subtotal-display fw-bold">0.00</td>
