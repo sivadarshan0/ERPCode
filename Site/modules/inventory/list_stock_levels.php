@@ -1,6 +1,6 @@
 <?php
 // File: /modules/inventory/list_stock_levels.php
-// FINAL version with cascading sub-category filter.
+// FINAL version with stock status filter.
 
 session_start();
 error_reporting(E_ALL);
@@ -21,7 +21,8 @@ if (isset($_GET['action'])) {
                 $filters = [
                     'item_name'       => $_GET['item_name'] ?? null,
                     'category_id'     => $_GET['category_id'] ?? null,
-                    'sub_category_id' => $_GET['sub_category_id'] ?? null, // Added sub-category
+                    'sub_category_id' => $_GET['sub_category_id'] ?? null,
+                    'stock_status'    => $_GET['stock_status'] ?? null, // Added stock_status
                 ];
                 echo json_encode(search_stock_levels($filters));
                 break;
@@ -68,10 +69,10 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="card-header"><i class="bi bi-search"></i> Find Stock</div>
                 <div class="card-body">
                     <form id="stockSearchForm" class="row gx-3 gy-2 align-items-center">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <input type="text" class="form-control" id="search_item_name" placeholder="Search by Item Name...">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <select id="search_category_id" class="form-select">
                                 <option value="">All Categories</option>
                                 <?php foreach ($all_categories as $category): ?>
@@ -81,10 +82,17 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <!-- ADDED: Sub-Category Filter -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <select id="search_sub_category_id" class="form-select" disabled>
                                 <option value="">All Sub-Categories</option>
+                            </select>
+                        </div>
+                        <!-- ADDED: Stock Status Filter -->
+                        <div class="col-md-3">
+                            <select id="search_stock_status" class="form-select">
+                                <option value="">All Stock Statuses</option>
+                                <option value="in_stock">In Stock</option>
+                                <option value="out_of_stock">Out of Stock</option>
                             </select>
                         </div>
                     </form>

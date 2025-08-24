@@ -300,7 +300,7 @@ function adjust_stock_level($item_id, $type, $quantity, $reason, $stock_check_ty
  * Joins items with categories, sub-categories, and stock levels.
  *
  * @param array $filters An associative array of filters. 
- *                       Keys can include 'item_name', 'category_id', 'sub_category_id'.
+ *                       Keys can include 'item_name', 'category_id', 'sub_category_id', 'stock_status'.
  * @return array The list of items with their stock levels.
  */
 function search_stock_levels($filters = []) {
@@ -334,11 +334,19 @@ function search_stock_levels($filters = []) {
         $params[] = $filters['category_id'];
         $types .= 's';
     }
-    // --- ADDED: Sub-category filter logic ---
     if (!empty($filters['sub_category_id'])) {
         $sql .= " AND cs.category_sub_id = ?";
         $params[] = $filters['sub_category_id'];
         $types .= 's';
+    }
+    
+    // --- ADDED: Stock Status filter logic ---
+    if (!empty($filters['stock_status'])) {
+        if ($filters['stock_status'] === 'in_stock') {
+            $sql .= " AND COALESCE(sl.quantity, 0) > 0";
+        } elseif ($filters['stock_status'] === 'out_of_stock') {
+            $sql .= " AND COALESCE(sl.quantity, 0) = 0";
+        }
     }
     // --- END ---
 
