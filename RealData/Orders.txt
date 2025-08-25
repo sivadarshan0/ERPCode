@@ -1,32 +1,32 @@
-ORD000001
+OK - ORD000001
 0768405673
 06/27/2025
 Bag 100 | Gift 150 | Courier 360
 Maheshwari cotton saree
 3,690.00 / 3,850.00	
 
-ORD000002
+OK - ORD000002
 0720393765 
 07/07/2025
 Bag 100
 Anuradha lining border saree
 4,466.00 / 4,700.00	
 
-ORD000003
+OK - ORD000003
 0778229530
 08/06/2025
 Bag 100 | Gift 180 | Courier 360 - BD003703299LK SLPost
 Maheshwari cotton saree
 3,690.00 / 4,150.00	
 
-ORD000004
+OK - ORD000004
 0778229530
 08/10/2025
 -
 Narayanpet cotton saree - Multiline
 - / 4,950.00	
 
-ORD000005
+OK - ORD000005
 0778229530
 09/23/2025
 -

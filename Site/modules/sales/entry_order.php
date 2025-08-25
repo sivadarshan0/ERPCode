@@ -103,6 +103,35 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
+if (isset($_GET['action'])) { // Switched to using an action parameter
+    header('Content-Type: application/json');
+    switch ($_GET['action']) {
+        case 'customer_lookup':
+            echo json_encode(search_customers_by_phone(trim($_GET['query'])));
+            break;
+        case 'item_lookup':
+            $name = trim($_GET['query']);
+            $type = $_GET['type'] ?? 'Ex-Stock';
+            echo json_encode(strlen($name) >= 2 ? ($type === 'Pre-Book' ? search_items_for_prebook($name) : search_items_for_order($name)) : []);
+            break;
+        
+        // --- ADD THIS NEW CASE ---
+        case 'get_item_stock_details':
+            $item_id = $_GET['item_id'] ?? null;
+            if ($item_id) {
+                // We can reuse the search_items_for_order function as it gets what we need
+                $items = search_items_for_order($item_id);
+                // The function returns an array, so we return the first result
+                echo json_encode($items[0] ?? null);
+            } else {
+                echo json_encode(null);
+            }
+            break;
+        // --- END NEW CASE ---
+    }
+    exit;
+}
+
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 

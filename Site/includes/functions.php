@@ -688,15 +688,15 @@ function get_order_details($order_id) {
 
 /**
  * Updates the status and details of an existing order and tracks history.
- * Now handles optional event dates for status changes.
+ * Now handles optional event dates and manual fulfillment of Pre-Book orders.
  *
  * @param string $order_id The ID of the order to update.
  * @param array $details An array of details to update (status, payment_method, etc.).
- * @param array $post_data The raw POST data, to access new event date fields.
+ * @param array $post_data The raw POST data, to access new event date and stock_type fields.
  * @return bool True on success, false on failure.
  * @throws Exception On validation or database errors.
  */
-function update_order_details($order_id, $details, $post_data) { // Added $post_data parameter
+function update_order_details($order_id, $details, $post_data) {
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
     if (empty($order_id) || !is_array($details)) throw new Exception("Invalid arguments for updating order.");
@@ -704,7 +704,7 @@ function update_order_details($order_id, $details, $post_data) { // Added $post_
     $db->begin_transaction();
     try {
         // --- Get the current state of the order from the database BEFORE updating ---
-        $stmt_check = $db->prepare("SELECT status, payment_status FROM orders WHERE order_id = ?");
+        $stmt_check = $db->prepare("SELECT status, payment_status, stock_type FROM orders WHERE order_id = ?");
         $stmt_check->bind_param("s", $order_id);
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
@@ -713,29 +713,44 @@ function update_order_details($order_id, $details, $post_data) { // Added $post_
         }
         $old_order_status = $current_state['status'];
         $old_payment_status = $current_state['payment_status'];
+        $old_stock_type = $current_state['stock_type']; // Get the old stock type
 
-        // --- Update the main order table ---
-        $stmt = $db->prepare("UPDATE orders SET status = ?, payment_method = ?, payment_status = ?, other_expenses = ?, remarks = ? WHERE order_id = ?");
-        if (!$stmt) throw new Exception("Database error: Failed to prepare statement.");
-        $stmt->bind_param("sssdss", $details['order_status'], $details['payment_method'], $details['payment_status'], $details['other_expenses'], $details['remarks'], $order_id);
+        // --- Get the NEW stock_type from the submitted form data ---
+        // We use the raw $_POST data because a disabled field might not be in $details.
+        $new_stock_type = $post_data['stock_type'] ?? $old_stock_type;
+
+        // --- NEW LOGIC: Check for manual fulfillment ---
+        $is_manual_fulfillment = ($old_stock_type === 'Pre-Book' && $new_stock_type === 'Ex-Stock');
+        
+        // Update the main order table, now including stock_type
+        $stmt = $db->prepare("UPDATE orders SET status = ?, payment_method = ?, payment_status = ?, other_expenses = ?, remarks = ?, stock_type = ? WHERE order_id = ?");
+        if (!$stmt) throw new Exception("Database error: Failed to prepare statement for order update.");
+        $stmt->bind_param("sssdsss", $details['order_status'], $details['payment_method'], $details['payment_status'], $details['other_expenses'], $details['remarks'], $new_stock_type, $order_id);
         $stmt->execute();
+        
+        // If it was a manual fulfillment, deduct the stock now
+        if ($is_manual_fulfillment) {
+            $stmt_items = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
+            if (!$stmt_items) throw new Exception("DB prepare failed for fetching order items.");
+            $stmt_items->bind_param("s", $order_id);
+            $stmt_items->execute();
+            $items_to_deduct = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
 
-        // --- Create history records ONLY if the status has actually changed ---
+            foreach ($items_to_deduct as $item) {
+                $stock_reason = "Manually fulfilled from Pre-Book for Order #" . $order_id;
+                adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
+            }
+        }
+
+        // --- History logging logic remains the same ---
         if ($old_order_status !== $details['order_status']) {
-            // Get the event date from POST data, default to NULL if not set or empty
             $order_event_date = !empty($post_data['order_status_event_date']) ? $post_data['order_status_event_date'] : null;
-            
-            // MODIFIED: Added the new event_date column to the INSERT statement
             $stmt_history = $db->prepare("INSERT INTO order_status_history (order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
             $stmt_history->bind_param("sssis", $order_id, $details['order_status'], $order_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_history->execute();
         }
-        
         if ($old_payment_status !== $details['payment_status']) {
-            // Get the event date from POST data, default to NULL if not set or empty
             $payment_event_date = !empty($post_data['payment_status_event_date']) ? $post_data['payment_status_event_date'] : null;
-            
-            // MODIFIED: Added the new event_date column to the INSERT statement
             $stmt_payment_history = $db->prepare("INSERT INTO payment_status_history (order_id, payment_status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
             $stmt_payment_history->bind_param("sssis", $order_id, $details['payment_status'], $payment_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_payment_history->execute();
