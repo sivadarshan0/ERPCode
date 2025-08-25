@@ -490,18 +490,30 @@ function initOrderEntry() {
                                     const marginInput = row.querySelector('.margin-input');
                                     const priceInput = row.querySelector('.price-input');
                                     
+                                    // Step 1: Update the stock display. This is correct.
                                     if(stockDisplay) stockDisplay.value = details.stock_on_hand;
                                     
+                                    // Step 2: Get the new, real cost from the fetched details. This is correct.
                                     const cost = parseFloat(details.last_cost) || 0;
+
+                                    // Step 3: Update the hidden and visible cost fields. This is correct.
                                     if(costInput) costInput.value = cost.toFixed(2);
                                     if(costDisplay) costDisplay.value = cost.toFixed(2);
                                     
+                                    // Step 4: Get the Sell Price that is ALREADY in the price input field. This is correct.
                                     const price = parseFloat(priceInput.value) || 0;
+
+                                    // Step 5: CORRECTED Margin Calculation Logic.
+                                    // We use the 'cost' and 'price' variables we just defined.
                                     if (cost > 0 && price > 0) {
-                                        if(marginInput) marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
+                                        // Formula: Margin % = ((Sell Price / Cost Price) - 1) * 100
+                                        const newMargin = ((price / cost) - 1) * 100;
+                                        if (marginInput) marginInput.value = newMargin.toFixed(2);
                                     } else {
-                                        if(marginInput) marginInput.value = '0.00';
+                                        if (marginInput) marginInput.value = '0.00';
                                     }
+
+                                    // Step 6: Re-validate the stock warning. This is correct.
                                     validateRowStock(row);
                                 }
                             })
