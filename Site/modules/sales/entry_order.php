@@ -238,20 +238,22 @@ require_once __DIR__ . '/../../includes/header.php';
                     <?php if ($is_edit && !empty($order['items'])): ?>
                         <?php foreach ($order['items'] as $item): ?>
                             <tr class="order-item-row">
-                                <!-- This now includes the hidden input with the item ID -->
                                 <td>
                                     <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
                                     <?= htmlspecialchars($item['item_name']) ?>
                                 </td>
                                 <td><input type="text" class="form-control-plaintext form-control-sm uom-display" value="<?= htmlspecialchars($item['uom']) ?>" readonly></td>
-                                <td class="stock-col"><input type="text" class="form-control-plaintext form-control-sm stock-display" value="<?= htmlspecialchars($item['stock_on_hand']) ?>" readonly></td>
+                                <td class="stock-col"><input type="text" class="form-control-plaintext form-control-sm stock-display" value="<?= htmlspecialchars(number_format($item['stock_on_hand'], 2)) ?>" readonly></td>
                                 <td class="cost-col">
                                     <input type="hidden" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
                                     <input type="text" class="form-control-plaintext form-control-sm cost-display" value="<?= htmlspecialchars(number_format($item['cost_price'], 2)) ?>" readonly>
                                 </td>
                                 <td><input type="text" class="form-control-plaintext form-control-sm margin-input" value="<?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?>" readonly></td>
-                                <td><input type="text" class="form-control-plaintext form-control-sm price-input" value="<?= htmlspecialchars(number_format($item['price'], 2)) ?>" readonly></td>
-                                <td><input type="text" class="form-control-plaintext form-control-sm quantity-input" value="<?= htmlspecialchars($item['quantity']) ?>" readonly></td>
+                                <td>
+                                    <!-- THE FIX: The 'value' attribute must not have commas -->
+                                    <input type="text" class="form-control-plaintext form-control-sm price-input" value="<?= htmlspecialchars($item['price']) ?>" readonly>
+                                </td>
+                                <td><input type="text" class="form-control-plaintext form-control-sm quantity-input" value="<?= htmlspecialchars(number_format($item['quantity'], 2)) ?>" readonly></td>
                                 <td class="text-end fw-bold subtotal-display"><?= htmlspecialchars(number_format($item['quantity'] * $item['price'], 2)) ?></td>
                             </tr>
                         <?php endforeach; ?>
