@@ -317,7 +317,6 @@ function initGrnEntry() {
 }
 
 // ───── Order Entry Handler ─────
-// ───── Order Entry Handler ─────
 function initOrderEntry() {
     const form = document.getElementById('orderForm');
     if (!form) return;
@@ -485,6 +484,7 @@ function initOrderEntry() {
                         fetch(`/modules/sales/entry_order.php?action=get_item_stock_details&item_id=${itemId}`)
                             .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch item details'))
                             .then(details => {
+                                console.log('Received item details:', details); 
                                 if (details) {
                                     const stockDisplay = row.querySelector('.stock-display');
                                     const costDisplay = row.querySelector('.cost-display');
