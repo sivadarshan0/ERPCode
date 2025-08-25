@@ -1148,6 +1148,12 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         
         $is_completed = ($new_status === 'Received' && $old_status !== 'Received');
 
+        // ADD THESE THREE LINES:
+        var_dump("Old Status: " . $old_status);
+        var_dump("New Status: " . $new_status);
+        var_dump("Is Completed Triggered: " . $is_completed);
+        die(); // This stops the script and shows us the values.
+
         if ($is_completed) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
