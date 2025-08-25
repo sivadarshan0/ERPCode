@@ -254,6 +254,35 @@ function search_items_by_name($name) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
+/**
+ * Gets the latest stock and cost details for a single item.
+ *
+ * @param string $item_id The exact ID of the item to look up.
+ * @return array|null The item details or null if not found.
+ */
+function get_item_stock_details($item_id) {
+    $db = db();
+    if (!$db || empty($item_id)) return null;
+
+    // This query is optimized for a single, exact item ID lookup.
+    $stmt = $db->prepare("
+        SELECT 
+            i.item_id, 
+            COALESCE(sl.quantity, 0.00) AS stock_on_hand,
+            (SELECT gi.cost FROM grn_items gi WHERE gi.item_id = i.item_id ORDER BY gi.grn_item_id DESC LIMIT 1) as last_cost
+        FROM items i
+        LEFT JOIN stock_levels sl ON i.item_id = sl.item_id
+        WHERE i.item_id = ?
+        LIMIT 1
+    ");
+    if (!$stmt) return null;
+
+    $stmt->bind_param("s", $item_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_assoc() : null;
+}
+
 // -----------------------------------------
 // ----- Stock Management Functions -----
 // -----------------------------------------

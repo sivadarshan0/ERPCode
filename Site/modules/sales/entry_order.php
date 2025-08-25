@@ -118,14 +118,8 @@ if (isset($_GET['action'])) { // Switched to using an action parameter
         // --- ADD THIS NEW CASE ---
         case 'get_item_stock_details':
             $item_id = $_GET['item_id'] ?? null;
-            if ($item_id) {
-                // We can reuse the search_items_for_order function as it gets what we need
-                $items = search_items_for_order($item_id);
-                // The function returns an array, so we return the first result
-                echo json_encode($items[0] ?? null);
-            } else {
-                echo json_encode(null);
-            }
+            // This now calls our new, optimized function
+            echo json_encode(get_item_stock_details($item_id)); 
             break;
         // --- END NEW CASE ---
     }
