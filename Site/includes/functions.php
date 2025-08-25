@@ -495,7 +495,9 @@ function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_na
     }
 }
 
-*
+/**
+ * Retrieves a single, complete GRN with its items for viewing.
+ *
  * @param string $grn_id The ID of the GRN to fetch.
  * @return array|false The complete GRN data, or false if not found.
  */
