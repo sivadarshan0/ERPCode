@@ -495,6 +495,38 @@ function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_na
     }
 }
 
+*
+ * @param string $grn_id The ID of the GRN to fetch.
+ * @return array|false The complete GRN data, or false if not found.
+ */
+function get_grn_details($grn_id) {
+    $db = db();
+    if (!$db) return false;
+
+    // 1. Get the main GRN details
+    $stmt_grn = $db->prepare("SELECT * FROM grn WHERE grn_id = ?");
+    $stmt_grn->bind_param("s", $grn_id);
+    $stmt_grn->execute();
+    $grn = $stmt_grn->get_result()->fetch_assoc();
+
+    if (!$grn) {
+        return false; // GRN not found
+    }
+
+    // 2. Get all line items for the GRN
+    $stmt_items = $db->prepare("
+        SELECT gi.*, i.name as item_name 
+        FROM grn_items gi 
+        JOIN items i ON gi.item_id = i.item_id 
+        WHERE gi.grn_id = ?
+    ");
+    $stmt_items->bind_param("s", $grn_id);
+    $stmt_items->execute();
+    $grn['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    return $grn;
+}
+
 // -----------------------------------------
 // ----- Sales Order Functions -----
 // -----------------------------------------
