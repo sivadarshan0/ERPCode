@@ -413,7 +413,7 @@ function initOrderEntry() {
         }
     }
 
-    // --- LOGIC FOR CREATE MODE ---
+    // --- LOGIC FOR CREATE MODE (Customer Search, Add Row Button, etc.) ---
     if (!isEditMode) {
         if (customerSearchInput) {
             const doCustomerLookup = debounce(() => {
@@ -477,14 +477,18 @@ function initOrderEntry() {
             if (isEditMode) {
                 if (stockTypeSelect.value === 'Ex-Stock') {
                     itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                        const itemIdInput = row.querySelector('input[name="items[id][]"]');
-                        if (!itemIdInput || !itemIdInput.value) return;
-                        const itemId = itemIdInput.value;
+                        // In edit mode, the item ID is already in a hidden input from the PHP render
+                        const itemId = row.querySelector('input[name="items[id][]"]')?.value;
+                        if (!itemId) { // Find item id from rendered html if hidden input not present
+                           const hiddenInput = Array.from(row.querySelectorAll('input[type="hidden"]')).find(inp => inp.name.includes('items[id]'));
+                           if(hiddenInput) itemId = hiddenInput.value;
+                        }
+                        if (!itemId) return; // Skip if no item ID is found
 
                         fetch(`/modules/sales/entry_order.php?action=get_item_stock_details&item_id=${itemId}`)
                             .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch item details'))
                             .then(details => {
-                                console.log('Received item details:', details); 
+                                console.log('Received item details:', details); // DEBUG LINE
                                 if (details) {
                                     const stockDisplay = row.querySelector('.stock-display');
                                     const costDisplay = row.querySelector('.cost-display');
@@ -500,9 +504,9 @@ function initOrderEntry() {
                                     
                                     const price = parseFloat(priceInput.value) || 0;
                                     if (cost > 0 && price > 0) {
-                                        marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
+                                        if(marginInput) marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
                                     } else {
-                                        marginInput.value = '0.00';
+                                        if(marginInput) marginInput.value = '0.00';
                                     }
                                     validateRowStock(row);
                                 }
