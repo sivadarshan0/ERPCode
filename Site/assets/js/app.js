@@ -337,7 +337,7 @@ function initOrderEntry() {
     const paymentStatusSelect = document.getElementById('payment_status');
 
     const toggleRowFields = () => {
-        if (!stockTypeSelect) return;
+        if (!stockTypeSelect || !itemRowsContainer) return;
         const isPreBook = stockTypeSelect.value === 'Pre-Book';
         const stockHeader = form.querySelector('th.stock-col');
         if (stockHeader) { stockHeader.classList.toggle('d-none', isPreBook); }
@@ -352,7 +352,7 @@ function initOrderEntry() {
     };
 
     const validateRowStock = (row) => {
-        if (!stockTypeSelect) return;
+        if (!stockTypeSelect || !row) return;
         const stockType = stockTypeSelect.value;
         const stockWarning = row.querySelector('.stock-warning');
         if (!stockWarning) return;
@@ -471,16 +471,14 @@ function initOrderEntry() {
     
     // --- EVENT LISTENERS THAT RUN IN BOTH CREATE AND EDIT MODE ---
     
-    // Handler for changing stock type
     if (stockTypeSelect) {
         stockTypeSelect.addEventListener('change', () => {
-            toggleRowFields(); // Always toggle column visibility
+            toggleRowFields();
 
             if (isEditMode) {
-                // In EDIT mode, if switching to Ex-Stock, fetch live data
                 if (stockTypeSelect.value === 'Ex-Stock') {
                     itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                        const itemIdInput = row.querySelector('.item-id-input');
+                        const itemIdInput = row.querySelector('input[name="items[id][]"]');
                         if (!itemIdInput || !itemIdInput.value) return;
                         const itemId = itemIdInput.value;
 
@@ -513,7 +511,6 @@ function initOrderEntry() {
                     });
                 }
             } else {
-                // In CREATE mode, changing stock type is a destructive reset of all rows
                 itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
                     row.querySelector('.item-search-input').value = '';
                     row.querySelector('.item-id-input').value = '';
@@ -531,7 +528,6 @@ function initOrderEntry() {
         });
     }
 
-    // General event listeners for the item rows container
     if (itemRowsContainer) {
         itemRowsContainer.addEventListener('click', e => {
             if (!isEditMode && e.target.closest('.remove-item-row')) {
@@ -541,7 +537,7 @@ function initOrderEntry() {
         });
         
         itemRowsContainer.addEventListener('input', e => {
-            if (isEditMode) return; // Disable live-editing of rows in edit mode
+            if (isEditMode) return;
             const row = e.target.closest('.order-item-row');
             if (!row) return;
 
@@ -620,7 +616,21 @@ function initOrderEntry() {
     }
 
     if (form && !isEditMode) {
-        form.addEventListener('keydown', (e) => { /* ... unchanged tab logic ... */ });
+        form.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab') return;
+            const activeElement = document.activeElement;
+            if (activeElement === otherExpensesInput) {
+                const firstItemInput = itemRowsContainer?.querySelector('.item-search-input');
+                if (firstItemInput) { e.preventDefault(); firstItemInput.focus(); }
+                return;
+            }
+            if (addRowBtn) {
+                const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
+                const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
+                if (activeElement === lastQuantityInput) { e.preventDefault(); addRowBtn.focus(); }
+                if (activeElement === addRowBtn) { e.preventDefault(); createOrderBtn.focus(); }
+            }
+        });
     }
 
     // Initial setup on page load

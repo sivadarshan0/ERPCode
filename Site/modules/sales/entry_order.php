@@ -103,25 +103,31 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-if (isset($_GET['action'])) { // Switched to using an action parameter
+if (isset($_GET['action'])) {
     header('Content-Type: application/json');
-    switch ($_GET['action']) {
-        case 'customer_lookup':
-            echo json_encode(search_customers_by_phone(trim($_GET['query'])));
-            break;
-        case 'item_lookup':
-            $name = trim($_GET['query']);
-            $type = $_GET['type'] ?? 'Ex-Stock';
-            echo json_encode(strlen($name) >= 2 ? ($type === 'Pre-Book' ? search_items_for_prebook($name) : search_items_for_order($name)) : []);
-            break;
-        
-        // --- ADD THIS NEW CASE ---
-        case 'get_item_stock_details':
-            $item_id = $_GET['item_id'] ?? null;
-            // This now calls our new, optimized function
-            echo json_encode(get_item_stock_details($item_id)); 
-            break;
-        // --- END NEW CASE ---
+    try {
+        switch ($_GET['action']) {
+            case 'customer_lookup':
+                echo json_encode(search_customers_by_phone(trim($_GET['query'] ?? '')));
+                break;
+
+            case 'item_lookup':
+                $name = trim($_GET['query'] ?? '');
+                $type = $_GET['type'] ?? 'Ex-Stock';
+                echo json_encode(strlen($name) >= 2 ? ($type === 'Pre-Book' ? search_items_for_prebook($name) : search_items_for_order($name)) : []);
+                break;
+            
+            // --- ADD THIS NEW CASE ---
+            case 'get_item_stock_details':
+                $item_id = $_GET['item_id'] ?? null;
+                // We will create this new function in the next step
+                echo json_encode(get_item_stock_details($item_id)); 
+                break;
+            // --- END NEW CASE ---
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
     }
     exit;
 }

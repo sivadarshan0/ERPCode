@@ -255,7 +255,7 @@ function search_items_by_name($name) {
 }
 
 /**
- * Gets the latest stock and cost details for a single item.
+ * Gets the latest stock and cost details for a single item ID.
  *
  * @param string $item_id The exact ID of the item to look up.
  * @return array|null The item details or null if not found.
@@ -264,12 +264,18 @@ function get_item_stock_details($item_id) {
     $db = db();
     if (!$db || empty($item_id)) return null;
 
-    // This query is optimized for a single, exact item ID lookup.
     $stmt = $db->prepare("
         SELECT 
             i.item_id, 
             COALESCE(sl.quantity, 0.00) AS stock_on_hand,
-            (SELECT gi.cost FROM grn_items gi WHERE gi.item_id = i.item_id ORDER BY gi.grn_item_id DESC LIMIT 1) as last_cost
+            (
+                SELECT gi.cost 
+                FROM grn_items gi
+                JOIN grn g ON gi.grn_id = g.grn_id
+                WHERE gi.item_id = i.item_id 
+                ORDER BY g.grn_date DESC, gi.grn_item_id DESC 
+                LIMIT 1
+            ) as last_cost
         FROM items i
         LEFT JOIN stock_levels sl ON i.item_id = sl.item_id
         WHERE i.item_id = ?
@@ -779,7 +785,8 @@ function update_order_details($order_id, $details, $post_data) {
         $old_stock_type = $current_state['stock_type']; // Get the old stock type
 
         // --- Get the NEW stock_type from the submitted form data ---
-        // We use the raw $_POST data because a disabled field might not be in $details.
+        // This is needed because the field is disabled in the UI but we still need its value.
+        // We can safely take it from $post_data or fallback to the old value if not submitted.
         $new_stock_type = $post_data['stock_type'] ?? $old_stock_type;
 
         // --- NEW LOGIC: Check for manual fulfillment ---
