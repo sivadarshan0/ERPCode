@@ -233,18 +233,31 @@ require_once __DIR__ . '/../../includes/header.php';
         <!-- Items Section -->
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><?php if (!$is_edit): ?><button type="button" class="btn btn-sm btn-success" id="addItemRow"><i class="bi bi-plus-circle"></i> Add Item</button><?php endif; ?></div>
-            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead><tbody id="orderItemRows"><?php if ($is_edit && !empty($order['items'])): ?><?php foreach ($order['items'] as $item): ?>
-                <tr class="order-item-row">
-                    <td><?= htmlspecialchars($item['item_name']) ?></td>
-                    <td><?= htmlspecialchars($item['uom']) ?></td>
-                    <td class="stock-col"><?= htmlspecialchars($item['stock_on_hand']) ?></td>
-                    <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
-                    <td><?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?></td>
-                    <td><?= htmlspecialchars(number_format($item['price'], 2)) ?></td>
-                    <td><?= htmlspecialchars($item['quantity']) ?></td>
-                    <td class="text-end fw-bold"><?= htmlspecialchars(number_format($item['quantity'] * $item['price'], 2)) ?></td>
-                </tr>
-            <?php endforeach; ?><?php endif; ?></tbody><?php if($is_edit): ?><tfoot><tr><th colspan="7" class="text-end border-0">Items Total:</th><th class="text-end border-0"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></th></tr></tfoot><?php endif; ?></table></div></div>
+            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead>
+               <tbody id="orderItemRows">
+                    <?php if ($is_edit && !empty($order['items'])): ?>
+                        <?php foreach ($order['items'] as $item): ?>
+                            <tr class="order-item-row">
+                                <!-- This now includes the hidden input with the item ID -->
+                                <td>
+                                    <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
+                                    <?= htmlspecialchars($item['item_name']) ?>
+                                </td>
+                                <td><input type="text" class="form-control-plaintext form-control-sm uom-display" value="<?= htmlspecialchars($item['uom']) ?>" readonly></td>
+                                <td class="stock-col"><input type="text" class="form-control-plaintext form-control-sm stock-display" value="<?= htmlspecialchars($item['stock_on_hand']) ?>" readonly></td>
+                                <td class="cost-col">
+                                    <input type="hidden" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
+                                    <input type="text" class="form-control-plaintext form-control-sm cost-display" value="<?= htmlspecialchars(number_format($item['cost_price'], 2)) ?>" readonly>
+                                </td>
+                                <td><input type="text" class="form-control-plaintext form-control-sm margin-input" value="<?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?>" readonly></td>
+                                <td><input type="text" class="form-control-plaintext form-control-sm price-input" value="<?= htmlspecialchars(number_format($item['price'], 2)) ?>" readonly></td>
+                                <td><input type="text" class="form-control-plaintext form-control-sm quantity-input" value="<?= htmlspecialchars($item['quantity']) ?>" readonly></td>
+                                <td class="text-end fw-bold subtotal-display"><?= htmlspecialchars(number_format($item['quantity'] * $item['price'], 2)) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody> 
+            <?php if($is_edit): ?><tfoot><tr><th colspan="7" class="text-end border-0">Items Total:</th><th class="text-end border-0"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></th></tr></tfoot><?php endif; ?></table></div></div>
         </div>
         
         <!-- History Sections -->

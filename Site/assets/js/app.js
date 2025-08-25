@@ -477,18 +477,12 @@ function initOrderEntry() {
             if (isEditMode) {
                 if (stockTypeSelect.value === 'Ex-Stock') {
                     itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                        // In edit mode, the item ID is already in a hidden input from the PHP render
-                        const itemId = row.querySelector('input[name="items[id][]"]')?.value;
-                        if (!itemId) { // Find item id from rendered html if hidden input not present
-                           const hiddenInput = Array.from(row.querySelectorAll('input[type="hidden"]')).find(inp => inp.name.includes('items[id]'));
-                           if(hiddenInput) itemId = hiddenInput.value;
-                        }
-                        if (!itemId) return; // Skip if no item ID is found
+                        const itemId = row.querySelector('.item-id-input')?.value;
+                        if (!itemId) return;
 
                         fetch(`/modules/sales/entry_order.php?action=get_item_stock_details&item_id=${itemId}`)
                             .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch item details'))
                             .then(details => {
-                                console.log('Received item details:', details); // DEBUG LINE
                                 if (details) {
                                     const stockDisplay = row.querySelector('.stock-display');
                                     const costDisplay = row.querySelector('.cost-display');
