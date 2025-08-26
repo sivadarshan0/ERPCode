@@ -1287,15 +1287,16 @@ function get_purchase_order_details($purchase_order_id) {
 
 /**
  * Updates the status and details of an existing PO and tracks history.
- * Now handles optional event dates for status changes.
+ * - Handles automation when status is set to 'Received'.
+ * - NEW: Handles all logic and validation when status is set to 'Canceled'.
  *
  * @param string $purchase_order_id The ID of the PO to update.
- * @param array $details An array of details to update (status, supplier_name, remarks).
- * @param array $post_data The raw POST data to access the new event date field.
+ * @param array $details An array of details to update.
+ * @param array $post_data The raw POST data.
  * @return array An array containing a success boolean and a feedback message.
  * @throws Exception On validation or database errors.
  */
-function update_purchase_order_details($purchase_order_id, $details, $post_data) { // Added $post_data
+function update_purchase_order_details($purchase_order_id, $details, $post_data) {
     $db = db();
     if (!$db) throw new Exception("Database connection failed.");
 
@@ -1303,7 +1304,7 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
     $db->begin_transaction();
     try {
-        $stmt_check = $db->prepare("SELECT status, linked_sales_order_id FROM purchase_orders WHERE purchase_order_id = ?");
+        $stmt_check = $db->prepare("SELECT status, linked_sales_order_id FROM purchase_orders WHERE purchase_order_id = ? FOR UPDATE");
         $stmt_check->bind_param("s", $purchase_order_id);
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
@@ -1314,23 +1315,48 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         $new_status = $details['status'];
         $linked_order_id = $current_state['linked_sales_order_id'];
 
+        // --- DEFINE EVENT TRIGGERS ---
+        $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
+        $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
+
+        // --- CANCELLATION LOGIC AND VALIDATION ---
+        if ($is_cancellation_event) {
+            // CRITICAL VALIDATION: Check if this PO has already been received.
+            if (in_array($old_status, ['Received', 'Completed'])) {
+                throw new Exception("Cannot cancel this PO because its status is '$old_status'. Please cancel the corresponding GRN first to reverse the stock.");
+            }
+
+            // If a sales order is linked, revert its status.
+            if (!empty($linked_order_id)) {
+                $new_so_status = 'Awaiting Stock';
+                $history_remark = "Fulfillment reverted: Linked PO #$purchase_order_id was canceled.";
+                
+                $stmt_so_update = $db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
+                $stmt_so_update->bind_param("ss", $new_so_status, $linked_order_id);
+                $stmt_so_update->execute();
+                
+                $stmt_so_history = $db->prepare("INSERT INTO order_status_history (order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+                $stmt_so_history->bind_param("sssis", $linked_order_id, $new_so_status, $history_remark, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
+                $stmt_so_history->execute();
+
+                $feedback_message .= " Linked Sales Order #$linked_order_id was reverted to 'Awaiting Stock'.";
+            }
+        }
+
+        // --- UPDATE THE PO STATUS (for all cases) ---
         $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
         $stmt->bind_param("ssss", $new_status, $details['supplier_name'], $details['remarks'], $purchase_order_id);
         $stmt->execute();
 
         if ($old_status !== $new_status) {
-            // Get the event date from POST data, default to NULL if not set or empty
             $po_event_date = !empty($post_data['po_status_event_date']) ? $post_data['po_status_event_date'] : null;
-            
-            // MODIFIED: Added the new event_date column to the INSERT statement
             $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
             $stmt_history->bind_param("sssis", $purchase_order_id, $new_status, $po_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_history->execute();
         }
         
-        $is_completed = ($new_status === 'Received' && $old_status !== 'Received');
-
-        if ($is_completed) {
+        // --- AUTOMATION LOGIC for Receiving ---
+        if ($is_receiving_event) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
 
