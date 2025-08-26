@@ -1131,7 +1131,7 @@ function search_open_pre_orders($query) {
           AND (o.order_id LIKE ? OR c.name LIKE ?)
         ORDER BY o.order_date DESC
         LIMIT 10
-    ");
+    ") or die($db->error);
     $stmt->bind_param("ss", $search_term, $search_term);
     $stmt->execute();
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
