@@ -919,6 +919,7 @@ function initGrnList() {
 
     const tableBody = document.getElementById('grnListTableBody');
     const grnIdInput = document.getElementById('search_grn_id');
+    const statusInput = document.getElementById('search_status'); // ADDED: Status input
     const dateRangeInput = document.getElementById('search_date_range');
 
     const picker = new Litepicker({
@@ -935,7 +936,14 @@ function initGrnList() {
 
     const doGrnSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
-        if (grnIdInput.value) { params.set('grn_id', grnIdInput.value); }
+
+        if (grnIdInput.value) {
+            params.set('grn_id', grnIdInput.value);
+        }
+        // ADDED: Read value from status dropdown
+        if (statusInput.value) {
+            params.set('status', statusInput.value);
+        }
         if (picker.getStartDate() && picker.getEndDate()) {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
@@ -946,15 +954,23 @@ function initGrnList() {
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No GRNs found matching your criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No GRNs found matching your criteria.</td></tr>`; // Colspan updated
                     return;
                 }
                 data.forEach(grn => {
                     const tr = document.createElement('tr');
+                    // ADDED: Logic for status badge color
+                    const statusClass = grn.status === 'Posted' ? 'bg-success' : 'bg-danger';
+                    
                     tr.innerHTML = `
                         <td>${escapeHtml(grn.grn_id)}</td>
                         <td>${new Date(grn.grn_date + 'T00:00:00').toLocaleDateString('en-GB')}</td>
                         <td>${escapeHtml(grn.remarks)}</td>
+                        <td>
+                            <span class="badge ${statusClass}">
+                                ${escapeHtml(grn.status)}
+                            </span>
+                        </td>
                         <td>${escapeHtml(grn.created_by_name)}</td>
                         <td>
                             <a href="/modules/purchase/entry_grn.php?grn_id=${escapeHtml(grn.grn_id)}" class="btn btn-sm btn-outline-primary">
@@ -967,11 +983,13 @@ function initGrnList() {
             })
             .catch(error => {
                 console.error('[GrnSearch] Error:', error);
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load search results.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Failed to load search results.</td></tr>`; // Colspan updated
             });
     }, 300);
 
+    // Attach event listeners to all filter inputs
     grnIdInput.addEventListener('input', doGrnSearch);
+    statusInput.addEventListener('change', doGrnSearch); // ADDED: Event listener for status
 }
 
 // -----------------------------------------

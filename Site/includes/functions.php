@@ -1115,8 +1115,9 @@ function search_open_pre_orders($query) {
 
 /**
  * Searches for GRNs based on various criteria.
+ * Now includes the status field and allows filtering by status.
  *
- * @param array $filters An associative array of filters (e.g., ['grn_id' => 'GRN001', 'date_from' => 'Y-m-d', 'date_to' => 'Y-m-d']).
+ * @param array $filters An associative array of filters (e.g., ['grn_id' => 'GRN001', 'status' => 'Posted']).
  * @return array An array of matching GRNs.
  */
 function search_grns($filters = []) {
@@ -1128,7 +1129,8 @@ function search_grns($filters = []) {
             g.grn_id,
             g.grn_date,
             g.remarks,
-            g.created_by_name
+            g.created_by_name,
+            g.status -- ADDED: Select the new status column
         FROM grn g
         WHERE 1=1
     ";
@@ -1142,6 +1144,14 @@ function search_grns($filters = []) {
         $params[] = '%' . $filters['grn_id'] . '%';
         $types .= 's';
     }
+
+    // --- NEW: Add logic for the status filter ---
+    if (!empty($filters['status'])) {
+        $sql .= " AND g.status = ?";
+        $params[] = $filters['status'];
+        $types .= 's';
+    }
+    // --- END NEW ---
 
     // Filter by Date Range
     if (!empty($filters['date_from'])) {
@@ -1159,7 +1169,6 @@ function search_grns($filters = []) {
     
     $stmt = $db->prepare($sql);
     if (!$stmt) {
-        // Log error and return empty array
         error_log("GRN Search Prepare Failed: " . $db->error);
         return [];
     }

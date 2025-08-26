@@ -1,6 +1,6 @@
 <?php
 // File: /modules/purchase/list_grns.php
-// Page to search and list all Goods Received Notes.
+// FINAL version with Status column and filter.
 
 session_start();
 error_reporting(E_ALL);
@@ -18,6 +18,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
     try {
         $filters = [
             'grn_id'    => $_GET['grn_id'] ?? null,
+            'status'    => $_GET['status'] ?? null, // ADDED: Status filter
             'date_from' => $_GET['date_from'] ?? null,
             'date_to'   => $_GET['date_to'] ?? null,
         ];
@@ -59,11 +60,17 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="card-body">
                     <form id="grnSearchForm" class="row gx-3 gy-2 align-items-center">
                         <div class="col-md-4">
-                            <label for="search_grn_id" class="visually-hidden">GRN ID</label>
                             <input type="text" class="form-control" id="search_grn_id" placeholder="Search by GRN ID...">
                         </div>
+                        <!-- NEW: Status Filter Dropdown -->
                         <div class="col-md-4">
-                             <label for="search_date_range" class="visually-hidden">Date Range</label>
+                            <select id="search_status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="Posted">Posted</option>
+                                <option value="Canceled">Canceled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <input type="text" class="form-control" id="search_date_range" placeholder="Select Date Range">
                         </div>
                     </form>
@@ -80,19 +87,26 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <th>GRN ID</th>
                                     <th>Date</th>
                                     <th>Remarks</th>
+                                    <th>Status</th> <!-- NEW: Column Header -->
                                     <th>Created By</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="grnListTableBody">
                                 <?php if (empty($initial_grns)): ?>
-                                    <tr><td colspan="5" class="text-center text-muted">No GRNs found.</td></tr>
+                                    <tr><td colspan="6" class="text-center text-muted">No GRNs found.</td></tr> <!-- Colspan updated -->
                                 <?php else: ?>
                                     <?php foreach ($initial_grns as $grn): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($grn['grn_id']) ?></td>
                                             <td><?= htmlspecialchars(date("d-m-Y", strtotime($grn['grn_date']))) ?></td>
                                             <td><?= htmlspecialchars($grn['remarks']) ?></td>
+                                            <!-- NEW: Status Badge Display -->
+                                            <td>
+                                                <span class="badge bg-<?= $grn['status'] == 'Posted' ? 'success' : 'danger' ?>">
+                                                    <?= htmlspecialchars($grn['status']) ?>
+                                                </span>
+                                            </td>
                                             <td><?= htmlspecialchars($grn['created_by_name']) ?></td>
                                             <td>
                                                 <a href="/modules/purchase/entry_grn.php?grn_id=<?= htmlspecialchars($grn['grn_id']) ?>" class="btn btn-sm btn-outline-primary">
