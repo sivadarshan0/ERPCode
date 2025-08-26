@@ -12,13 +12,39 @@ require_once __DIR__ . '/../../includes/functions.php';
 
 require_login();
 
-// --- AJAX Endpoint for Item Search ---
-if (isset($_GET['item_lookup'])) {
+// --- AJAX Endpoints ---
+if (isset($_GET['action'])) {
     header('Content-Type: application/json');
     try {
-        $name = trim($_GET['item_lookup']);
-        echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
-    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
+        switch ($_GET['action']) {
+            case 'item_lookup':
+                $name = trim($_GET['query'] ?? '');
+                echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
+                break;
+
+            // --- NEW CASE FOR CANCELLATION ---
+            case 'cancel_grn':
+                // Cancellation must be a POST request for security
+                if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                    throw new Exception('Invalid request method.');
+                }
+                $grn_id = $_POST['grn_id'] ?? null;
+                if (!$grn_id) {
+                    throw new Exception('GRN ID is missing.');
+                }
+                
+                // Call the backend function
+                cancel_grn($grn_id);
+                
+                // If it succeeds, send back a success response
+                echo json_encode(['success' => true, 'message' => "GRN #$grn_id has been successfully canceled and stock reversed."]);
+                break;
+            // --- END NEW CASE ---
+        }
+    } catch (Exception $e) { 
+        http_response_code(400); // Use 400 for a client-side or data error
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]); 
+    }
     exit;
 }
 
@@ -156,13 +182,25 @@ require_once __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
 
-                <div class="col-12 mt-4">
+                <div class="col-12 mt-4 d-flex justify-content-between align-items-center">
+                <div>
                     <?php if (!$is_view_mode): ?>
                         <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save GRN & Update Stock</button>
                     <?php endif; ?>
                     <a href="/modules/purchase/list_grns.php" class="btn btn-secondary">GRN List</a>
                     <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
                 </div>
+
+                <!-- NEW "Cancel GRN" BUTTON BLOCK -->
+                <div>
+                    <?php if ($is_view_mode && $grn['status'] === 'Posted'): ?>
+                        <button type="button" class="btn btn-danger" id="cancelGrnBtn" data-grn-id="<?= htmlspecialchars($grn['grn_id']) ?>">
+                            <i class="bi bi-x-circle"></i> Cancel GRN
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <!-- END NEW BLOCK -->
+            </div>
             </form>
         </main>
     </div>

@@ -502,6 +502,71 @@ function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_na
 }
 
 /**
+ * Cancels a GRN and reverses the stock adjustments.
+ * This function performs all actions within a single database transaction.
+ *
+ * @param string $grn_id The ID of the GRN to cancel.
+ * @return bool True on success.
+ * @throws Exception On failure, including if stock would go negative.
+ */
+function cancel_grn($grn_id) {
+    $db = db();
+    if (!$db) throw new Exception("Database connection failed.");
+
+    $db->begin_transaction();
+    try {
+        // Step 1: Lock the GRN row and verify its status is 'Posted'
+        $stmt_check = $db->prepare("SELECT status FROM grn WHERE grn_id = ? FOR UPDATE");
+        if (!$stmt_check) throw new Exception("DB prepare failed for GRN status check.");
+        $stmt_check->bind_param("s", $grn_id);
+        $stmt_check->execute();
+        $grn = $stmt_check->get_result()->fetch_assoc();
+
+        if (!$grn) {
+            throw new Exception("GRN #$grn_id not found.");
+        }
+        if ($grn['status'] !== 'Posted') {
+            throw new Exception("This GRN cannot be canceled because its status is not 'Posted'.");
+        }
+
+        // Step 2: Fetch all items that were on this GRN
+        $stmt_items = $db->prepare("SELECT item_id, quantity FROM grn_items WHERE grn_id = ?");
+        if (!$stmt_items) throw new Exception("DB prepare failed for fetching GRN items.");
+        $stmt_items->bind_param("s", $grn_id);
+        $stmt_items->execute();
+        $items_to_reverse = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        if (empty($items_to_reverse)) {
+            // This is a safety check; if there are no items, we can just cancel the GRN.
+        } else {
+            // Step 3: Loop through each item and REVERSE the stock adjustment
+            foreach ($items_to_reverse as $item) {
+                $stock_reason = "Stock reversed from canceled GRN #" . $grn_id;
+                // Use 'OUT' to deduct the stock that was previously added.
+                // The 'Ex-Stock' check will prevent stock from going negative, which is a critical safety feature.
+                adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
+            }
+        }
+
+        // Step 4: Update the GRN's status to 'Canceled'
+        $stmt_update = $db->prepare("UPDATE grn SET status = 'Canceled' WHERE grn_id = ?");
+        if (!$stmt_update) throw new Exception("DB prepare failed for updating GRN status.");
+        $stmt_update->bind_param("s", $grn_id);
+        $stmt_update->execute();
+
+        // If all steps were successful, commit the transaction
+        $db->commit();
+        return true;
+
+    } catch (Exception $e) {
+        // If any step failed, roll back all changes
+        $db->rollback();
+        // Pass the specific error message up (e.g., the stock-level error)
+        throw new Exception("Failed to cancel GRN: " . $e->getMessage());
+    }
+}
+
+/**
  * Retrieves a single, complete GRN with its items for viewing.
  *
  * @param string $grn_id The ID of the GRN to fetch.

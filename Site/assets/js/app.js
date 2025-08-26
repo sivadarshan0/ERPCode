@@ -316,7 +316,8 @@ function initGrnEntry() {
     }
 }
 
-// ───── Order Entry Handler ─────
+
+
 // ───── Order Entry Handler ─────
 function initOrderEntry() {
     const form = document.getElementById('orderForm');
@@ -1076,6 +1077,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('grnSearchForm')) { initGrnList(); }
     if (document.getElementById('poSearchForm')) { initPurchaseOrderList(); }
     if (document.getElementById('stockSearchForm')) { initStockLevelList(); }
+    if (document.getElementById('cancelGrnBtn')) { initGrnCancellation(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
