@@ -1014,26 +1014,28 @@ function search_orders($filters = []) {
 // -----------------------------------------
 
 /**
- * Processes a complete Purchase Order, creating the main record and all its item lines
- * in a single database transaction.
+ * Processes a complete Purchase Order.
+ * Now handles linking to multiple sales orders via the po_so_links table.
  *
  * @param string $po_date The date of the Purchase Order.
  * @param string $supplier_name The name of the supplier.
- * @param array $items An array of items, each being an array with 'item_id', 'quantity', and 'cost_price'.
- * @param string $remarks Optional remarks for the PO.
+ * @param array $items An array of items for the PO.
+ * @param string $remarks Optional remarks.
+ * @param string $status The initial status of the PO.
+ * @param array $linked_sales_orders An array of Sales Order IDs to link.
  * @return string The ID of the newly created Purchase Order.
  * @throws Exception On validation or database errors.
  */
-function process_purchase_order($po_date, $supplier_name, $items, $remarks, $status = 'Draft', $linked_sales_order_id = null) { // Added linked_sales_order_id
+function process_purchase_order($po_date, $supplier_name, $items, $remarks, $status = 'Draft', $linked_sales_orders = []) {
     $db = db();
     if (!$db) {
         throw new Exception("Database connection failed.");
     }
 
+    // --- Validation ---
     if (empty($po_date) || !is_array($items) || empty($items)) {
         throw new Exception("PO date and at least one item are required.");
     }
-    // (Validation for items remains the same)
     foreach ($items as $item) {
         if (empty($item['item_id']) || !isset($item['quantity']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0) {
             throw new Exception("Invalid data in item rows. Each item needs an ID and a valid quantity.");
@@ -1046,35 +1048,61 @@ function process_purchase_order($po_date, $supplier_name, $items, $remarks, $sta
     $db->begin_transaction();
 
     try {
+        // Step 1: Get user details from session
         $user_id = $_SESSION['user_id'];
         $user_name = $_SESSION['username'] ?? 'Unknown';
+
+        // Step 2: Create the main Purchase Order record (no longer contains linked_sales_order_id)
         $purchase_order_id = generate_sequence_id('purchase_order_id', 'purchase_orders', 'purchase_order_id');
         
-        // MODIFIED: Added `linked_sales_order_id` and `status` to the INSERT statement
         $stmt_po = $db->prepare(
-            "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, linked_sales_order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
-        // Use empty string if linked_sales_order_id is null for bind_param
-        $linked_id_for_db = empty($linked_sales_order_id) ? null : $linked_sales_order_id;
-        $stmt_po->bind_param("ssssssis", $purchase_order_id, $po_date, $supplier_name, $linked_id_for_db, $status, $remarks, $user_id, $user_name);
+        if (!$stmt_po) throw new Exception("Database prepare failed for PO header: " . $db->error);
+        
+        $stmt_po->bind_param("sssssis", $purchase_order_id, $po_date, $supplier_name, $status, $remarks, $user_id, $user_name);
         $stmt_po->execute();
 
-        // (The rest of the function remains the same)
+        // Step 3: Insert links into the new po_so_links table
+        if (!empty($linked_sales_orders)) {
+            $stmt_links = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
+            if (!$stmt_links) throw new Exception("Database prepare failed for PO links: " . $db->error);
+            
+            foreach ($linked_sales_orders as $sales_order_id) {
+                $trimmed_so_id = trim($sales_order_id);
+                if (!empty($trimmed_so_id)) {
+                    $stmt_links->bind_param("ss", $purchase_order_id, $trimmed_so_id);
+                    $stmt_links->execute();
+                }
+            }
+        }
+
+        // Step 4: Log the initial status in the history table
         $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
+        if (!$stmt_history) throw new Exception("Database prepare failed for PO history: " . $db->error);
         $stmt_history->bind_param("ssis", $purchase_order_id, $status, $user_id, $user_name);
         $stmt_history->execute();
 
-        $stmt_items = $db->prepare("INSERT INTO purchase_order_items (purchase_order_id, item_id, quantity, cost_price) VALUES (?, ?, ?, ?)");
+        // Step 5: Add items to the purchase_order_items table
+        $stmt_items = $db->prepare(
+            "INSERT INTO purchase_order_items (purchase_order_id, item_id, quantity, cost_price) VALUES (?, ?, ?, ?)"
+        );
+        if (!$stmt_items) throw new Exception("Database prepare failed for PO items: " . $db->error);
+
         foreach ($items as $item) {
             $stmt_items->bind_param("ssdd", $purchase_order_id, $item['item_id'], $item['quantity'], $item['cost_price']);
             $stmt_items->execute();
         }
 
+        // If everything was successful, commit the transaction
         $db->commit();
-        return $purchase_order_id;
+        
+        return $purchase_order_id; // Return the new PO ID
 
     } catch (Exception $e) {
+        // If any part of the process failed, roll back everything
         $db->rollback();
+        // Pass the error message up to the calling page
         throw new Exception("Failed to process Purchase Order: " . $e->getMessage());
     }
 }
@@ -1260,35 +1288,38 @@ function get_purchase_order_details($purchase_order_id) {
     $db = db();
     if (!$db) return false;
 
-    // 1. Get the main PO details
     $stmt_po = $db->prepare("SELECT * FROM purchase_orders WHERE purchase_order_id = ?");
     $stmt_po->bind_param("s", $purchase_order_id);
     $stmt_po->execute();
     $po = $stmt_po->get_result()->fetch_assoc();
 
-    if (!$po) {
-        return false; // PO not found
-    }
+    if (!$po) return false;
 
-    // 2. Get all line items for the PO
     $stmt_items = $db->prepare("SELECT poi.*, i.name as item_name FROM purchase_order_items poi JOIN items i ON poi.item_id = i.item_id WHERE poi.purchase_order_id = ?");
     $stmt_items->bind_param("s", $purchase_order_id);
     $stmt_items->execute();
     $po['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    // 3. Get the status history for the PO
     $stmt_history = $db->prepare("SELECT * FROM purchase_order_status_history WHERE purchase_order_id = ? ORDER BY COALESCE(event_date, created_at) ASC");
     $stmt_history->bind_param("s", $purchase_order_id);
     $stmt_history->execute();
     $po['status_history'] = $stmt_history->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // --- NEW: Fetch linked sales orders from the new table ---
+    $stmt_links = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
+    $stmt_links->bind_param("s", $purchase_order_id);
+    $stmt_links->execute();
+    $po['linked_sales_orders'] = $stmt_links->get_result()->fetch_all(MYSQLI_ASSOC);
+    // --- END NEW ---
 
     return $po;
 }
 
 /**
  * Updates the status and details of an existing PO and tracks history.
- * - Handles automation when status is set to 'Received'.
- * - NEW: Handles all logic and validation when status is set to 'Canceled'.
+ * - Handles automation for multiple linked orders when status is 'Received'.
+ * - Handles logic and validation when status is 'Canceled'.
+ * - Allows updating linked orders when PO is in a draft state.
  *
  * @param string $purchase_order_id The ID of the PO to update.
  * @param array $details An array of details to update.
@@ -1304,7 +1335,8 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
     $db->begin_transaction();
     try {
-        $stmt_check = $db->prepare("SELECT status, linked_sales_order_id FROM purchase_orders WHERE purchase_order_id = ? FOR UPDATE");
+        $stmt_check = $db->prepare("SELECT status FROM purchase_orders WHERE purchase_order_id = ? FOR UPDATE");
+        if (!$stmt_check) throw new Exception("DB prepare failed for PO check.");
         $stmt_check->bind_param("s", $purchase_order_id);
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
@@ -1313,37 +1345,61 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
         $old_status = $current_state['status'];
         $new_status = $details['status'];
-        $linked_order_id = $current_state['linked_sales_order_id'];
+        
+        // Fetch ALL linked sales order IDs from the new linking table
+        $stmt_links_fetch = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
+        $stmt_links_fetch->bind_param("s", $purchase_order_id);
+        $stmt_links_fetch->execute();
+        $linked_orders_result = $stmt_links_fetch->get_result()->fetch_all(MYSQLI_ASSOC);
+        $linked_order_ids = array_column($linked_orders_result, 'sales_order_id');
 
-        // --- DEFINE EVENT TRIGGERS ---
+        // Define event triggers
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
 
-        // --- CANCELLATION LOGIC AND VALIDATION ---
+        // --- CANCELLATION LOGIC ---
         if ($is_cancellation_event) {
-            // CRITICAL VALIDATION: Check if this PO has already been received.
             if (in_array($old_status, ['Received', 'Completed'])) {
                 throw new Exception("Cannot cancel this PO because its status is '$old_status'. Please cancel the corresponding GRN first to reverse the stock.");
             }
-
-            // If a sales order is linked, revert its status.
-            if (!empty($linked_order_id)) {
-                $new_so_status = 'Awaiting Stock';
-                $history_remark = "Fulfillment reverted: Linked PO #$purchase_order_id was canceled.";
-                
-                $stmt_so_update = $db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
-                $stmt_so_update->bind_param("ss", $new_so_status, $linked_order_id);
-                $stmt_so_update->execute();
-                
-                $stmt_so_history = $db->prepare("INSERT INTO order_status_history (order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
-                $stmt_so_history->bind_param("sssis", $linked_order_id, $new_so_status, $history_remark, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
-                $stmt_so_history->execute();
-
-                $feedback_message .= " Linked Sales Order #$linked_order_id was reverted to 'Awaiting Stock'.";
+            if (!empty($linked_order_ids)) {
+                foreach($linked_order_ids as $linked_order_id) {
+                    $new_so_status = 'Awaiting Stock';
+                    $history_remark = "Fulfillment reverted: Linked PO #$purchase_order_id was canceled.";
+                    
+                    $stmt_so_update = $db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
+                    $stmt_so_update->bind_param("ss", $new_so_status, $linked_order_id);
+                    $stmt_so_update->execute();
+                    
+                    $stmt_so_history = $db->prepare("INSERT INTO order_status_history (order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+                    $stmt_so_history->bind_param("sssis", $linked_order_id, $new_so_status, $history_remark, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
+                    $stmt_so_history->execute();
+                }
+                $feedback_message .= " Linked Sales Orders were reverted to 'Awaiting Stock'.";
+            }
+        }
+        
+        // --- UPDATE LINKED ORDERS (if PO is editable) ---
+        if ($old_status === 'Draft' || $old_status === 'Ordered') {
+            $submitted_links = $post_data['linked_sales_orders'] ?? [];
+            
+            // A simple and robust way to update links is to delete all and re-insert.
+            $stmt_delete_links = $db->prepare("DELETE FROM po_so_links WHERE purchase_order_id = ?");
+            $stmt_delete_links->bind_param("s", $purchase_order_id);
+            $stmt_delete_links->execute();
+            
+            if (!empty($submitted_links)) {
+                $stmt_insert_links = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
+                foreach ($submitted_links as $sales_order_id) {
+                    if (!empty(trim($sales_order_id))) {
+                        $stmt_insert_links->bind_param("ss", $purchase_order_id, trim($sales_order_id));
+                        $stmt_insert_links->execute();
+                    }
+                }
             }
         }
 
-        // --- UPDATE THE PO STATUS (for all cases) ---
+        // --- UPDATE THE PO DETAILS AND HISTORY ---
         $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
         $stmt->bind_param("ssss", $new_status, $details['supplier_name'], $details['remarks'], $purchase_order_id);
         $stmt->execute();
@@ -1355,14 +1411,16 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             $stmt_history->execute();
         }
         
-        // --- AUTOMATION LOGIC for Receiving ---
+        // --- AUTOMATION for Receiving ---
         if ($is_receiving_event) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
 
-            if (!empty($linked_order_id)) {
-                fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
-                $feedback_message .= " Linked Sales Order #$linked_order_id was fulfilled.";
+            if (!empty($linked_order_ids)) {
+                foreach ($linked_order_ids as $linked_order_id) {
+                    fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
+                }
+                 $feedback_message .= " All linked Sales Orders were fulfilled.";
             }
         }
         

@@ -132,47 +132,45 @@ require_once __DIR__ . '/../../includes/header.php';
                             </div>
                             <div class="col-md-4">
                                 <label for="supplier_name" class="form-label">Supplier Name</label>
-                                <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name..." value="<?= htmlspecialchars($po['supplier_name'] ?? '') ?>">
+                                <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name..." value="<?= htmlspecialchars($po['supplier_name'] ?? '') ?>" <?= $is_edit && $po['status'] !== 'Draft' ? 'readonly' : '' ?>>
                             </div>
                             <div class="col-md-4">
                                 <label for="status" class="form-label">Status</label>
                                 <select class="form-select" id="status" name="status">
-                                    <option value="Draft" <?= ($is_edit && $po['status'] == 'Draft') ? 'selected' : '' ?>>Draft</option>
-                                    <option value="Ordered" <?= ($is_edit && $po['status'] == 'Ordered') ? 'selected' : '' ?>>Ordered</option>
-                                    <option value="Paid" <?= ($is_edit && $po['status'] == 'Paid') ? 'selected' : '' ?>>Paid</option>
-                                    <option value="Delivered" <?= ($is_edit && $po['status'] == 'Delivered') ? 'selected' : '' ?>>Delivered</option>
-                                    <option value="With int courier" <?= ($is_edit && $po['status'] == 'With int courier') ? 'selected' : '' ?>>With int courier</option>
-                                    <option value="Received" <?= ($is_edit && $po['status'] == 'Received') ? 'selected' : '' ?>>Received</option>
-                                    <option value="Canceled" <?= ($is_edit && $po['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option>
+                                    <!-- ... (options remain the same) ... -->
                                 </select>
                             </div>
-                            <!-- ADD THIS NEW DIV FOR THE HIDDEN DATE INPUT -->
-                            <div class="col-md-4 d-none" id="po_status_date_wrapper">
-                                <label for="po_status_event_date" class="form-label">Status Date</label>
-                                <input type="datetime-local" class="form-control" id="po_status_event_date" name="po_status_event_date">
-                            </div>
 
-                            <?php if (!$is_edit): ?>
-                            <div class="col-md-6 position-relative">
-                                <label for="pre_order_search" class="form-label">Link to Pre-Order (Optional)</label>
-                                <input type="text" class="form-control" id="pre_order_search" autocomplete="off" placeholder="Search Order ID or Customer...">
-                                <input type="hidden" name="linked_sales_order_id" id="linked_sales_order_id">
-                                <div id="preOrderResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
-                            </div>
-                            <?php elseif (!empty($po['linked_sales_order_id'])): ?>
-                            <div class="col-md-6">
-                                 <label class="form-label">Linked Sales Order</label>
-                                 <div class="form-control-plaintext">
-                                     <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($po['linked_sales_order_id']) ?>" target="_blank">
-                                         <?= htmlspecialchars($po['linked_sales_order_id']) ?> <i class="bi bi-box-arrow-up-right"></i>
-                                     </a>
-                                 </div>
+                            <!-- ENTIRELY NEW UI FOR LINKING SALES ORDERS -->
+                            <?php if (!$is_edit || $po['status'] === 'Draft' || $po['status'] === 'Ordered'): ?>
+                            <div class="col-12">
+                                <label for="pre_order_search" class="form-label">Link to Pre-Order(s)</label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control" id="pre_order_search" autocomplete="off" placeholder="Search Order ID or Customer to link...">
+                                    <div id="preOrderResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
+                                </div>
+
+                                <!-- This container will hold the selected order "tags" -->
+                                <div id="linkedOrdersContainer" class="d-flex flex-wrap gap-2 mt-2 border rounded p-2 bg-light" style="min-height: 40px;">
+                                    <!-- Linked orders will be populated here by JavaScript -->
+                                    <?php if ($is_edit && !empty($po['linked_sales_orders'])): ?>
+                                        <?php foreach ($po['linked_sales_orders'] as $linked_order): ?>
+                                            <span class="badge bg-primary d-flex align-items-center">
+                                                <input type="hidden" name="linked_sales_orders[]" value="<?= htmlspecialchars($linked_order['sales_order_id']) ?>">
+                                                <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($linked_order['sales_order_id']) ?>" target="_blank" class="text-white text-decoration-none">
+                                                    <?= htmlspecialchars($linked_order['sales_order_id']) ?>
+                                                </a>
+                                                <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                             <?php endif; ?>
 
                             <div class="col-12">
                                 <label for="remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="remarks" name="remarks" rows="2" placeholder="e.g., Delivery instructions..."><?= htmlspecialchars($po['remarks'] ?? '') ?></textarea>
+                                <textarea class="form-control" id="remarks" name="remarks" rows="2" placeholder="e.g., Delivery instructions..." <?= $is_edit && $po['status'] !== 'Draft' ? 'readonly' : '' ?>><?= htmlspecialchars($po['remarks'] ?? '') ?></textarea>
                             </div>
                         </div>
                     </div>

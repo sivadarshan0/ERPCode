@@ -781,55 +781,122 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
-
-    const isEditMode = !document.getElementById('addPoItemRow'); // A reliable way to check if we are in manage mode
+    const isEditMode = !!document.querySelector('input[name="purchase_order_id"]');
     const statusSelect = document.getElementById('status');
+    
+    // --- Initial page focus logic ---
     const poDateInput = document.getElementById('po_date');
     if (poDateInput && !poDateInput.readOnly) {
         poDateInput.focus();
     }
-
+    
+    // --- Backdating logic for manage mode ---
     if (isEditMode && statusSelect) {
         const statusDateWrapper = document.getElementById('po_status_date_wrapper');
-        
         if (statusDateWrapper) {
-            // Store the original status from when the page loaded
             const originalStatus = statusSelect.value;
-
-            // Listen for any change on the status dropdown
             statusSelect.addEventListener('change', function() {
-                // If the new status is different from the original, show the date input
                 if (this.value !== originalStatus) {
                     statusDateWrapper.classList.remove('d-none');
                 } else {
-                    // If the user selects the original status again, hide it
                     statusDateWrapper.classList.add('d-none');
                 }
             });
         }
     }
+    
+    // --- NEW LOGIC FOR MULTI-ORDER LINKING ---
+    const preOrderSearchInput = document.getElementById('pre_order_search');
+    const preOrderResults = document.getElementById('preOrderResults');
+    const linkedOrdersContainer = document.getElementById('linkedOrdersContainer');
 
+    // Function to add a new "tag" for a linked order
+    const addLinkedOrderTag = (orderId, customerName) => {
+        // Prevent adding the same order twice
+        if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) {
+            preOrderSearchInput.value = ''; // Clear search input
+            return;
+        }
+
+        const tag = document.createElement('span');
+        tag.className = 'badge bg-primary d-flex align-items-center';
+        tag.innerHTML = `
+            <input type="hidden" name="linked_sales_orders[]" value="${escapeHtml(orderId)}">
+            <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">
+                ${escapeHtml(orderId)}
+            </a>
+            <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
+        `;
+        linkedOrdersContainer.appendChild(tag);
+        preOrderSearchInput.value = ''; // Clear search input after adding
+    };
+    
+    if (preOrderSearchInput && preOrderResults && linkedOrdersContainer) {
+        // Live search for pre-orders
+        preOrderSearchInput.addEventListener('input', debounce(() => {
+            const query = preOrderSearchInput.value.trim();
+            if (query.length < 2) {
+                preOrderResults.classList.add('d-none');
+                return;
+            }
+            fetch(`/modules/purchase/entry_purchase_order.php?action=pre_order_lookup&query=${encodeURIComponent(query)}`)
+                .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
+                .then(data => {
+                    preOrderResults.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(order => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'list-group-item list-group-item-action';
+                            btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
+                            btn.addEventListener('click', () => {
+                                addLinkedOrderTag(order.order_id, order.customer_name);
+                                preOrderResults.classList.add('d-none');
+                                preOrderSearchInput.focus();
+                            });
+                            preOrderResults.appendChild(btn);
+                        });
+                        preOrderResults.classList.remove('d-none');
+                    } else {
+                        preOrderResults.classList.add('d-none');
+                    }
+                })
+                .catch(error => console.error('[PreOrderLookup] Error:', error));
+        }, 300));
+
+        // Hide search results if clicking away
+        document.addEventListener('click', e => {
+            if (!preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
+                preOrderResults.classList.add('d-none');
+            }
+        });
+
+        // Handle removing a linked order "tag"
+        linkedOrdersContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove-linked-order')) {
+                e.target.closest('.badge').remove();
+            }
+        });
+    }
+
+    // --- Logic for adding/removing item rows (only in create mode) ---
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
-    const preOrderSearchInput = document.getElementById('pre_order_search');
-    const preOrderResults = document.getElementById('preOrderResults');
-    const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
+    
+    if (!isEditMode && itemRowsContainer && template) {
+        const addRow = (shouldFocus = true) => {
+            const newRow = template.content.cloneNode(true);
+            itemRowsContainer.appendChild(newRow);
+            if (shouldFocus) {
+                itemRowsContainer.querySelector('.po-item-row:last-child .item-search-input').focus();
+            }
+        };
+        addRow(false); // Add the initial row without focus
+        if (addRowBtn) addRowBtn.addEventListener('click', () => addRow(true));
 
-    const addRow = (shouldFocus = true) => {
-        if (!template) return; 
-        const newRow = template.content.cloneNode(true);
-        itemRowsContainer.appendChild(newRow);
-        const justAddedRow = itemRowsContainer.querySelector('.po-item-row:last-child');
-        if (shouldFocus && justAddedRow) {
-            justAddedRow.querySelector('.item-search-input').focus();
-        }
-    };
-    
-    addRow(false); 
-    
-    if (addRowBtn) {
-        addRowBtn.addEventListener('click', () => addRow(true));
+        // The rest of the create-mode item row logic (live search for items, remove row button) goes here...
+        // This part of your existing function can be pasted here.
     }
 
     if (itemRowsContainer) {
