@@ -316,7 +316,64 @@ function initGrnEntry() {
     }
 }
 
+// -----------------------------------------
+// ----- GRN Cancellation Handler -----
+// -----------------------------------------
 
+function initGrnCancellation() {
+    const cancelBtn = document.getElementById('cancelGrnBtn');
+    if (!cancelBtn) return;
+
+    cancelBtn.addEventListener('click', function() {
+        const grnId = this.dataset.grnId; // Get the GRN ID from the button's data-attribute
+
+        // Use a simple confirmation dialog
+        if (!confirm(`Are you sure you want to cancel GRN #${grnId}?\nThis action will reverse the stock adjustments and cannot be undone.`)) {
+            return; // Stop if the user clicks "Cancel"
+        }
+
+        // Disable the button and show a spinner
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Canceling...';
+        
+        // Prepare the data to be sent
+        const formData = new FormData();
+        formData.append('grn_id', grnId);
+
+        // Send the AJAX request to the endpoint we created
+        fetch('/modules/purchase/entry_grn.php?action=cancel_grn', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // On success, show a success alert
+                showAlert(data.message, 'success');
+                // Remove the cancel button from the page
+                this.remove();
+                // Optionally, you could add a "Canceled" badge to the page title here
+                const pageTitle = document.querySelector('h2');
+                if (pageTitle) {
+                    pageTitle.innerHTML += ' <span class="badge bg-danger">Canceled</span>';
+                }
+            } else {
+                // On failure, show an error alert
+                showAlert(data.error, 'danger');
+                // Re-enable the button so the user can try again if the error is temporary
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
+            }
+        })
+        .catch(error => {
+            // Handle network errors
+            showAlert('A network error occurred. Please try again.', 'danger');
+            this.disabled = false;
+            this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
+            console.error('Cancellation Error:', error);
+        });
+    });
+}
 
 // ───── Order Entry Handler ─────
 function initOrderEntry() {
