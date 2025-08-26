@@ -1230,7 +1230,6 @@ function search_purchase_orders($filters = []) {
             purchase_order_id, 
             po_date, 
             supplier_name, 
-            linked_sales_order_id, -- ADDED THIS LINE
             status, 
             created_by_name 
         FROM purchase_orders 
