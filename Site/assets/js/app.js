@@ -781,125 +781,70 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
-    const isEditMode = !!document.querySelector('input[name="purchase_order_id"]');
+
+    const isEditMode = !document.getElementById('addPoItemRow'); // A reliable way to check if we are in manage mode
     const statusSelect = document.getElementById('status');
-    
-    // --- Initial page focus logic ---
     const poDateInput = document.getElementById('po_date');
     if (poDateInput && !poDateInput.readOnly) {
         poDateInput.focus();
     }
-    
-    // --- Backdating logic for manage mode ---
+
     if (isEditMode && statusSelect) {
         const statusDateWrapper = document.getElementById('po_status_date_wrapper');
+        
         if (statusDateWrapper) {
+            // Store the original status from when the page loaded
             const originalStatus = statusSelect.value;
+
+            // Listen for any change on the status dropdown
             statusSelect.addEventListener('change', function() {
+                // If the new status is different from the original, show the date input
                 if (this.value !== originalStatus) {
                     statusDateWrapper.classList.remove('d-none');
                 } else {
+                    // If the user selects the original status again, hide it
                     statusDateWrapper.classList.add('d-none');
                 }
             });
         }
     }
-    
-    // --- LOGIC FOR MULTI-ORDER LINKING ---
-    const preOrderSearchInput = document.getElementById('pre_order_search');
-    const preOrderResults = document.getElementById('preOrderResults');
-    const linkedOrdersContainer = document.getElementById('linkedOrdersContainer');
 
-    if (preOrderSearchInput && preOrderResults && linkedOrdersContainer) {
-        const addLinkedOrderTag = (orderId) => {
-            if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) {
-                preOrderSearchInput.value = '';
-                return;
-            }
-            const tag = document.createElement('span');
-            tag.className = 'badge bg-primary d-flex align-items-center';
-            tag.innerHTML = `
-                <input type="hidden" name="linked_sales_orders[]" value="${escapeHtml(orderId)}">
-                <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">${escapeHtml(orderId)}</a>
-                <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
-            `;
-            linkedOrdersContainer.appendChild(tag);
-            preOrderSearchInput.value = '';
-        };
-
-        preOrderSearchInput.addEventListener('input', debounce(() => {
-            const query = preOrderSearchInput.value.trim();
-            if (query.length < 2) {
-                preOrderResults.classList.add('d-none');
-                return;
-            }
-            fetch(`/modules/purchase/entry_purchase_order.php?action=pre_order_lookup&query=${encodeURIComponent(query)}`)
-                .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
-                .then(data => {
-                    preOrderResults.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(order => {
-                            const btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.className = 'list-group-item list-group-item-action';
-                            btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
-                            btn.addEventListener('click', () => {
-                                addLinkedOrderTag(order.order_id);
-                                preOrderResults.classList.add('d-none');
-                                preOrderSearchInput.focus();
-                            });
-                            preOrderResults.appendChild(btn);
-                        });
-                        preOrderResults.classList.remove('d-none');
-                    } else {
-                        preOrderResults.classList.add('d-none');
-                    }
-                })
-                .catch(error => console.error('[PreOrderLookup] Error:', error));
-        }, 300));
-
-        document.addEventListener('click', e => {
-            if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
-                preOrderResults.classList.add('d-none');
-            }
-        });
-
-        linkedOrdersContainer.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-linked-order')) {
-                e.target.closest('.badge').remove();
-            }
-        });
-    }
-
-    // --- Logic for adding/removing item rows (ONLY IN CREATE MODE) ---
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
-    
-    if (!isEditMode && itemRowsContainer && template) {
-        const addRow = (shouldFocus = true) => {
-            const newRow = template.content.cloneNode(true);
-            itemRowsContainer.appendChild(newRow);
-            if (shouldFocus) {
-                itemRowsContainer.querySelector('.po-item-row:last-child .item-search-input').focus();
-            }
-        };
-        addRow(false);
-        if (addRowBtn) addRowBtn.addEventListener('click', () => addRow(true));
+    const preOrderSearchInput = document.getElementById('pre_order_search');
+    const preOrderResults = document.getElementById('preOrderResults');
+    const hiddenLinkedOrderId = document.getElementById('linked_sales_order_id');
 
+    const addRow = (shouldFocus = true) => {
+        if (!template) return; 
+        const newRow = template.content.cloneNode(true);
+        itemRowsContainer.appendChild(newRow);
+        const justAddedRow = itemRowsContainer.querySelector('.po-item-row:last-child');
+        if (shouldFocus && justAddedRow) {
+            justAddedRow.querySelector('.item-search-input').focus();
+        }
+    };
+    
+    addRow(false); 
+    
+    if (addRowBtn) {
+        addRowBtn.addEventListener('click', () => addRow(true));
+    }
+
+    if (itemRowsContainer) {
         itemRowsContainer.addEventListener('click', function(e) {
             if (e.target.closest('.remove-item-row')) {
                 e.target.closest('.po-item-row').remove();
             }
         });
-
         itemRowsContainer.addEventListener('input', debounce((e) => {
             if (e.target.classList.contains('item-search-input')) {
                 const searchInput = e.target;
                 const resultsContainer = searchInput.nextElementSibling;
                 const name = searchInput.value.trim();
                 if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
-                fetch(`/modules/purchase/entry_purchase_order.php?action=item_lookup&query=${encodeURIComponent(name)}`)
+                fetch(`/modules/purchase/entry_purchase_order.php?item_lookup=${encodeURIComponent(name)}`)
                     .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                     .then(data => {
                         resultsContainer.innerHTML = '';
@@ -925,6 +870,337 @@ function initPoEntry() {
             }
         }, 300));
     }
+    
+    if (preOrderSearchInput) {
+        preOrderSearchInput.addEventListener('input', debounce(() => {
+            const query = preOrderSearchInput.value.trim();
+            if (query.length < 2) { if (preOrderResults) preOrderResults.classList.add('d-none'); return; }
+            fetch(`/modules/purchase/entry_purchase_order.php?pre_order_lookup=${encodeURIComponent(query)}`)
+                .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
+                .then(data => {
+                    if (!preOrderResults) return;
+                    preOrderResults.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(order => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'list-group-item list-group-item-action';
+                            btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
+                            btn.addEventListener('click', () => {
+                                preOrderSearchInput.value = `${order.order_id} - ${order.customer_name}`;
+                                if (hiddenLinkedOrderId) hiddenLinkedOrderId.value = order.order_id;
+                                preOrderResults.classList.add('d-none');
+                            });
+                            preOrderResults.appendChild(btn);
+                        });
+                        preOrderResults.classList.remove('d-none');
+                    } else {
+                        preOrderResults.classList.add('d-none');
+                    }
+                })
+                .catch(error => console.error('[PreOrderLookup] Error:', error));
+        }, 300));
+
+        document.addEventListener('click', e => {
+            if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
+                preOrderResults.classList.add('d-none');
+            }
+        });
+    }
+}
+
+// -----------------------------------------
+// ----- GRN List Handler -----
+// -----------------------------------------
+
+function initGrnList() {
+    const searchForm = document.getElementById('grnSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('grnListTableBody');
+    const grnIdInput = document.getElementById('search_grn_id');
+    const dateRangeInput = document.getElementById('search_date_range');
+
+    const picker = new Litepicker({
+        element: dateRangeInput,
+        singleMode: false,
+        autoApply: true,
+        format: 'YYYY-MM-DD',
+        setup: (picker) => {
+            picker.on('selected', (date1, date2) => {
+                doGrnSearch();
+            });
+        }
+    });
+
+    const doGrnSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+        if (grnIdInput.value) { params.set('grn_id', grnIdInput.value); }
+        if (picker.getStartDate() && picker.getEndDate()) {
+            params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
+            params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
+        }
+
+        fetch(`/modules/purchase/list_grns.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No GRNs found matching your criteria.</td></tr>`;
+                    return;
+                }
+                data.forEach(grn => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(grn.grn_id)}</td>
+                        <td>${new Date(grn.grn_date + 'T00:00:00').toLocaleDateString('en-GB')}</td>
+                        <td>${escapeHtml(grn.remarks)}</td>
+                        <td>${escapeHtml(grn.created_by_name)}</td>
+                        <td>
+                            <a href="/modules/purchase/entry_grn.php?grn_id=${escapeHtml(grn.grn_id)}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[GrnSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    grnIdInput.addEventListener('input', doGrnSearch);
+}
+
+// -----------------------------------------
+// ----- Purchase Order List Handler -----
+// -----------------------------------------
+
+function initPurchaseOrderList() {
+    const searchForm = document.getElementById('poSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('purchaseOrderListTableBody');
+    const poIdInput = document.getElementById('search_po_id');
+    const statusInput = document.getElementById('search_status');
+    const dateRangeInput = document.getElementById('search_date_range');
+
+    // --- Date Range Picker Initialization ---
+    const picker = new Litepicker({
+        element: dateRangeInput,
+        singleMode: false,
+        autoApply: true,
+        format: 'DD/MM/YYYY',
+        setup: (picker) => {
+            picker.on('selected', (date1, date2) => {
+                doPoSearch();
+            });
+        }
+    });
+
+    const doPoSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+
+        if (poIdInput.value) { params.set('purchase_order_id', poIdInput.value); }
+        if (statusInput.value) { params.set('status', statusInput.value); }
+        if (picker.getStartDate() && picker.getEndDate()) {
+            params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
+            params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
+        }
+
+        fetch(`/modules/purchase/list_purchase_order.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
+                    return;
+                }
+                data.forEach(po => {
+                    const tr = document.createElement('tr');
+                    const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
+                    
+                    // Note: We expect the PHP to give us the linked orders now
+                    let linkedOrdersHtml = '<span class="text-muted">N/A</span>';
+                    if (po.linked_orders && po.linked_orders.length > 0) {
+                        linkedOrdersHtml = po.linked_orders.map(orderId => 
+                            `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank">${escapeHtml(orderId)}</a>`
+                        ).join('<br>');
+                    }
+
+                    tr.innerHTML = `
+                        <td>${escapeHtml(po.purchase_order_id)}</td>
+                        <td>${poDate}</td>
+                        <td>${escapeHtml(po.supplier_name)}</td>
+                        <td>${linkedOrdersHtml}</td>
+                        <td><span class="badge bg-info text-dark">${escapeHtml(po.status)}</span></td>
+                        <td>${escapeHtml(po.created_by_name)}</td>
+                        <td>
+                            <a href="/modules/purchase/entry_purchase_order.php?purchase_order_id=${escapeHtml(po.purchase_order_id)}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[PoSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    // Attach event listeners to all filter controls
+    poIdInput.addEventListener('input', doPoSearch);
+    statusInput.addEventListener('change', doPoSearch);
+}
+
+// -----------------------------------------
+// ----- Purchase Order List Handler -----
+// -----------------------------------------
+
+function initPurchaseOrderList() {
+    const searchForm = document.getElementById('poSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('purchaseOrderListTableBody');
+    const poIdInput = document.getElementById('search_po_id');
+    const dateRangeInput = document.getElementById('search_date_range');
+    const statusInput = document.getElementById('search_status');
+
+    const picker = new Litepicker({
+        element: dateRangeInput,
+        singleMode: false,
+        autoApply: true,
+        format: 'DD/MM/YYYY',
+        setup: (picker) => {
+            picker.on('selected', (date1, date2) => {
+                doPoSearch();
+            });
+        }
+    });
+
+    const doPoSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+        if (poIdInput.value) { params.set('purchase_order_id', poIdInput.value); }
+        if (statusInput.value) { params.set('status', statusInput.value); }
+        if (picker.getStartDate() && picker.getEndDate()) {
+            params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
+            params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
+        }
+
+        fetch(`/modules/purchase/list_purchase_order.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
+                    return;
+                }
+                data.forEach(po => {
+                    const tr = document.createElement('tr');
+                    const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
+                    const linkedOrderHtml = po.linked_sales_order_id
+                        ? `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(po.linked_sales_order_id)}" target="_blank">${escapeHtml(po.linked_sales_order_id)}</a>`
+                        : `<span class="text-muted">N/A</span>`;
+                    tr.innerHTML = `
+                        <td>${escapeHtml(po.purchase_order_id)}</td>
+                        <td>${poDate}</td>
+                        <td>${escapeHtml(po.supplier_name)}</td>
+                        <td>${linkedOrderHtml}</td>
+                        <td><span class="badge bg-info text-dark">${escapeHtml(po.status)}</span></td>
+                        <td>${escapeHtml(po.created_by_name)}</td>
+                        <td>
+                            <a href="/modules/purchase/entry_purchase_order.php?purchase_order_id=${escapeHtml(po.purchase_order_id)}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[PoSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    poIdInput.addEventListener('input', doPoSearch);
+    statusInput.addEventListener('change', doPoSearch);
+}
+
+// -----------------------------------------
+// ----- Stock Level List Handler -----
+// -----------------------------------------
+
+function initStockLevelList() {
+    const searchForm = document.getElementById('stockSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('stockListTableBody');
+    const itemNameInput = document.getElementById('search_item_name');
+    const categoryIdInput = document.getElementById('search_category_id');
+    const subCategoryIdInput = document.getElementById('search_sub_category_id');
+    const stockStatusInput = document.getElementById('search_stock_status');
+
+    const doStockSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+        if (itemNameInput.value) { params.set('item_name', itemNameInput.value); }
+        if (categoryIdInput.value) { params.set('category_id', categoryIdInput.value); }
+        if (subCategoryIdInput.value) { params.set('sub_category_id', subCategoryIdInput.value); }
+        if (stockStatusInput.value) { params.set('stock_status', stockStatusInput.value); }
+
+        fetch(`/modules/inventory/list_stock_levels.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No items found matching your criteria.</td></tr>`;
+                    return;
+                }
+                data.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(item.item_id)}</td>
+                        <td>${escapeHtml(item.item_name)}</td>
+                        <td>${escapeHtml(item.category_name)}</td>
+                        <td>${escapeHtml(item.sub_category_name)}</td>
+                        <td class="text-end fw-bold">${parseFloat(item.quantity).toFixed(2)}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[StockSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    categoryIdInput.addEventListener('change', function() {
+        const categoryId = this.value;
+        subCategoryIdInput.innerHTML = '<option value="">All Sub-Categories</option>';
+        subCategoryIdInput.disabled = true;
+
+        if (categoryId) {
+            fetch(`/modules/inventory/list_stock_levels.php?action=get_sub_categories&category_id=${categoryId}`)
+                .then(response => response.ok ? response.json() : Promise.reject('Failed to load sub-categories'))
+                .then(data => {
+                    data.forEach(sub_cat => {
+                        subCategoryIdInput.add(new Option(sub_cat.name, sub_cat.category_sub_id));
+                    });
+                    subCategoryIdInput.disabled = false;
+                })
+                .catch(error => console.error('[SubCategoryFetch] Error:', error));
+        }
+        
+        doStockSearch();
+    });
+
+    itemNameInput.addEventListener('input', doStockSearch);
+    subCategoryIdInput.addEventListener('change', doStockSearch);
+    stockStatusInput.addEventListener('change', doStockSearch);
 }
 
 // ───── DOM Ready ─────
