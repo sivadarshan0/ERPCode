@@ -805,30 +805,28 @@ function initPoEntry() {
         }
     }
     
-    // --- NEW LOGIC FOR MULTI-ORDER LINKING ---
+    // --- LOGIC FOR MULTI-ORDER LINKING ---
     const preOrderSearchInput = document.getElementById('pre_order_search');
     const preOrderResults = document.getElementById('preOrderResults');
     const linkedOrdersContainer = document.getElementById('linkedOrdersContainer');
 
-    // This function adds a new "tag" for a linked order
-    const addLinkedOrderTag = (orderId) => {
-        if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) {
-            preOrderSearchInput.value = '';
-            return;
-        }
-        const tag = document.createElement('span');
-        tag.className = 'badge bg-primary d-flex align-items-center';
-        tag.innerHTML = `
-            <input type="hidden" name="linked_sales_orders[]" value="${escapeHtml(orderId)}">
-            <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">${escapeHtml(orderId)}</a>
-            <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
-        `;
-        linkedOrdersContainer.appendChild(tag);
-        preOrderSearchInput.value = '';
-    };
-    
     if (preOrderSearchInput && preOrderResults && linkedOrdersContainer) {
-        // Live search for pre-orders
+        const addLinkedOrderTag = (orderId) => {
+            if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) {
+                preOrderSearchInput.value = '';
+                return;
+            }
+            const tag = document.createElement('span');
+            tag.className = 'badge bg-primary d-flex align-items-center';
+            tag.innerHTML = `
+                <input type="hidden" name="linked_sales_orders[]" value="${escapeHtml(orderId)}">
+                <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">${escapeHtml(orderId)}</a>
+                <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
+            `;
+            linkedOrdersContainer.appendChild(tag);
+            preOrderSearchInput.value = '';
+        };
+
         preOrderSearchInput.addEventListener('input', debounce(() => {
             const query = preOrderSearchInput.value.trim();
             if (query.length < 2) {
@@ -861,7 +859,7 @@ function initPoEntry() {
         }, 300));
 
         document.addEventListener('click', e => {
-            if (!preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
+            if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
                 preOrderResults.classList.add('d-none');
             }
         });
@@ -873,7 +871,7 @@ function initPoEntry() {
         });
     }
 
-    // --- Logic for adding/removing item rows (only in create mode) ---
+    // --- Logic for adding/removing item rows (ONLY IN CREATE MODE) ---
     const itemRowsContainer = document.getElementById('poItemRows');
     const template = document.getElementById('poItemRowTemplate');
     const addRowBtn = document.getElementById('addPoItemRow');
