@@ -805,12 +805,13 @@ function initPoEntry() {
         }
     }
     
-    // --- LOGIC FOR MULTI-ORDER LINKING ---
+    // --- NEW LOGIC FOR MULTI-ORDER LINKING ---
     const preOrderSearchInput = document.getElementById('pre_order_search');
     const preOrderResults = document.getElementById('preOrderResults');
     const linkedOrdersContainer = document.getElementById('linkedOrdersContainer');
 
-    const addLinkedOrderTag = (orderId, customerName) => {
+    // This function adds a new "tag" for a linked order
+    const addLinkedOrderTag = (orderId) => {
         if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) {
             preOrderSearchInput.value = '';
             return;
@@ -827,6 +828,7 @@ function initPoEntry() {
     };
     
     if (preOrderSearchInput && preOrderResults && linkedOrdersContainer) {
+        // Live search for pre-orders
         preOrderSearchInput.addEventListener('input', debounce(() => {
             const query = preOrderSearchInput.value.trim();
             if (query.length < 2) {
@@ -834,10 +836,7 @@ function initPoEntry() {
                 return;
             }
             fetch(`/modules/purchase/entry_purchase_order.php?action=pre_order_lookup&query=${encodeURIComponent(query)}`)
-                .then(res => {
-                    if (!res.ok) { throw new Error(`Server responded with ${res.status}`); }
-                    return res.json();
-                })
+                .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
                 .then(data => {
                     preOrderResults.innerHTML = '';
                     if (data && data.length > 0) {
@@ -847,7 +846,7 @@ function initPoEntry() {
                             btn.className = 'list-group-item list-group-item-action';
                             btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
                             btn.addEventListener('click', () => {
-                                addLinkedOrderTag(order.order_id, order.customer_name);
+                                addLinkedOrderTag(order.order_id);
                                 preOrderResults.classList.add('d-none');
                                 preOrderSearchInput.focus();
                             });
@@ -858,16 +857,11 @@ function initPoEntry() {
                         preOrderResults.classList.add('d-none');
                     }
                 })
-                .catch(error => {
-                     console.error('[PreOrderLookup] Error:', error);
-                     fetch(`/modules/purchase/entry_purchase_order.php?action=pre_order_lookup&query=${encodeURIComponent(query)}`)
-                        .then(res => res.text())
-                        .then(text => console.log("Raw server response:", text));
-                });
+                .catch(error => console.error('[PreOrderLookup] Error:', error));
         }, 300));
 
         document.addEventListener('click', e => {
-            if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
+            if (!preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
                 preOrderResults.classList.add('d-none');
             }
         });
