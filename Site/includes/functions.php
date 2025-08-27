@@ -1141,6 +1141,48 @@ function search_open_pre_orders($query) {
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
+/**
+ * Retrieves a single, complete purchase order with its items, history, and linked sales orders.
+ *
+ * @param string $purchase_order_id The ID of the PO to fetch.
+ * @return array|false The complete PO data, or false if not found.
+ */
+function get_purchase_order_details($purchase_order_id) {
+    $db = db();
+    if (!$db) return false;
+
+    // 1. Get the main PO details
+    $stmt_po = $db->prepare("SELECT * FROM purchase_orders WHERE purchase_order_id = ?");
+    if (!$stmt_po) return false;
+    $stmt_po->bind_param("s", $purchase_order_id);
+    $stmt_po->execute();
+    $po = $stmt_po->get_result()->fetch_assoc();
+
+    if (!$po) {
+        return false; // PO not found
+    }
+
+    // 2. Get all line items for the PO
+    $stmt_items = $db->prepare("SELECT poi.*, i.name as item_name FROM purchase_order_items poi JOIN items i ON poi.item_id = i.item_id WHERE poi.purchase_order_id = ?");
+    $stmt_items->bind_param("s", $purchase_order_id);
+    $stmt_items->execute();
+    $po['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // 3. Get the status history for the PO
+    $stmt_history = $db->prepare("SELECT * FROM purchase_order_status_history WHERE purchase_order_id = ? ORDER BY COALESCE(event_date, created_at) ASC");
+    $stmt_history->bind_param("s", $purchase_order_id);
+    $stmt_history->execute();
+    $po['status_history'] = $stmt_history->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // 4. Fetch linked sales orders from the new linking table
+    $stmt_links = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
+    $stmt_links->bind_param("s", $purchase_order_id);
+    $stmt_links->execute();
+    $po['linked_sales_orders'] = $stmt_links->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    return $po;
+}
+
 // -----------------------------------------
 // ----- GRN Listing/Search Functions -----
 // -----------------------------------------
