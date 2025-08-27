@@ -1118,7 +1118,7 @@ function search_open_pre_orders($query) {
     if (!$db) return [];
     
     $search_term = "%$query%";
-    // We search for orders that are of type 'Pre-Book' and have a status that indicates they are waiting for fulfillment.
+    // CORRECTED: Made the ORDER BY clause unambiguous by specifying the table alias.
     $stmt = $db->prepare("
         SELECT 
             o.order_id,
@@ -1129,9 +1129,13 @@ function search_open_pre_orders($query) {
         WHERE o.stock_type = 'Pre-Book' 
           AND o.status IN ('New', 'Awaiting Stock')
           AND (o.order_id LIKE ? OR c.name LIKE ?)
-        ORDER BY o.order_date DESC
+        ORDER BY o.order_date DESC, o.order_id DESC
         LIMIT 10
-    ") or die($db->error);
+    ");
+    if (!$stmt) {
+        error_log("Search Open Pre-Orders Prepare Failed: " . $db->error);
+        return [];
+    }
     $stmt->bind_param("ss", $search_term, $search_term);
     $stmt->execute();
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
