@@ -1324,9 +1324,9 @@ function search_purchase_orders($filters = []) {
 
 /**
  * Updates the status and details of an existing PO and tracks history.
- * - Handles automation for multiple linked orders when status is 'Received'.
+ * - Uses a smart sync for linked orders.
+ * - Handles automation when status is 'Received'.
  * - Handles logic and validation when status is 'Canceled'.
- * - Allows updating linked orders when PO is in a draft state.
  *
  * @param string $purchase_order_id The ID of the PO to update.
  * @param array $details An array of details to update.
@@ -1353,11 +1353,53 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         $old_status = $current_state['status'];
         $new_status = $details['status'];
         
-        $stmt_links_fetch = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
-        $stmt_links_fetch->bind_param("s", $purchase_order_id);
-        $stmt_links_fetch->execute();
-        $linked_orders_result = $stmt_links_fetch->get_result()->fetch_all(MYSQLI_ASSOC);
-        $linked_order_ids = array_column($linked_orders_result, 'sales_order_id');
+        // --- LOGIC TO UPDATE LINKS (NEW, SMARTER METHOD) ---
+        if ($old_status === 'Draft' || $old_status === 'Ordered') {
+            // 1. Get existing links from DB
+            $stmt_links_fetch = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
+            $stmt_links_fetch->bind_param("s", $purchase_order_id);
+            $stmt_links_fetch->execute();
+            $existing_links_result = $stmt_links_fetch->get_result()->fetch_all(MYSQLI_ASSOC);
+            $existing_links = array_column($existing_links_result, 'sales_order_id');
+
+            // 2. Get submitted links from Form
+            $submitted_links = $post_data['linked_sales_orders'] ?? [];
+
+            // 3. Calculate what to ADD
+            $links_to_add = array_diff($submitted_links, $existing_links);
+            if (!empty($links_to_add)) {
+                $stmt_add = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
+                if (!$stmt_add) throw new Exception("DB prepare failed for adding PO links.");
+                foreach ($links_to_add as $sales_order_id) {
+                    $trimmed_so_id = trim($sales_order_id);
+                    if (!empty($trimmed_so_id)) {
+                        $stmt_add->bind_param("ss", $purchase_order_id, $trimmed_so_id);
+                        $stmt_add->execute();
+                    }
+                }
+            }
+
+            // 4. Calculate what to REMOVE
+            $links_to_remove = array_diff($existing_links, $submitted_links);
+            if (!empty($links_to_remove)) {
+                $stmt_remove = $db->prepare("DELETE FROM po_so_links WHERE purchase_order_id = ? AND sales_order_id = ?");
+                if (!$stmt_remove) throw new Exception("DB prepare failed for removing PO links.");
+                foreach ($links_to_remove as $sales_order_id) {
+                    $trimmed_so_id = trim($sales_order_id);
+                    if (!empty($trimmed_so_id)) {
+                        $stmt_remove->bind_param("ss", $purchase_order_id, $trimmed_so_id);
+                        $stmt_remove->execute();
+                    }
+                }
+            }
+        }
+        
+        // --- Fetch the final, updated list of linked orders for the automation step ---
+        $stmt_final_links = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
+        $stmt_final_links->bind_param("s", $purchase_order_id);
+        $stmt_final_links->execute();
+        $final_links_result = $stmt_final_links->get_result()->fetch_all(MYSQLI_ASSOC);
+        $linked_order_ids = array_column($final_links_result, 'sales_order_id');
 
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
@@ -1382,31 +1424,8 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
                 $feedback_message .= " Linked Sales Orders were reverted to 'Awaiting Stock'.";
             }
         }
-        
-        // --- CORRECTED: Handle updating of linked orders if PO is editable ---
-        if ($old_status === 'Draft' || $old_status === 'Ordered') {
-            $submitted_links = $post_data['linked_sales_orders'] ?? [];
-            
-            $stmt_delete_links = $db->prepare("DELETE FROM po_so_links WHERE purchase_order_id = ?");
-            if (!$stmt_delete_links) throw new Exception("DB prepare failed for deleting PO links.");
-            $stmt_delete_links->bind_param("s", $purchase_order_id);
-            $stmt_delete_links->execute();
-            
-            if (!empty($submitted_links)) {
-                $stmt_insert_links = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
-                if (!$stmt_insert_links) throw new Exception("DB prepare failed for inserting PO links.");
-                
-                foreach ($submitted_links as $sales_order_id) {
-                    $trimmed_so_id = trim($sales_order_id);
-                    if (!empty($trimmed_so_id)) {
-                        $stmt_insert_links->bind_param("ss", $purchase_order_id, $trimmed_so_id);
-                        $stmt_insert_links->execute();
-                    }
-                }
-            }
-        }
-        // --- END CORRECTION ---
 
+        // UPDATE THE PO DETAILS AND HISTORY
         $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
         if (!$stmt) throw new Exception("DB prepare failed for PO update.");
         $stmt->bind_param("ssss", $new_status, $details['supplier_name'], $details['remarks'], $purchase_order_id);
@@ -1420,6 +1439,7 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             $stmt_history->execute();
         }
         
+        // AUTOMATION for Receiving
         if ($is_receiving_event) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
