@@ -1044,13 +1044,12 @@ function initPurchaseOrderList() {
                     const tr = document.createElement('tr');
                     const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
                     
-                    // --- CORRECTED LOGIC for Linked Orders Cell ---
+                    // --- THIS IS THE FINAL CORRECTED LOGIC ---
                     let linkedOrdersHtml = '<span class="text-muted">N/A</span>';
                     if (po.linked_orders && po.linked_orders.length > 0) {
-                        // Map each order ID in the array to an HTML anchor tag
                         linkedOrdersHtml = po.linked_orders.map(orderId => 
                             `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank">${escapeHtml(orderId)}</a>`
-                        ).join('<br>'); // Join multiple links with a line break
+                        ).join('<br>'); // Use a line break to stack multiple IDs
                     }
                     // --- END CORRECTION ---
 
@@ -1076,8 +1075,8 @@ function initPurchaseOrderList() {
             });
     }, 300);
 
-    poIdInput.addEventListener('input', doPoSearch);
-    statusInput.addEventListener('change', doPoSearch);
+    if (poIdInput) poIdInput.addEventListener('input', doPoSearch);
+    if (statusInput) statusInput.addEventListener('change', doPoSearch);
 }
 
 // -----------------------------------------
