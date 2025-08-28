@@ -137,7 +137,13 @@ require_once __DIR__ . '/../../includes/header.php';
                             <div class="col-md-4">
                                 <label for="status" class="form-label">Status</label>
                                 <select class="form-select" id="status" name="status">
-                                    <!-- ... (options remain the same) ... -->
+                                    <option value="Draft" <?= ($is_edit && $po['status'] == 'Draft') ? 'selected' : '' ?>>Draft</option>
+                                    <option value="Ordered" <?= ($is_edit && $po['status'] == 'Ordered') ? 'selected' : '' ?>>Ordered</option>
+                                    <option value="Paid" <?= ($is_edit && $po['status'] == 'Paid') ? 'selected' : '' ?>>Paid</option>
+                                    <option value="Delivered" <?= ($is_edit && $po['status'] == 'Delivered') ? 'selected' : '' ?>>Delivered</option>
+                                    <option value="With int courier" <?= ($is_edit && $po['status'] == 'With int courier') ? 'selected' : '' ?>>With int courier</option>
+                                    <option value="Received" <?= ($is_edit && $po['status'] == 'Received') ? 'selected' : '' ?>>Received</option>
+                                    <option value="Canceled" <?= ($is_edit && $po['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option>
                                 </select>
                             </div>
 
