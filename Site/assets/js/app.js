@@ -1012,16 +1012,13 @@ function initPurchaseOrderList() {
     const statusInput = document.getElementById('search_status');
     const dateRangeInput = document.getElementById('search_date_range');
 
-    // --- Date Range Picker Initialization ---
     const picker = new Litepicker({
         element: dateRangeInput,
         singleMode: false,
         autoApply: true,
         format: 'DD/MM/YYYY',
         setup: (picker) => {
-            picker.on('selected', (date1, date2) => {
-                doPoSearch();
-            });
+            picker.on('selected', () => doPoSearch());
         }
     });
 
@@ -1040,20 +1037,22 @@ function initPurchaseOrderList() {
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No Purchase Orders found.</td></tr>`;
                     return;
                 }
                 data.forEach(po => {
                     const tr = document.createElement('tr');
                     const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
                     
-                    // Note: We expect the PHP to give us the linked orders now
+                    // --- CORRECTED LOGIC for Linked Orders Cell ---
                     let linkedOrdersHtml = '<span class="text-muted">N/A</span>';
                     if (po.linked_orders && po.linked_orders.length > 0) {
+                        // Map each order ID in the array to an HTML anchor tag
                         linkedOrdersHtml = po.linked_orders.map(orderId => 
                             `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank">${escapeHtml(orderId)}</a>`
-                        ).join('<br>');
+                        ).join('<br>'); // Join multiple links with a line break
                     }
+                    // --- END CORRECTION ---
 
                     tr.innerHTML = `
                         <td>${escapeHtml(po.purchase_order_id)}</td>
@@ -1077,7 +1076,6 @@ function initPurchaseOrderList() {
             });
     }, 300);
 
-    // Attach event listeners to all filter controls
     poIdInput.addEventListener('input', doPoSearch);
     statusInput.addEventListener('change', doPoSearch);
 }
