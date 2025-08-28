@@ -1353,18 +1353,15 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         $old_status = $current_state['status'];
         $new_status = $details['status'];
         
-        // Fetch ALL linked sales order IDs from the new linking table
         $stmt_links_fetch = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
         $stmt_links_fetch->bind_param("s", $purchase_order_id);
         $stmt_links_fetch->execute();
         $linked_orders_result = $stmt_links_fetch->get_result()->fetch_all(MYSQLI_ASSOC);
         $linked_order_ids = array_column($linked_orders_result, 'sales_order_id');
 
-        // Define event triggers
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
 
-        // --- CANCELLATION LOGIC ---
         if ($is_cancellation_event) {
             if (in_array($old_status, ['Received', 'Completed'])) {
                 throw new Exception("Cannot cancel this PO because its status is '$old_status'. Please cancel the corresponding GRN first to reverse the stock.");
@@ -1386,39 +1383,43 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             }
         }
         
-        // --- UPDATE LINKED ORDERS (if PO is editable) ---
+        // --- CORRECTED: Handle updating of linked orders if PO is editable ---
         if ($old_status === 'Draft' || $old_status === 'Ordered') {
             $submitted_links = $post_data['linked_sales_orders'] ?? [];
             
-            // A simple and robust way to update links is to delete all and re-insert.
             $stmt_delete_links = $db->prepare("DELETE FROM po_so_links WHERE purchase_order_id = ?");
+            if (!$stmt_delete_links) throw new Exception("DB prepare failed for deleting PO links.");
             $stmt_delete_links->bind_param("s", $purchase_order_id);
             $stmt_delete_links->execute();
             
             if (!empty($submitted_links)) {
                 $stmt_insert_links = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
+                if (!$stmt_insert_links) throw new Exception("DB prepare failed for inserting PO links.");
+                
                 foreach ($submitted_links as $sales_order_id) {
-                    if (!empty(trim($sales_order_id))) {
-                        $stmt_insert_links->bind_param("ss", $purchase_order_id, trim($sales_order_id));
+                    $trimmed_so_id = trim($sales_order_id);
+                    if (!empty($trimmed_so_id)) {
+                        $stmt_insert_links->bind_param("ss", $purchase_order_id, $trimmed_so_id);
                         $stmt_insert_links->execute();
                     }
                 }
             }
         }
+        // --- END CORRECTION ---
 
-        // --- UPDATE THE PO DETAILS AND HISTORY ---
         $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
+        if (!$stmt) throw new Exception("DB prepare failed for PO update.");
         $stmt->bind_param("ssss", $new_status, $details['supplier_name'], $details['remarks'], $purchase_order_id);
         $stmt->execute();
 
         if ($old_status !== $new_status) {
             $po_event_date = !empty($post_data['po_status_event_date']) ? $post_data['po_status_event_date'] : null;
             $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
+            if (!$stmt_history) throw new Exception("DB prepare failed for PO history.");
             $stmt_history->bind_param("sssis", $purchase_order_id, $new_status, $po_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_history->execute();
         }
         
-        // --- AUTOMATION for Receiving ---
         if ($is_receiving_event) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
