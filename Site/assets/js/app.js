@@ -1151,6 +1151,8 @@ function initPurchaseOrderList() {
 
     poIdInput.addEventListener('input', doPoSearch);
     statusInput.addEventListener('change', doPoSearch);
+
+    doPoSearch(); 
 }
 
 // -----------------------------------------
