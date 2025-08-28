@@ -1279,26 +1279,24 @@ function search_grns($filters = []) {
 // -----------------------------------------
 
 /**
- * Searches for purchase orders in the database based on filters.
+ * Searches for purchase orders and correctly attaches all linked sales orders.
  *
- * @param array $filters An associative array of filters. 
- *                       Keys can include 'purchase_order_id', 'date_from', 'date_to', 'status'.
- * @return array The list of purchase orders found.
+ * @param array $filters An associative array of filters.
+ * @return array An array of matching purchase orders, each with a 'linked_orders' array.
  */
 function search_purchase_orders($filters = []) {
     $db = db();
     if (!$db) return [];
 
+    // Step 1: Get the filtered list of main Purchase Order data
     $sql = "
         SELECT 
             p.purchase_order_id, 
             p.po_date, 
             p.supplier_name, 
             p.status, 
-            p.created_by_name,
-            GROUP_CONCAT(l.sales_order_id) AS linked_orders_str
+            p.created_by_name
         FROM purchase_orders p
-        LEFT JOIN po_so_links l ON p.purchase_order_id = l.purchase_order_id
         WHERE 1=1
     ";
             
@@ -1326,11 +1324,11 @@ function search_purchase_orders($filters = []) {
         $types .= 's';
     }
 
-    $sql .= " GROUP BY p.purchase_order_id ORDER BY p.po_date DESC, p.purchase_order_id DESC LIMIT 100";
+    $sql .= " ORDER BY p.po_date DESC, p.purchase_order_id DESC LIMIT 100";
 
     $stmt = $db->prepare($sql);
     if (!$stmt) {
-        error_log("Purchase Order Search Prepare Failed: " . $db->error);
+        error_log("Purchase Order Search (Main Query) Prepare Failed: " . $db->error);
         return [];
     }
     
@@ -1342,18 +1340,37 @@ function search_purchase_orders($filters = []) {
     $result = $stmt->get_result();
     $orders = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-    // --- DEFINITIVE FIX FOR POST-PROCESSING ---
+    // If no POs were found, return early.
+    if (empty($orders)) {
+        return [];
+    }
+
+    // Step 2: Now that we have the PO IDs, fetch all their links in one separate, efficient query.
+    $order_ids = array_column($orders, 'purchase_order_id');
+    $placeholders = implode(',', array_fill(0, count($order_ids), '?')); // Creates ?,?,? string
+    
+    $links_sql = "SELECT purchase_order_id, sales_order_id FROM po_so_links WHERE purchase_order_id IN ($placeholders)";
+    $stmt_links = $db->prepare($links_sql);
+    if (!$stmt_links) {
+        error_log("Purchase Order Search (Links Query) Prepare Failed: " . $db->error);
+        return $orders; // Return main data even if links fail
+    }
+
+    $stmt_links->bind_param(str_repeat('s', count($order_ids)), ...$order_ids);
+    $stmt_links->execute();
+    $links_result = $stmt_links->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // Create a map for easy lookup: [purchase_order_id => [sales_order_id1, sales_order_id2]]
+    $links_map = [];
+    foreach ($links_result as $link) {
+        $links_map[$link['purchase_order_id']][] = $link['sales_order_id'];
+    }
+
+    // Step 3: Attach the links array to each corresponding PO.
     foreach ($orders as $key => $order) {
-        // Check if the concatenated string is not NULL and not empty
-        if (!empty($order['linked_orders_str'])) {
-            // If it has values, explode it into an array
-            $orders[$key]['linked_orders'] = explode(',', $order['linked_orders_str']);
-        } else {
-            // Otherwise, create an empty array, which is what JavaScript expects
-            $orders[$key]['linked_orders'] = [];
-        }
-        // Remove the temporary string column to keep the JSON clean
-        unset($orders[$key]['linked_orders_str']);
+        $po_id = $order['purchase_order_id'];
+        // If a link exists in our map for this PO, use it. Otherwise, use an empty array.
+        $orders[$key]['linked_orders'] = $links_map[$po_id] ?? [];
     }
 
     return $orders;
