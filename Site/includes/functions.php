@@ -1308,29 +1308,43 @@ function search_purchase_orders($filters = []) {
     if (!empty($filters['purchase_order_id'])) {
         $sql .= " AND p.purchase_order_id LIKE ?";
         $params[] = '%' . $filters['purchase_order_id'] . '%';
-        $types = 's';
+        $types .= 's';
     }
     if (!empty($filters['status'])) {
         $sql .= " AND p.status = ?";
         $params[] = $filters['status'];
         $types .= 's';
     }
-    // ... (date filters remain the same) ...
+    if (!empty($filters['date_from'])) {
+        $sql .= " AND p.po_date >= ?";
+        $params[] = $filters['date_from'];
+        $types .= 's';
+    }
+    if (!empty($filters['date_to'])) {
+        $sql .= " AND p.po_date <= ?";
+        $params[] = $filters['date_to'];
+        $types .= 's';
+    }
 
     $sql .= " GROUP BY p.purchase_order_id ORDER BY p.po_date DESC, p.purchase_order_id DESC LIMIT 100";
 
     $stmt = $db->prepare($sql);
-    if (!$stmt) { /* ... error log ... */ return []; }
+    if (!$stmt) {
+        error_log("Purchase Order Search Prepare Failed: " . $db->error);
+        return [];
+    }
     
-    if (!empty($params)) { $stmt->bind_param($types, ...$params); }
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
     
     $stmt->execute();
     $result = $stmt->get_result();
     $orders = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-    // Convert the comma-separated string of linked orders into an array for JavaScript
+    // Post-process the result to turn the comma-separated string into a proper array
     foreach ($orders as $key => $order) {
-        if ($order['linked_orders']) {
+        if (!empty($order['linked_orders'])) {
             $orders[$key]['linked_orders'] = explode(',', $order['linked_orders']);
         } else {
             $orders[$key]['linked_orders'] = [];
