@@ -1092,8 +1092,8 @@ function initPurchaseOrderList() {
 
     const tableBody = document.getElementById('purchaseOrderListTableBody');
     const poIdInput = document.getElementById('search_po_id');
-    const dateRangeInput = document.getElementById('search_date_range');
     const statusInput = document.getElementById('search_status');
+    const dateRangeInput = document.getElementById('search_date_range');
 
     const picker = new Litepicker({
         element: dateRangeInput,
@@ -1101,14 +1101,13 @@ function initPurchaseOrderList() {
         autoApply: true,
         format: 'DD/MM/YYYY',
         setup: (picker) => {
-            picker.on('selected', (date1, date2) => {
-                doPoSearch();
-            });
+            picker.on('selected', () => doPoSearch());
         }
     });
 
     const doPoSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
+
         if (poIdInput.value) { params.set('purchase_order_id', poIdInput.value); }
         if (statusInput.value) { params.set('status', statusInput.value); }
         if (picker.getStartDate() && picker.getEndDate()) {
@@ -1127,14 +1126,23 @@ function initPurchaseOrderList() {
                 data.forEach(po => {
                     const tr = document.createElement('tr');
                     const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
-                    const linkedOrderHtml = po.linked_sales_order_id
-                        ? `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(po.linked_sales_order_id)}" target="_blank">${escapeHtml(po.linked_sales_order_id)}</a>`
-                        : `<span class="text-muted">N/A</span>`;
+                    
+                    // --- THIS IS THE FINAL CORRECTED LOGIC ---
+                    let linkedOrdersHtml = '<span class="text-muted">N/A</span>';
+                    // It now correctly checks the `po.linked_orders` array
+                    if (po.linked_orders && po.linked_orders.length > 0) {
+                        // It maps over the array to create a link for each ID
+                        linkedOrdersHtml = po.linked_orders.map(orderId => 
+                            `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank">${escapeHtml(orderId)}</a>`
+                        ).join('<br>'); // And joins them with a line break
+                    }
+                    // --- END CORRECTION ---
+
                     tr.innerHTML = `
                         <td>${escapeHtml(po.purchase_order_id)}</td>
                         <td>${poDate}</td>
                         <td>${escapeHtml(po.supplier_name)}</td>
-                        <td>${linkedOrderHtml}</td>
+                        <td>${linkedOrdersHtml}</td>
                         <td><span class="badge bg-info text-dark">${escapeHtml(po.status)}</span></td>
                         <td>${escapeHtml(po.created_by_name)}</td>
                         <td>
@@ -1152,11 +1160,11 @@ function initPurchaseOrderList() {
             });
     }, 300);
 
-    poIdInput.addEventListener('input', doPoSearch);
-    statusInput.addEventListener('change', doPoSearch);
+    if (poIdInput) poIdInput.addEventListener('input', doPoSearch);
+    if (statusInput) statusInput.addEventListener('change', doPoSearch);
 
-    doPoSearch(); 
-
+    // This correctly loads the initial data.
+    doPoSearch();
 }
 
 // -----------------------------------------
