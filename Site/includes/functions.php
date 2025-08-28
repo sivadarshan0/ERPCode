@@ -1150,7 +1150,7 @@ function search_open_pre_orders($query) {
 }
 
 /**
- * Retrieves a single, complete purchase order with its items, history, and linked sales orders.
+ * Retrieves a single, complete purchase order with its items, history, and detailed linked sales orders.
  *
  * @param string $purchase_order_id The ID of the PO to fetch.
  * @return array|false The complete PO data, or false if not found.
@@ -1182,11 +1182,21 @@ function get_purchase_order_details($purchase_order_id) {
     $stmt_history->execute();
     $po['status_history'] = $stmt_history->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    // 4. Fetch linked sales orders from the new linking table
-    $stmt_links = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
+    // 4. --- CORRECTED: Fetch linked sales orders WITH customer names ---
+    $stmt_links = $db->prepare("
+        SELECT 
+            l.sales_order_id,
+            c.name as customer_name
+        FROM po_so_links l
+        JOIN orders o ON l.sales_order_id = o.order_id
+        JOIN customers c ON o.customer_id = c.customer_id
+        WHERE l.purchase_order_id = ?
+        ORDER BY l.sales_order_id
+    ");
     $stmt_links->bind_param("s", $purchase_order_id);
     $stmt_links->execute();
     $po['linked_sales_orders'] = $stmt_links->get_result()->fetch_all(MYSQLI_ASSOC);
+    // --- END CORRECTION ---
 
     return $po;
 }

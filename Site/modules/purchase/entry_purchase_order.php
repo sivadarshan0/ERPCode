@@ -1,6 +1,6 @@
 <?php
 // File: /modules/purchase/entry_purchase_order.php
-// FINAL VALIDATED version with Create/Manage modes, Status Tracking, and Pre-Order Linking.
+// FINAL VALIDATED version with multi-order linking and backdating.
 
 session_start();
 error_reporting(E_ALL);
@@ -13,20 +13,23 @@ require_once __DIR__ . '/../../includes/functions.php';
 require_login();
 
 // --- AJAX Endpoints ---
-if (isset($_GET['item_lookup'])) {
+if (isset($_GET['action'])) {
     header('Content-Type: application/json');
     try {
-        $name = trim($_GET['item_lookup']);
-        echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
-    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
-    exit;
-}
-if (isset($_GET['pre_order_lookup'])) {
-    header('Content-Type: application/json');
-    try {
-        $query = trim($_GET['pre_order_lookup']);
-        echo json_encode(strlen($query) >= 2 ? search_open_pre_orders($query) : []);
-    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
+        switch ($_GET['action']) {
+            case 'item_lookup':
+                $name = trim($_GET['query'] ?? '');
+                echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
+                break;
+            case 'pre_order_lookup':
+                $query = trim($_GET['query'] ?? '');
+                echo json_encode(strlen($query) >= 2 ? search_open_pre_orders($query) : []);
+                break;
+        }
+    } catch (Exception $e) { 
+        http_response_code(500); 
+        echo json_encode(['error' => $e->getMessage()]); 
+    }
     exit;
 }
 
@@ -35,7 +38,6 @@ $message_type = '';
 $is_edit = false;
 $po = null;
 
-// --- Check for Edit Mode ---
 if (isset($_GET['purchase_order_id'])) {
     $po_id_to_load = trim($_GET['purchase_order_id']);
     $po = get_purchase_order_details($po_id_to_load);
@@ -48,29 +50,27 @@ if (isset($_GET['purchase_order_id'])) {
     }
 }
 
-// --- Handle Form Submission (Create or Update) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($is_edit) {
-            // --- UPDATE LOGIC ---
             $po_id_to_update = $_POST['purchase_order_id'] ?? '';
             $details_to_update = [
                 'status'        => $_POST['status'] ?? 'Draft',
                 'supplier_name' => $_POST['supplier_name'] ?? '',
                 'remarks'       => $_POST['remarks'] ?? ''
             ];
-            if (update_purchase_order_details($po_id_to_update, $details_to_update, $_POST)) {
-                $_SESSION['success_message'] = "✅ Purchase Order #$po_id_to_update successfully updated.";
+            $update_result = update_purchase_order_details($po_id_to_update, $details_to_update, $_POST);
+            if ($update_result['success']) {
+                $_SESSION['success_message'] = $update_result['message'];
                 header("Location: /modules/purchase/list_purchase_order.php");
                 exit;
             }
         } else {
-            // --- CREATE LOGIC ---
             $po_date = $_POST['po_date'] ?? '';
             $supplier_name = $_POST['supplier_name'] ?? '';
             $status = $_POST['status'] ?? 'Draft';
             $remarks = $_POST['remarks'] ?? '';
-            $linked_sales_order_id = $_POST['linked_sales_order_id'] ?? null;
+            $linked_sales_orders = $_POST['linked_sales_orders'] ?? [];
             
             $item_ids = $_POST['items']['id'] ?? [];
             $quantities = $_POST['items']['quantity'] ?? [];
@@ -83,8 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status, $linked_sales_order_id);
-            
+            $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status, $linked_sales_orders);
             $_SESSION['success_message'] = "✅ Purchase Order #$new_po_id successfully created.";
             header("Location: entry_purchase_order.php");
             exit;
@@ -96,20 +95,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Display success messages from session
 if (isset($_SESSION['success_message'])) {
     $message = $_SESSION['success_message'];
     $message_type = 'success';
     unset($_SESSION['success_message']);
 }
+if (isset($_SESSION['error_message'])) {
+    $message = $_SESSION['error_message'];
+    $message_type = 'danger';
+    unset($_SESSION['error_message']);
+}
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
-
 <div class="container-fluid">
     <div class="row">
         <?php require_once __DIR__ . '/../../includes/sidebar.php'; ?>
-
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h2><?= $is_edit ? 'Manage Purchase Order <span class="badge bg-secondary">'.htmlspecialchars($po['purchase_order_id']).'</span>' : 'New Purchase Order' ?></h2>
@@ -132,7 +133,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             </div>
                             <div class="col-md-4">
                                 <label for="supplier_name" class="form-label">Supplier Name</label>
-                                <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name..." value="<?= htmlspecialchars($po['supplier_name'] ?? '') ?>" <?= $is_edit && $po['status'] !== 'Draft' ? 'readonly' : '' ?>>
+                                <input type="text" class="form-control" id="supplier_name" name="supplier_name" placeholder="Enter supplier name..." value="<?= htmlspecialchars($po['supplier_name'] ?? '') ?>" <?= $is_edit && !in_array($po['status'], ['Draft', 'Ordered']) ? 'readonly' : '' ?>>
                             </div>
                             <div class="col-md-4">
                                 <label for="status" class="form-label">Status</label>
@@ -146,25 +147,25 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <option value="Canceled" <?= ($is_edit && $po['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option>
                                 </select>
                             </div>
+                            <div class="col-md-4 d-none" id="po_status_date_wrapper">
+                                <label for="po_status_event_date" class="form-label">Status Date</label>
+                                <input type="datetime-local" class="form-control" id="po_status_event_date" name="po_status_event_date">
+                            </div>
 
-                            <!-- ENTIRELY NEW UI FOR LINKING SALES ORDERS -->
-                            <?php if (!$is_edit || $po['status'] === 'Draft' || $po['status'] === 'Ordered'): ?>
+                            <?php if (!$is_edit || in_array($po['status'], ['Draft', 'Ordered'])): ?>
                             <div class="col-12">
                                 <label for="pre_order_search" class="form-label">Link to Pre-Order(s)</label>
                                 <div class="position-relative">
                                     <input type="text" class="form-control" id="pre_order_search" autocomplete="off" placeholder="Search Order ID or Customer to link...">
                                     <div id="preOrderResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
                                 </div>
-
-                                <!-- This container will hold the selected order "tags" -->
                                 <div id="linkedOrdersContainer" class="d-flex flex-wrap gap-2 mt-2 border rounded p-2 bg-light" style="min-height: 40px;">
-                                    <!-- Linked orders will be populated here by JavaScript -->
                                     <?php if ($is_edit && !empty($po['linked_sales_orders'])): ?>
                                         <?php foreach ($po['linked_sales_orders'] as $linked_order): ?>
                                             <span class="badge bg-primary d-flex align-items-center">
                                                 <input type="hidden" name="linked_sales_orders[]" value="<?= htmlspecialchars($linked_order['sales_order_id']) ?>">
                                                 <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($linked_order['sales_order_id']) ?>" target="_blank" class="text-white text-decoration-none">
-                                                    <?= htmlspecialchars($linked_order['sales_order_id']) ?>
+                                                    <?= htmlspecialchars($linked_order['sales_order_id']) ?> (<?= htmlspecialchars($linked_order['customer_name']) ?>)
                                                 </a>
                                                 <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
                                             </span>
@@ -176,7 +177,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
                             <div class="col-12">
                                 <label for="remarks" class="form-label">Remarks</label>
-                                <textarea class="form-control" id="remarks" name="remarks" rows="2" placeholder="e.g., Delivery instructions..." <?= $is_edit && $po['status'] !== 'Draft' ? 'readonly' : '' ?>><?= htmlspecialchars($po['remarks'] ?? '') ?></textarea>
+                                <textarea class="form-control" id="remarks" name="remarks" rows="2" placeholder="e.g., Delivery instructions..." <?= $is_edit && !in_array($po['status'], ['Draft', 'Ordered']) ? 'readonly' : '' ?>><?= htmlspecialchars($po['remarks'] ?? '') ?></textarea>
                             </div>
                         </div>
                     </div>
@@ -194,13 +195,13 @@ require_once __DIR__ . '/../../includes/header.php';
                             <table class="table table-sm">
                                 <thead><tr><th style="width: 50%;">Item</th><th style="width: 20%;">Quantity</th><th style="width: 20%;">Cost Price</th><?php if (!$is_edit): ?><th>Actions</th><?php endif; ?></tr></thead>
                                 <tbody id="poItemRows">
-                                    <?php if ($is_edit): ?>
+                                    <?php if ($is_edit && !empty($po['items'])): ?>
                                         <?php foreach ($po['items'] as $item): ?>
-                                            <tr>
-                                                <td><?= htmlspecialchars($item['item_name']) ?></td>
-                                                <td><?= htmlspecialchars($item['quantity']) ?></td>
-                                                <td><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
-                                            </tr>
+                                        <tr>
+                                            <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                            <td><?= htmlspecialchars(number_format($item['quantity'], 2)) ?></td>
+                                            <td><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
+                                        </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </tbody>
@@ -212,20 +213,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <?php if ($is_edit && !empty($po['status_history'])): ?>
                 <div class="card mt-4">
                     <div class="card-header"><i class="bi bi-clock-history"></i> Status History</div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <?php foreach ($po['status_history'] as $history): ?>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>Status set to <strong><?= htmlspecialchars($history['status']) ?></strong>
-                                    <small class="d-block text-muted">by <?= htmlspecialchars($history['created_by_name']) ?></small>
-                                </div>
-                                <span class="badge bg-secondary rounded-pill">
-                                    <?= date("d-M-Y h:i A", strtotime($history['event_date'] ?? $history['created_at'])) ?>
-                                </span>
-                            </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
+                    <div class="card-body"><ul class="list-group list-group-flush"><?php foreach ($po['status_history'] as $history): ?><li class="list-group-item d-flex justify-content-between align-items-center"><div>Status set to <strong><?= htmlspecialchars($history['status']) ?></strong><small class="d-block text-muted">by <?= htmlspecialchars($history['created_by_name']) ?></small></div><span class="badge bg-secondary rounded-pill"><?= date("d-M-Y h:i A", strtotime($history['event_date'] ?? $history['created_at'])) ?></span></li><?php endforeach; ?></ul></div>
                 </div>
                 <?php endif; ?>
 
@@ -242,9 +230,9 @@ require_once __DIR__ . '/../../includes/header.php';
 <?php if (!$is_edit): ?>
 <template id="poItemRowTemplate">
     <tr class="po-item-row">
-        <td class="position-relative"><input type="hidden" name="items[id][]" class="item-id-input"><input type="text" class="form-control form-control-sm item-search-input" placeholder="Start typing item name..." required><div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div><div class="invalid-feedback">Please select an item.</div></td>
-        <td><input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required><div class="invalid-feedback">Req.</div></td>
-        <td><input type="number" class="form-control form-control-sm cost-price-input" name="items[cost_price][]" value="0.00" min="0.00" step="0.01" required><div class="invalid-feedback">Req.</div></td>
+        <td class="position-relative"><input type="hidden" name="items[id][]" class="item-id-input"><input type="text" class="form-control form-control-sm item-search-input" placeholder="Start typing item name..." required><div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div></td>
+        <td><input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required></td>
+        <td><input type="number" class="form-control form-control-sm cost-price-input" name="items[cost_price][]" value="0.00" min="0.00" step="0.01" required></td>
         <td><button type="button" class="btn btn-danger btn-sm remove-item-row"><i class="bi bi-trash"></i></button></td>
     </tr>
 </template>

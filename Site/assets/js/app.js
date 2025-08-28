@@ -777,26 +777,28 @@ function initOrderList() {
 // -----------------------------------------
 // ----- Purchase Order Entry Handler -----
 // -----------------------------------------
-
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
 
-    // --- DEBUG STEP B.1 & B.2 ---
     const isEditMode = !!document.querySelector('input[name="purchase_order_id"]');
-    console.log('isEditMode:', isEditMode);
     const statusSelect = document.getElementById('status');
-    console.log('statusSelect element:', statusSelect);
-    // --- END DEBUG ---
-    
     const poDateInput = document.getElementById('po_date');
+    const preOrderSearchInput = document.getElementById('pre_order_search');
+    const preOrderResults = document.getElementById('preOrderResults');
+    const linkedOrdersContainer = document.getElementById('linkedOrdersContainer');
+    const itemRowsContainer = document.getElementById('poItemRows');
+    const template = document.getElementById('poItemRowTemplate');
+    const addRowBtn = document.getElementById('addPoItemRow');
+
+    // --- Initial page focus ---
     if (poDateInput && !poDateInput.readOnly) {
         poDateInput.focus();
     }
 
+    // --- Backdating UI logic (Only for Edit Mode) ---
     if (isEditMode && statusSelect) {
         const statusDateWrapper = document.getElementById('po_status_date_wrapper');
-        
         if (statusDateWrapper) {
             const originalStatus = statusSelect.value;
             statusSelect.addEventListener('change', function() {
@@ -809,18 +811,9 @@ function initPoEntry() {
         }
     }
 
-    // --- LOGIC FOR MULTI-ORDER LINKING ---
-    const preOrderSearchInput = document.getElementById('pre_order_search');
-    const preOrderResults = document.getElementById('preOrderResults');
-    const linkedOrdersContainer = document.getElementById('linkedOrdersContainer');
-
+    // --- Multi-Order Linking UI logic ---
     if (preOrderSearchInput && preOrderResults && linkedOrdersContainer) {
-        // Function to add a new "tag" for a linked order
         const addLinkedOrderTag = (orderId, customerName) => {
-            // --- DEBUG STEP A.2 ---
-            console.log('addLinkedOrderTag called with:', orderId);
-            // --- END DEBUG ---
-
             if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) {
                 preOrderSearchInput.value = '';
                 return;
@@ -829,7 +822,9 @@ function initPoEntry() {
             tag.className = 'badge bg-primary d-flex align-items-center';
             tag.innerHTML = `
                 <input type="hidden" name="linked_sales_orders[]" value="${escapeHtml(orderId)}">
-                <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">${escapeHtml(orderId)}</a>
+                <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">
+                    ${escapeHtml(orderId)} (${escapeHtml(customerName)})
+                </a>
                 <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
             `;
             linkedOrdersContainer.appendChild(tag);
@@ -839,11 +834,14 @@ function initPoEntry() {
         preOrderSearchInput.addEventListener('input', debounce(() => {
             const query = preOrderSearchInput.value.trim();
             if (query.length < 2) {
-                preOrderResults.classList.add('d-none');
+                if (preOrderResults) preOrderResults.classList.add('d-none');
                 return;
             }
             fetch(`/modules/purchase/entry_purchase_order.php?action=pre_order_lookup&query=${encodeURIComponent(query)}`)
-                .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
+                .then(res => {
+                    if (!res.ok) { throw new Error(`Server responded with ${res.status}`); }
+                    return res.json();
+                })
                 .then(data => {
                     preOrderResults.innerHTML = '';
                     if (data && data.length > 0) {
@@ -853,9 +851,6 @@ function initPoEntry() {
                             btn.className = 'list-group-item list-group-item-action';
                             btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
                             btn.addEventListener('click', () => {
-                                // --- DEBUG STEP A.1 ---
-                                console.log('Button clicked for order:', order.order_id);
-                                // --- END DEBUG ---
                                 addLinkedOrderTag(order.order_id, order.customer_name);
                                 preOrderResults.classList.add('d-none');
                                 preOrderSearchInput.focus();
@@ -867,7 +862,9 @@ function initPoEntry() {
                         preOrderResults.classList.add('d-none');
                     }
                 })
-                .catch(error => console.error('[PreOrderLookup] Error:', error));
+                .catch(error => {
+                     console.error('[PreOrderLookup] Error:', error);
+                });
         }, 300));
 
         document.addEventListener('click', e => {
@@ -883,17 +880,14 @@ function initPoEntry() {
         });
     }
 
-    // --- Logic for adding/removing item rows (only in create mode) ---
-    const itemRowsContainer = document.getElementById('poItemRows');
-    const template = document.getElementById('poItemRowTemplate');
-    const addRowBtn = document.getElementById('addPoItemRow');
-    
+    // --- Item Rows UI logic (ONLY for Create Mode) ---
     if (!isEditMode && itemRowsContainer && template) {
         const addRow = (shouldFocus = true) => {
             const newRow = template.content.cloneNode(true);
             itemRowsContainer.appendChild(newRow);
             if (shouldFocus) {
-                itemRowsContainer.querySelector('.po-item-row:last-child .item-search-input').focus();
+                const searchInput = itemRowsContainer.querySelector('.po-item-row:last-child .item-search-input');
+                if (searchInput) searchInput.focus();
             }
         };
         addRow(false);
@@ -910,10 +904,11 @@ function initPoEntry() {
                 const searchInput = e.target;
                 const resultsContainer = searchInput.nextElementSibling;
                 const name = searchInput.value.trim();
-                if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
+                if (name.length < 2) { if (resultsContainer) resultsContainer.classList.add('d-none'); return; }
                 fetch(`/modules/purchase/entry_purchase_order.php?action=item_lookup&query=${encodeURIComponent(name)}`)
                     .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                     .then(data => {
+                        if (!resultsContainer) return;
                         resultsContainer.innerHTML = '';
                         if (data && data.length > 0) {
                             data.forEach(item => {
