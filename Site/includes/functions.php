@@ -1296,7 +1296,7 @@ function search_purchase_orders($filters = []) {
             p.supplier_name, 
             p.status, 
             p.created_by_name,
-            GROUP_CONCAT(l.sales_order_id) AS linked_orders
+            GROUP_CONCAT(l.sales_order_id) AS linked_orders_str
         FROM purchase_orders p
         LEFT JOIN po_so_links l ON p.purchase_order_id = l.purchase_order_id
         WHERE 1=1
@@ -1342,13 +1342,18 @@ function search_purchase_orders($filters = []) {
     $result = $stmt->get_result();
     $orders = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
-    // Post-process the result to turn the comma-separated string into a proper array
+    // --- DEFINITIVE FIX FOR POST-PROCESSING ---
     foreach ($orders as $key => $order) {
-        if (!empty($order['linked_orders'])) {
-            $orders[$key]['linked_orders'] = explode(',', $order['linked_orders']);
+        // Check if the concatenated string is not NULL and not empty
+        if (!empty($order['linked_orders_str'])) {
+            // If it has values, explode it into an array
+            $orders[$key]['linked_orders'] = explode(',', $order['linked_orders_str']);
         } else {
+            // Otherwise, create an empty array, which is what JavaScript expects
             $orders[$key]['linked_orders'] = [];
         }
+        // Remove the temporary string column to keep the JSON clean
+        unset($orders[$key]['linked_orders_str']);
     }
 
     return $orders;
