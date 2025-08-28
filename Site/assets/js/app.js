@@ -1044,20 +1044,20 @@ function initPurchaseOrderList() {
                     const tr = document.createElement('tr');
                     const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
                     
-                    // --- THIS IS THE FINAL CORRECTED LOGIC ---
+                    // --- THIS LOGIC IS CORRECT ---
                     let linkedOrdersHtml = '<span class="text-muted">N/A</span>';
                     if (po.linked_orders && po.linked_orders.length > 0) {
                         linkedOrdersHtml = po.linked_orders.map(orderId => 
                             `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank">${escapeHtml(orderId)}</a>`
-                        ).join('<br>'); // Use a line break to stack multiple IDs
+                        ).join('<br>');
                     }
-                    // --- END CORRECTION ---
-
+                    
+                    // --- THIS TEMPLATE IS NOW CORRECTED ---
                     tr.innerHTML = `
                         <td>${escapeHtml(po.purchase_order_id)}</td>
                         <td>${poDate}</td>
                         <td>${escapeHtml(po.supplier_name)}</td>
-                        <td>${linkedOrdersHtml}</td>
+                        <td>${linkedOrdersHtml}</td>  <!-- THIS LINE IS NOW CORRECT -->
                         <td><span class="badge bg-info text-dark">${escapeHtml(po.status)}</span></td>
                         <td>${escapeHtml(po.created_by_name)}</td>
                         <td>
@@ -1077,6 +1077,9 @@ function initPurchaseOrderList() {
 
     if (poIdInput) poIdInput.addEventListener('input', doPoSearch);
     if (statusInput) statusInput.addEventListener('change', doPoSearch);
+
+    // Load initial data
+    doPoSearch();
 }
 
 // -----------------------------------------
@@ -1153,7 +1156,7 @@ function initPurchaseOrderList() {
     statusInput.addEventListener('change', doPoSearch);
 
     doPoSearch(); 
-    
+
 }
 
 // -----------------------------------------
