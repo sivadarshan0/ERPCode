@@ -1108,17 +1108,21 @@ function process_purchase_order($po_date, $supplier_name, $items, $remarks, $sta
 }
 
 /**
- * Searches for open Pre-Orders to link them to a Purchase Order.
+ * Searches for open Pre-Orders that are not yet linked to any Purchase Order.
  *
  * @param string $query The Order ID or Customer Name to search for.
- * @return array An array of matching Pre-Orders.
+ * @return array An array of matching, unlinked Pre-Orders.
  */
 function search_open_pre_orders($query) {
     $db = db();
     if (!$db) return [];
     
     $search_term = "%$query%";
-    // CORRECTED: Made the ORDER BY clause unambiguous by specifying the table alias.
+    
+    // THE CORRECTED QUERY:
+    // It now LEFT JOINs with the new po_so_links table.
+    // The WHERE l.sales_order_id IS NULL clause is the key: it ensures we only find
+    // sales orders that do NOT have an existing link.
     $stmt = $db->prepare("
         SELECT 
             o.order_id,
@@ -1126,16 +1130,20 @@ function search_open_pre_orders($query) {
             c.name as customer_name
         FROM orders o
         JOIN customers c ON o.customer_id = c.customer_id
+        LEFT JOIN po_so_links l ON o.order_id = l.sales_order_id
         WHERE o.stock_type = 'Pre-Book' 
           AND o.status IN ('New', 'Awaiting Stock')
+          AND l.sales_order_id IS NULL
           AND (o.order_id LIKE ? OR c.name LIKE ?)
         ORDER BY o.order_date DESC, o.order_id DESC
         LIMIT 10
     ");
+
     if (!$stmt) {
         error_log("Search Open Pre-Orders Prepare Failed: " . $db->error);
         return [];
     }
+    
     $stmt->bind_param("ss", $search_term, $search_term);
     $stmt->execute();
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
