@@ -1153,6 +1153,7 @@ function initPurchaseOrderList() {
     statusInput.addEventListener('change', doPoSearch);
 
     doPoSearch(); 
+    
 }
 
 // -----------------------------------------
