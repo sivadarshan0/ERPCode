@@ -27,6 +27,12 @@
 
 <!-- Custom JavaScript with cache busting -->
 <?php
+    $utilsJsPath = __DIR__ . '/../assets/js/utils.js';
+    $utilsJsVersion = file_exists($utilsJsPath) ? filemtime($utilsJsPath) : time();
+?>
+<script src="/assets/js/utils.js?v=<?= $utilsJsVersion ?>"></script>
+
+<?php
     $appJsPath = __DIR__ . '/../assets/js/app.js';
     $appJsVersion = file_exists($appJsPath) ? filemtime($appJsPath) : time();
 ?>

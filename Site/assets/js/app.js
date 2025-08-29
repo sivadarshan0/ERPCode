@@ -1,24 +1,6 @@
 // File: assets/js/app.js
 // Final validated version with all modules and all UI/UX refinements.
 
-// ───── Utility Functions ─────
-function escapeHtml(unsafe) {
-    return unsafe?.toString()?.replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;") || '';
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function (...args) {
-        const context = this;
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(context, args), wait);
-    };
-}
-
 function showAlert(message, type = 'danger') {
     const alertContainer = document.querySelector('main') || document.body;
     const alertDiv = document.createElement('div');
