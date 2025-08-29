@@ -8,8 +8,9 @@ ini_set('display_errors', 1);
 define('_IN_APP_', true);
 
 require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../../includes/functions.php';
-require_once __DIR__ . '/../../includes/function_acc.php'; // Include the new accounts functions file
+require_once __DIR__ . '/../../includes/functions.php'; 
+require_once __DIR__ . '/../../includes/functions_acc.php'; // Include the new accounts functions file
+
 
 require_login();
 
