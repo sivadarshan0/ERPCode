@@ -16,12 +16,9 @@ function initAccountList() {
     const doAccountSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
 
-        if (accountNameInput.value) {
-            params.set('account_name', accountNameInput.value);
-        }
-        if (accountTypeInput.value) {
-            params.set('account_type', accountTypeInput.value);
-        }
+        if (accountNameInput.value) { params.set('account_name', accountNameInput.value); }
+        if (accountTypeInput.value) { params.set('account_type', accountTypeInput.value); }
+        if (isActiveInput.value) { params.set('is_active', isActiveInput.value); } // Read from status
 
         fetch(`/modules/accounts/list_accounts.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
@@ -58,8 +55,9 @@ function initAccountList() {
             });
     }, 300);
 
-    if(accountNameInput) accountNameInput.addEventListener('input', doAccountSearch);
-    if(accountTypeInput) accountTypeInput.addEventListener('change', doAccountSearch);
+    accountNameInput.addEventListener('input', doAccountSearch);
+    accountTypeInput.addEventListener('change', doAccountSearch);
+    isActiveInput.addEventListener('change', doAccountSearch); // Add listener for status
     
     doAccountSearch();
 }

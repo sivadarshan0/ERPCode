@@ -3,6 +3,7 @@
 // Page to create and manage accounts in the Chart of Accounts.
 
 session_start();
+$custom_js = 'app_acc';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 define('_IN_APP_', true);

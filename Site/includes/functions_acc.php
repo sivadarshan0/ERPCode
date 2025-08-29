@@ -36,6 +36,13 @@ function search_chart_of_accounts($filters = []) {
         $types .= 's';
     }
 
+    // --- NEW: Add logic for the status filter ---
+    if (isset($filters['is_active']) && $filters['is_active'] !== '') {
+        $sql .= " AND is_active = ?";
+        $params[] = $filters['is_active'];
+        $types .= 'i'; // 'i' for integer (0 or 1)
+    }
+
     $sql .= " ORDER BY account_type, account_name";
     
     $stmt = $db->prepare($sql);

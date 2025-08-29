@@ -3,6 +3,7 @@
 // Page to display and filter the Chart of Accounts.
 
 session_start();
+$custom_js = 'app_acc';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 define('_IN_APP_', true);
@@ -20,6 +21,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
         $filters = [
             'account_name' => $_GET['account_name'] ?? null,
             'account_type' => $_GET['account_type'] ?? null,
+            'is_active'    => $_GET['is_active'] ?? null, // Added status
         ];
         echo json_encode(search_chart_of_accounts($filters));
     } catch (Exception $e) { 
@@ -57,10 +59,10 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="card-header"><i class="bi bi-search"></i> Find Accounts</div>
                 <div class="card-body">
                     <form id="accountSearchForm" class="row gx-3 gy-2 align-items-center">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <input type="text" class="form-control" id="search_account_name" placeholder="Search by Account Name...">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <select id="search_account_type" class="form-select">
                                 <option value="">All Account Types</option>
                                 <option value="Asset">Asset</option>
@@ -68,6 +70,14 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <option value="Equity">Equity</option>
                                 <option value="Revenue">Revenue</option>
                                 <option value="Expense">Expense</option>
+                            </select>
+                        </div>
+                        <!-- NEW: Status Filter -->
+                        <div class="col-md-4">
+                            <select id="search_is_active" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
                             </select>
                         </div>
                     </form>
