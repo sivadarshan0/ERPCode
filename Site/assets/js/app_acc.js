@@ -26,7 +26,7 @@ function initAccountList() {
         fetch(`/modules/accounts/list_accounts.php?${params.toString()}`)
             .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
             .then(data => {
-                tableBody.innerHTML = ''; // Clear existing results
+                tableBody.innerHTML = '';
                 if (data.length === 0) {
                     tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No accounts found matching your criteria.</td></tr>`;
                     return;
@@ -58,18 +58,43 @@ function initAccountList() {
             });
     }, 300);
 
-    // Attach event listeners to both filter controls
-    accountNameInput.addEventListener('input', doAccountSearch);
-    accountTypeInput.addEventListener('change', doAccountSearch);
-
-    // Initial load
+    if(accountNameInput) accountNameInput.addEventListener('input', doAccountSearch);
+    if(accountTypeInput) accountTypeInput.addEventListener('change', doAccountSearch);
+    
     doAccountSearch();
 }
+// --------------------------End-------------------------------
 
+// -----------------------------------------
+// ----- Chart of Accounts Entry Handler -----
+// -----------------------------------------
+function initAccountEntry() {
+    const accountTypeSelect = document.getElementById('account_type');
+    const normalBalanceSelect = document.getElementById('normal_balance');
 
-// ───── DOM Ready ─────
+    if (!accountTypeSelect || !normalBalanceSelect) return;
+
+    accountTypeSelect.addEventListener('change', function() {
+        const selectedType = this.value;
+        
+        // Define which account types have a normal debit balance
+        const debitTypes = ['Asset', 'Expense'];
+
+        if (debitTypes.includes(selectedType)) {
+            normalBalanceSelect.value = 'debit';
+        } else {
+            // All other types (Liability, Equity, Revenue) have a credit balance
+            normalBalanceSelect.value = 'credit';
+        }
+    });
+}
+// ──────────────────────── End ─────────────────────────
+
+// ──────────────────── DOM Ready ───────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-    // This file is only for the Accounts module, so we can call the init function directly.
+    // Call the list page handler
     if (document.getElementById('accountSearchForm')) { initAccountList(); }
-    // Add other account-related init functions here in the future...
+    // Call the entry page handler
+    if (document.getElementById('accountForm')) { initAccountEntry(); }
 });
+// ───────────────────────── End ──────────────────────────
