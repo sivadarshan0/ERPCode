@@ -49,20 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // --- Update Logic ---
             update_account($account_id, $details);
             $_SESSION['success_message'] = "✅ Account '" . htmlspecialchars($details['account_name']) . "' successfully updated.";
+            // After update, redirect to the list page
+            header("Location: /modules/accounts/list_accounts.php");
+            exit;
         } else {
             // --- Create Logic ---
-            $new_account_id = add_account($details);
+            add_account($details); // We don't need the new ID
             $_SESSION['success_message'] = "✅ Account '" . htmlspecialchars($details['account_name']) . "' successfully created.";
-            // Redirect to the new edit page
-            header("Location: /modules/accounts/entry_account.php?account_id=" . $new_account_id);
+            // After create, redirect to a fresh, blank entry page
+            header("Location: /modules/accounts/entry_account.php");
             exit;
         }
-
-        // Refresh data after update
-        $account = get_account($account_id);
-        $message = $_SESSION['success_message'];
-        $message_type = 'success';
-        unset($_SESSION['success_message']);
 
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
