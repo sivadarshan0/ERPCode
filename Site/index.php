@@ -131,6 +131,26 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
 
+                <!-- Card 6: Accounts -->
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-bank"></i> Accounts
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">Financial Management</h5>
+                            <div class="d-grid gap-2">
+                                <a href="/modules/accounts/list_accounts.php" class="btn btn-success">
+                                    <i class="bi bi-journal-text"></i> Chart of Accounts
+                                </a>
+                                <a href="/modules/accounts/entry_transaction.php" class="btn btn-primary">
+                                    <i class="bi bi-pencil-square"></i> Journal Entry
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div> <!-- End of the row -->
         </main>
     </div>
