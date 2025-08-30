@@ -12,6 +12,7 @@ function initAccountList() {
     const tableBody = document.getElementById('accountListTableBody');
     const accountNameInput = document.getElementById('search_account_name');
     const accountTypeInput = document.getElementById('search_account_type');
+    const isActiveInput = document.getElementById('search_is_active');
 
     const doAccountSearch = debounce(() => {
         const params = new URLSearchParams({ action: 'search' });
