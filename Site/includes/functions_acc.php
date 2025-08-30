@@ -377,7 +377,7 @@ function record_purchase_payment($po_id, $db) {
 
     // Step 3: Create the journal entry
     $details = [
-        'transaction_date'  => date('Y-m-d'), // Payment happens today
+        'transaction_date'  => $event_date ? date('Y-m-d', strtotime($event_date)) : date('Y-m-d'),
         'description'       => 'Payment for PO #' . $po_id,
         'debit_account_id'  => $accounts['Accounts Payable'],
         'credit_account_id' => $accounts['Bank Account'],

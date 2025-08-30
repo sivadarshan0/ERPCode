@@ -1518,7 +1518,8 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         
         // AUTOMATION for Payment
         if ($is_payment_event) {
-            record_purchase_payment($purchase_order_id, $db);
+            $payment_date = $post_data['po_status_event_date'] ?? null;
+            record_purchase_payment($purchase_order_id, $db, $payment_date);            
             $feedback_message .= " Payment transaction was recorded in the ledger.";
         }
         
