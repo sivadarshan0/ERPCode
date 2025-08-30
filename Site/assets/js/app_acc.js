@@ -141,7 +141,11 @@ function initTransactionList() {
                     const tr = document.createElement('tr');
                     const isCredit = txn.credit_amount !== null;
                     
-                    // Format the source link if it exists
+                    // --- CORRECTED: Use Intl.NumberFormat for proper comma separation ---
+                    const numberFormatter = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 });
+                    const debitAmount = txn.debit_amount ? numberFormatter.format(txn.debit_amount) : '';
+                    const creditAmount = txn.credit_amount ? numberFormatter.format(txn.credit_amount) : '';
+
                     let sourceHtml = escapeHtml(txn.source_type);
                     if (txn.source_id) {
                         let url = '#';
@@ -153,12 +157,13 @@ function initTransactionList() {
                         sourceHtml = `<a href="${url}" target="_blank">${escapeHtml(txn.source_id)}</a>`;
                     }
                     
+                    // --- CORRECTED: Added indentation to the credit-side account name ---
                     tr.innerHTML = `
                         <td>${new Date(txn.transaction_date).toLocaleDateString('en-GB')}</td>
-                        <td class="${isCredit ? 'ps-4' : ''}">${escapeHtml(txn.account_name)}</td>
+                        <td class="${isCredit ? 'ps-4 text-muted' : ''}">${escapeHtml(txn.account_name)}</td>
                         <td>${escapeHtml(txn.description)}</td>
-                        <td class="text-end font-monospace">${txn.debit_amount ? parseFloat(txn.debit_amount).toFixed(2) : ''}</td>
-                        <td class="text-end font-monospace">${txn.credit_amount ? parseFloat(txn.credit_amount).toFixed(2) : ''}</td>
+                        <td class="text-end font-monospace">${debitAmount}</td>
+                        <td class="text-end font-monospace">${creditAmount}</td>
                         <td>${sourceHtml}</td>
                     `;
                     tableBody.appendChild(tr);
