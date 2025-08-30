@@ -98,11 +98,10 @@ echo "Processing Paid Purchase Orders (Payment)...\n";
 $paid_pos_res = $db->query("
     SELECT p.purchase_order_id
     FROM purchase_orders p
-    LEFT JOIN acc_transactions t ON p.purchase_order_id = t.source_id 
-        AND t.source_type = 'purchase_order' 
-        AND t.description LIKE 'Payment for PO #%' -- Correctly includes the '#'
-    WHERE p.status = 'Paid'
-    AND t.transaction_id IS NULL
+    LEFT JOIN acc_transactions t ON p.purchase_order_id = t.source_id AND t.source_type = 'purchase_order'
+    LEFT JOIN acc_chartofaccounts ca ON t.account_id = ca.account_id AND ca.account_type = 'Liability' AND t.debit_amount IS NOT NULL
+    WHERE p.status = 'Paid' AND t.transaction_id IS NULL
+    GROUP BY p.purchase_order_id
 ");
 $paid_pos = $paid_pos_res->fetch_all(MYSQLI_ASSOC);
 
