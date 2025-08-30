@@ -23,14 +23,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $details = [
             'transaction_date'  => $_POST['transaction_date'] ?? '',
             'description'       => $_POST['description'] ?? '',
+            'remarks'           => $_POST['remarks'] ?? '',
             'debit_account_id'  => $_POST['debit_account_id'] ?? '',
             'credit_account_id' => $_POST['credit_account_id'] ?? '',
             'amount'            => $_POST['amount'] ?? 0,
         ];
         
-        $new_txn_id = process_manual_journal_entry($details);
+        // --- THIS IS THE CRITICAL FIX ---
+        // We now call the correct, refactored function and provide the source_type.
+        $new_txn_id = process_journal_entry($details, 'manual_entry', null, db());
+        // --- END FIX ---
         
-        // Use session message for feedback after redirect
         $_SESSION['success_message'] = "✅ Journal Entry #$new_txn_id successfully created.";
         header("Location: entry_transaction.php");
         exit;
@@ -39,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
     }
+
 }
 
 // Handle success message from session after redirect

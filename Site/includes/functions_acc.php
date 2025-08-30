@@ -171,23 +171,35 @@ function update_account($account_id, $details) {
 
 /**
  * Processes a double-entry journal transaction (can be manual or automated).
+ * Now includes the 'remarks' field.
  *
  * @param array $details An associative array with transaction details.
  * @param string $source_type The type of record that generated this transaction.
- * @param string $source_id The ID of the source record.
- * @param mysqli $db An existing database connection for transactions.
+ * @param string|null $source_id The ID of the source record.
+ * @param mysqli $db An existing database connection to use within a transaction.
  * @return string The transaction_group_id for the new entry.
  * @throws Exception On validation or database errors.
  */
+
 function process_journal_entry($details, $source_type, $source_id, $db) {
-    // --- Data Validation (moved to the calling functions) ---
+    // --- Data Validation ---
+    if (empty($details['transaction_date']) || empty($details['description']) || empty($details['debit_account_id']) || empty($details['credit_account_id']) || !isset($details['amount'])) {
+        throw new Exception("Date, Description, Debit Account, Credit Account, and Amount are all required.");
+    }
+    if (!is_numeric($details['amount']) || $details['amount'] <= 0) {
+        throw new Exception("Amount must be a positive number.");
+    }
+    if ($details['debit_account_id'] == $details['credit_account_id']) {
+        throw new Exception("Debit and Credit accounts cannot be the same.");
+    }
 
     // Generate a unique ID for this pair of transactions
     $transaction_group_id = generate_sequence_id('transaction_id', 'acc_transactions', 'transaction_group_id');
     
+    // MODIFIED: Added the `remarks` column to the INSERT statement
     $sql = "INSERT INTO acc_transactions 
-            (transaction_group_id, account_id, transaction_date, financial_year, description, debit_amount, credit_amount, source_type, source_id, created_by_name) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            (transaction_group_id, account_id, transaction_date, financial_year, description, remarks, debit_amount, credit_amount, source_type, source_id, created_by_name) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $db->prepare($sql);
     if (!$stmt) throw new Exception("Database prepare failed: " . $db->error);
@@ -197,7 +209,9 @@ function process_journal_entry($details, $source_type, $source_id, $db) {
     $transaction_date = $details['transaction_date'] . ' ' . date('H:i:s');
     $amount = (float)$details['amount'];
     $description = trim($details['description']);
-    
+    $remarks = trim($details['remarks'] ?? ''); // Get remarks, default to empty string if not set
+
+    // Determine financial year
     $year = date('Y', strtotime($details['transaction_date']));
     $month = date('m', strtotime($details['transaction_date']));
     $financial_year = ($month >= 4) ? $year . '-' . ($year + 1) : ($year - 1) . '-' . $year;
@@ -205,18 +219,19 @@ function process_journal_entry($details, $source_type, $source_id, $db) {
     // --- 1. The DEBIT Entry ---
     $debit_amount = $amount;
     $credit_amount = null;
-    $stmt->bind_param("sisssddsss", $transaction_group_id, $details['debit_account_id'], $transaction_date, $financial_year, $description, $debit_amount, $credit_amount, $source_type, $source_id, $user_name);
+    // MODIFIED: Added 's' for remarks and the $remarks variable to bind_param
+    $stmt->bind_param("sissssddsss", $transaction_group_id, $details['debit_account_id'], $transaction_date, $financial_year, $description, $remarks, $debit_amount, $credit_amount, $source_type, $source_id, $user_name);
     $stmt->execute();
     
     // --- 2. The CREDIT Entry ---
     $debit_amount = null;
     $credit_amount = $amount;
-    $stmt->bind_param("sisssddsss", $transaction_group_id, $details['credit_account_id'], $transaction_date, $financial_year, $description, $debit_amount, $credit_amount, $source_type, $source_id, $user_name);
+    // MODIFIED: Added 's' for remarks and the $remarks variable to bind_param
+    $stmt->bind_param("sissssddsss", $transaction_group_id, $details['credit_account_id'], $transaction_date, $financial_year, $description, $remarks, $debit_amount, $credit_amount, $source_type, $source_id, $user_name);
     $stmt->execute();
     
     return $transaction_group_id;
 }
-// ----------------End----------------------
 
 // -----------------------------------------
 // ----- Automated Transaction Functions -----
