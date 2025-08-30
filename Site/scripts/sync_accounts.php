@@ -8,7 +8,7 @@ chdir(dirname(__DIR__)); // Set the working directory to the project root
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/function_acc.php';
+require_once __DIR__ . '/../includes/functions_acc.php';
 
 // Mock a session for the 'created_by_name' fields
 $_SESSION['username'] = 'SystemSync';
