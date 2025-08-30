@@ -96,14 +96,26 @@ echo "\n";
 // -----------------------------------------
 echo "Processing Paid Purchase Orders (Payment)...\n";
 $paid_pos_res = $db->query("
-    SELECT purchase_order_id 
-    FROM purchase_orders
-    WHERE status = 'Paid' 
-    AND purchase_order_id NOT IN (
-        SELECT source_id FROM acc_transactions 
-        WHERE source_type = 'purchase_order' 
-        AND description LIKE 'Payment for PO %'
-    )
+    SELECT p.purchase_order_id
+    FROM purchase_orders p
+    WHERE 
+        -- Rule 1: The PO's CURRENT status must NOT be Canceled.
+        p.status != 'Canceled'
+    AND 
+        -- Rule 2: A 'Paid' event MUST exist in its history.
+        EXISTS (
+            SELECT 1 
+            FROM purchase_order_status_history h 
+            WHERE h.purchase_order_id = p.purchase_order_id AND h.status = 'Paid'
+        )
+    AND 
+        -- Rule 3: A payment transaction must NOT already exist for it in the ledger.
+        p.purchase_order_id NOT IN (
+            SELECT source_id FROM acc_transactions 
+            WHERE source_type = 'purchase_order' 
+            AND description LIKE 'Payment for PO #%'
+            AND source_id IS NOT NULL
+        )
 ");
 $paid_pos = $paid_pos_res->fetch_all(MYSQLI_ASSOC);
 
