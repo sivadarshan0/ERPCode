@@ -74,17 +74,24 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-header">Transaction Details</div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="transaction_date" class="form-label">Date *</label>
+                            <div class="col-md-3">
+                                <label for="transaction_date" class="form-label">Transaction Date *</label>
                                 <input type="date" class="form-control" id="transaction_date" name="transaction_date" value="<?= date('Y-m-d') ?>" required>
                             </div>
-                            <div class="col-md-8">
+
+                            <!-- NEW: Financial Year Input -->
+                            <div class="col-md-3">
+                                <label for="financial_year" class="form-label">Financial Year *</label>
+                                <input type="text" class="form-control" id="financial_year" name="financial_year" placeholder="e.g., 2024-2025" required>
+                            </div>
+
+                            <div class="col-md-6">
                                 <label for="description" class="form-label">Description *</label>
                                 <input type="text" class="form-control" id="description" name="description" placeholder="e.g., Paid monthly office rent" required>
                             </div>
 
                             <div class="col-md-6">
-                                <label for="debit_account_id" class="form-label">Account to Debit (Increase ↑) *</label>
+                                <label for="debit_account_id" class="form-label">Account to Debit (Receiving Account) *</label>
                                 <select class="form-select" id="debit_account_id" name="debit_account_id" required>
                                     <option value="">Choose...</option>
                                     <?php foreach ($all_accounts as $account): ?>
@@ -93,20 +100,20 @@ require_once __DIR__ . '/../../includes/header.php';
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <div class="form-text">Which account is receiving value? (e.g., Expense account, Asset account)</div>
+                                <div class="form-text">e.g., Rent Expense, Inventory, Bank Account</div>
                             </div>
 
-                             <div class="col-md-6">
-                                <label for="credit_account_id" class="form-label">Account to Credit (Decrease ↓) *</label>
+                            <div class="col-md-6">
+                                <label for="credit_account_id" class="form-label">Account to Credit (Giving Account) *</label>
                                 <select class="form-select" id="credit_account_id" name="credit_account_id" required>
-                                     <option value="">Choose...</option>
+                                    <option value="">Choose...</option>
                                     <?php foreach ($all_accounts as $account): ?>
                                         <option value="<?= $account['account_id'] ?>">
                                             <?= htmlspecialchars($account['account_name']) ?> (<?= htmlspecialchars($account['account_type']) ?>)
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <div class="form-text">Which account is giving value? (e.g., Cash, Bank, Equity account)</div>
+                                <div class="form-text">e.g., Cash, Bank, Owner Equity</div>
                             </div>
                             
                             <div class="col-md-4">
