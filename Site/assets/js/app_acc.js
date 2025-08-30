@@ -87,13 +87,103 @@ function initAccountEntry() {
         }
     });
 }
-// ──────────────────────── End ─────────────────────────
+// ──────────────────────────────────────── End ─────────────────────────────────────────
+
+// -----------------------------------------
+// ----- Transaction List Handler -----
+// -----------------------------------------
+
+function initTransactionList() {
+    const searchForm = document.getElementById('transactionSearchForm');
+    if (!searchForm) return;
+
+    const tableBody = document.getElementById('transactionListTableBody');
+    const dateRangeInput = document.getElementById('search_date_range');
+    const accountIdInput = document.getElementById('search_account_id');
+    const descriptionInput = document.getElementById('search_description');
+
+    // --- Date Range Picker Initialization ---
+    const picker = new Litepicker({
+        element: dateRangeInput,
+        singleMode: false,
+        autoApply: true,
+        format: 'YYYY-MM-DD',
+        setup: (picker) => {
+            picker.on('selected', () => {
+                doTransactionSearch();
+            });
+        }
+    });
+
+    const doTransactionSearch = debounce(() => {
+        const params = new URLSearchParams({ action: 'search' });
+
+        if (picker.getStartDate() && picker.getEndDate()) {
+            params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
+            params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
+        }
+        if (accountIdInput.value) {
+            params.set('account_id', accountIdInput.value);
+        }
+        if (descriptionInput.value) {
+            params.set('description', descriptionInput.value);
+        }
+
+        fetch(`/modules/accounts/list_transactions.php?${params.toString()}`)
+            .then(response => response.ok ? response.json() : Promise.reject('Search failed'))
+            .then(data => {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No transactions found matching your criteria.</td></tr>`;
+                    return;
+                }
+                data.forEach(txn => {
+                    const tr = document.createElement('tr');
+                    const isCredit = txn.credit_amount !== null;
+                    
+                    // Format the source link if it exists
+                    let sourceHtml = escapeHtml(txn.source_type);
+                    if (txn.source_id) {
+                        let url = '#';
+                        if (txn.source_type === 'sales_order') {
+                            url = `/modules/sales/entry_order.php?order_id=${txn.source_id}`;
+                        } else if (txn.source_type === 'purchase_order') {
+                            url = `/modules/purchase/entry_purchase_order.php?purchase_order_id=${txn.source_id}`;
+                        }
+                        sourceHtml = `<a href="${url}" target="_blank">${escapeHtml(txn.source_id)}</a>`;
+                    }
+                    
+                    tr.innerHTML = `
+                        <td>${new Date(txn.transaction_date).toLocaleDateString('en-GB')}</td>
+                        <td class="${isCredit ? 'ps-4' : ''}">${escapeHtml(txn.account_name)}</td>
+                        <td>${escapeHtml(txn.description)}</td>
+                        <td class="text-end font-monospace">${txn.debit_amount ? parseFloat(txn.debit_amount).toFixed(2) : ''}</td>
+                        <td class="text-end font-monospace">${txn.credit_amount ? parseFloat(txn.credit_amount).toFixed(2) : ''}</td>
+                        <td>${sourceHtml}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => {
+                console.error('[TransactionSearch] Error:', error);
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Failed to load search results.</td></tr>`;
+            });
+    }, 300);
+
+    // Attach event listeners to all filter controls
+    accountIdInput.addEventListener('change', doTransactionSearch);
+    descriptionInput.addEventListener('input', doTransactionSearch);
+    
+    // Initial load
+    doTransactionSearch();
+}
+
+// ──────────────────────────────────────── End ─────────────────────────────────────────
 
 // ──────────────────── DOM Ready ───────────────────────
 document.addEventListener('DOMContentLoaded', function () {
-    // Call the list page handler
-    if (document.getElementById('accountSearchForm')) { initAccountList(); }
-    // Call the entry page handler
-    if (document.getElementById('accountForm')) { initAccountEntry(); }
+    if (document.getElementById('accountSearchForm')) { initAccountList(); } // Call the list page handler
+    if (document.getElementById('accountForm')) { initAccountEntry(); } // Call the entry page handler
+    if (document.getElementById('transactionSearchForm')) { initTransactionList(); }
 });
 // ───────────────────────── End ──────────────────────────

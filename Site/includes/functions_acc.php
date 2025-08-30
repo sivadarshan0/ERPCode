@@ -163,7 +163,23 @@ function update_account($account_id, $details) {
 
     return true;
 }
-// ----------------End----------------------
+// ------------------------------------End------------------------------------------
+
+/**
+ * Retrieves a simple list of all active accounts for use in dropdown menus.
+ *
+ * @return array A list of accounts, each with 'account_id' and 'account_name'.
+ */
+function get_all_active_accounts() {
+    $db = db();
+    if (!$db) return [];
+
+    $sql = "SELECT account_id, account_name FROM acc_chartofaccounts WHERE is_active = 1 ORDER BY account_name ASC";
+    $result = $db->query($sql);
+    
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+// ------------------------------------End------------------------------------------
 
 // -----------------------------------------
 // ----- Journal Entry Functions -----
@@ -392,4 +408,87 @@ function record_purchase_payment($po_id, $db, $event_date = null) {
 
     return process_journal_entry($details, 'purchase_order', $po_id, $db);
 }
-// ----------------End----------------------
+// ----------------------------------End-----------------------------------------
+
+// ... (your existing Journal Entry functions are here) ...
+
+// -----------------------------------------
+// ----- Transaction Reporting Functions -----
+// -----------------------------------------
+
+/**
+ * Searches and filters the account transactions (General Ledger).
+ *
+ * @param array $filters An associative array of filters.
+ *                       Keys: 'date_from', 'date_to', 'account_id', 'description'.
+ * @return array The list of transactions.
+ */
+function get_account_transactions($filters = []) {
+    $db = db();
+    if (!$db) return [];
+
+    $sql = "
+        SELECT 
+            t.transaction_id,
+            t.transaction_group_id,
+            t.transaction_date,
+            t.description,
+            t.remarks,
+            t.debit_amount,
+            t.credit_amount,
+            t.source_type,
+            t.source_id,
+            a.account_name,
+            a.account_type
+        FROM acc_transactions t
+        JOIN acc_chartofaccounts a ON t.account_id = a.account_id
+        WHERE 1=1
+    ";
+
+    $params = [];
+    $types = '';
+
+    // Filter by Date Range
+    if (!empty($filters['date_from'])) {
+        $sql .= " AND DATE(t.transaction_date) >= ?";
+        $params[] = $filters['date_from'];
+        $types .= 's';
+    }
+    if (!empty($filters['date_to'])) {
+        $sql .= " AND DATE(t.transaction_date) <= ?";
+        $params[] = $filters['date_to'];
+        $types .= 's';
+    }
+
+    // Filter by a specific Account
+    if (!empty($filters['account_id'])) {
+        $sql .= " AND t.account_id = ?";
+        $params[] = $filters['account_id'];
+        $types .= 'i';
+    }
+
+    // Filter by Description text search
+    if (!empty($filters['description'])) {
+        $sql .= " AND t.description LIKE ?";
+        $params[] = '%' . $filters['description'] . '%';
+        $types .= 's';
+    }
+
+    // Order to group debits/credits from the same transaction together
+    $sql .= " ORDER BY t.transaction_date DESC, t.transaction_group_id ASC, t.credit_amount ASC";
+    
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        error_log("Account Transaction Search Prepare Failed: " . $db->error);
+        return [];
+    }
+    
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+// ----------------------------------End-----------------------------------------
