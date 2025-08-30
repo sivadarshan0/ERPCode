@@ -164,3 +164,211 @@ function update_account($account_id, $details) {
     return true;
 }
 // ----------------End----------------------
+
+// -----------------------------------------
+// ----- Journal Entry Functions -----
+// -----------------------------------------
+
+/**
+ * Processes a double-entry journal transaction (can be manual or automated).
+ *
+ * @param array $details An associative array with transaction details.
+ * @param string $source_type The type of record that generated this transaction.
+ * @param string $source_id The ID of the source record.
+ * @param mysqli $db An existing database connection for transactions.
+ * @return string The transaction_group_id for the new entry.
+ * @throws Exception On validation or database errors.
+ */
+function process_journal_entry($details, $source_type, $source_id, $db) {
+    // --- Data Validation (moved to the calling functions) ---
+
+    // Generate a unique ID for this pair of transactions
+    $transaction_group_id = generate_sequence_id('transaction_id', 'acc_transactions', 'transaction_group_id');
+    
+    $sql = "INSERT INTO acc_transactions 
+            (transaction_group_id, account_id, transaction_date, financial_year, description, debit_amount, credit_amount, source_type, source_id, created_by_name) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $stmt = $db->prepare($sql);
+    if (!$stmt) throw new Exception("Database prepare failed: " . $db->error);
+
+    // --- Prepare Shared Data ---
+    $user_name = $_SESSION['username'] ?? 'Unknown';
+    $transaction_date = $details['transaction_date'] . ' ' . date('H:i:s');
+    $amount = (float)$details['amount'];
+    $description = trim($details['description']);
+    
+    $year = date('Y', strtotime($details['transaction_date']));
+    $month = date('m', strtotime($details['transaction_date']));
+    $financial_year = ($month >= 4) ? $year . '-' . ($year + 1) : ($year - 1) . '-' . $year;
+
+    // --- 1. The DEBIT Entry ---
+    $debit_amount = $amount;
+    $credit_amount = null;
+    $stmt->bind_param("sisssddsss", $transaction_group_id, $details['debit_account_id'], $transaction_date, $financial_year, $description, $debit_amount, $credit_amount, $source_type, $source_id, $user_name);
+    $stmt->execute();
+    
+    // --- 2. The CREDIT Entry ---
+    $debit_amount = null;
+    $credit_amount = $amount;
+    $stmt->bind_param("sisssddsss", $transaction_group_id, $details['credit_account_id'], $transaction_date, $financial_year, $description, $debit_amount, $credit_amount, $source_type, $source_id, $user_name);
+    $stmt->execute();
+    
+    return $transaction_group_id;
+}
+// ----------------End----------------------
+
+// -----------------------------------------
+// ----- Automated Transaction Functions -----
+// -----------------------------------------
+
+/**
+ * Creates the accounting entries for a paid sales order.
+ * This should be called when an order's payment_status becomes 'Received'.
+ *
+ * @param string $order_id The ID of the sales order.
+ * @param mysqli $db The existing database connection for transaction integrity.
+ * @return bool True on success.
+ * @throws Exception On failure.
+ */
+function record_sales_transaction($order_id, $db) {
+    // Step 1: Fetch the necessary order details
+    $stmt_order = $db->prepare("SELECT total_amount, payment_method, order_date FROM orders WHERE order_id = ?");
+    if (!$stmt_order) throw new Exception("DB prepare failed for fetching order details.");
+    $stmt_order->bind_param("s", $order_id);
+    $stmt_order->execute();
+    $order = $stmt_order->get_result()->fetch_assoc();
+
+    if (!$order) {
+        throw new Exception("Sales Order #$order_id not found for accounting entry.");
+    }
+    
+    $amount = (float)$order['total_amount'];
+    if ($amount <= 0) {
+        // No financial transaction to record if the total is zero or less.
+        return true; 
+    }
+
+    // Step 2: Determine which asset account to Debit based on payment method
+    // In a larger system, these account names/IDs might come from a settings table.
+    $debit_account_name = ($order['payment_method'] === 'COD') ? 'Cash in Hand' : 'Bank Account';
+    $credit_account_name = 'Sales Revenue';
+    
+    // Fetch the actual account IDs
+    $stmt_acc = $db->prepare("SELECT account_id FROM acc_chartofaccounts WHERE account_name = ?");
+    
+    $stmt_acc->bind_param("s", $debit_account_name);
+    $stmt_acc->execute();
+    $debit_account_id = $stmt_acc->get_result()->fetch_assoc()['account_id'] ?? null;
+    
+    $stmt_acc->bind_param("s", $credit_account_name);
+    $stmt_acc->execute();
+    $credit_account_id = $stmt_acc->get_result()->fetch_assoc()['account_id'] ?? null;
+    
+    if (!$debit_account_id || !$credit_account_id) {
+        throw new Exception("Could not find the necessary system accounts ('$debit_account_name', '$credit_account_name') in the Chart of Accounts.");
+    }
+
+    // Step 3: Use the manual journal entry function to create the balanced transaction
+    $details = [
+        'transaction_date'  => $order['order_date'],
+        'description'       => 'Sales revenue from Order #' . $order_id,
+        'debit_account_id'  => $debit_account_id,
+        'credit_account_id' => $credit_account_id,
+        'amount'            => $amount,
+    ];
+    
+    // We pass the source_type and source_id directly to a modified journal entry function
+    return process_automated_journal_entry($details, 'sales_order', $order_id, $db);
+}
+// ----------------End----------------------
+
+/**
+ * Creates the accounting entries for receiving goods from a PO.
+ * Debits Inventory, Credits Accounts Payable.
+ *
+ * @param string $po_id The ID of the Purchase Order.
+ * @param mysqli $db The existing database connection.
+ * @return bool True on success.
+ * @throws Exception On failure.
+ */
+function record_inventory_purchase($po_id, $db) {
+    // Step 1: Fetch the total cost of items from the PO
+    $stmt_po = $db->prepare("SELECT SUM(quantity * cost_price) as total_cost, po_date FROM purchase_order_items WHERE purchase_order_id = ?");
+    if (!$stmt_po) throw new Exception("DB prepare failed for fetching PO total.");
+    $stmt_po->bind_param("s", $po_id);
+    $stmt_po->execute();
+    $po = $stmt_po->get_result()->fetch_assoc();
+
+    if (!$po || $po['total_cost'] <= 0) {
+        return true; // No cost to record
+    }
+
+    // Step 2: Get the required account IDs
+    $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Inventory', 'Accounts Payable')");
+    $stmt_acc->execute();
+    $accounts_res = $stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC);
+    $accounts = array_column($accounts_res, 'account_id', 'account_name');
+
+    if (!isset($accounts['Inventory']) || !isset($accounts['Accounts Payable'])) {
+        throw new Exception("Could not find 'Inventory' or 'Accounts Payable' in the Chart of Accounts.");
+    }
+
+    // Step 3: Create the journal entry
+    $details = [
+        'transaction_date'  => $po['po_date'],
+        'description'       => 'Inventory received from PO #' . $po_id,
+        'debit_account_id'  => $accounts['Inventory'],
+        'credit_account_id' => $accounts['Accounts Payable'],
+        'amount'            => $po['total_cost'],
+    ];
+
+    // Renamed source_id to be more generic, source_ref_id
+    return process_journal_entry($details, 'purchase_order', $po_id, $db);
+}
+// ----------------End----------------------
+
+/**
+ * Creates the accounting entries for paying a supplier for a PO.
+ * Debits Accounts Payable, Credits Cash/Bank.
+ *
+ * @param string $po_id The ID of the Purchase Order.
+ * @param mysqli $db The existing database connection.
+ * @return bool True on success.
+ * @throws Exception On failure.
+ */
+function record_purchase_payment($po_id, $db) {
+    // Step 1: Fetch the total cost of items from the PO
+    $stmt_po = $db->prepare("SELECT SUM(quantity * cost_price) as total_cost, po_date FROM purchase_order_items WHERE purchase_order_id = ?");
+    if (!$stmt_po) throw new Exception("DB prepare failed for fetching PO total.");
+    $stmt_po->bind_param("s", $po_id);
+    $stmt_po->execute();
+    $po = $stmt_po->get_result()->fetch_assoc();
+
+    if (!$po || $po['total_cost'] <= 0) {
+        return true; // No cost to record
+    }
+    
+    // Step 2: Get the required account IDs
+    // Assuming payment is from Bank Account. Could be enhanced later with payment method on PO.
+    $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Bank Account', 'Accounts Payable')");
+    $stmt_acc->execute();
+    $accounts_res = $stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC);
+    $accounts = array_column($accounts_res, 'account_id', 'account_name');
+
+    if (!isset($accounts['Bank Account']) || !isset($accounts['Accounts Payable'])) {
+        throw new Exception("Could not find 'Bank Account' or 'Accounts Payable' in the Chart of Accounts.");
+    }
+
+    // Step 3: Create the journal entry
+    $details = [
+        'transaction_date'  => date('Y-m-d'), // Payment happens today
+        'description'       => 'Payment for PO #' . $po_id,
+        'debit_account_id'  => $accounts['Accounts Payable'],
+        'credit_account_id' => $accounts['Bank Account'],
+        'amount'            => $po['total_cost'],
+    ];
+
+    return process_journal_entry($details, 'purchase_order', $po_id, $db);
+}
+// ----------------End----------------------

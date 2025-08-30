@@ -688,6 +688,11 @@ function process_order($customer_id, $order_date, $items, $details) {
                 $stock_reason = "Sold via Order #" . $order_id;
                 adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock'); // Pass 'Ex-Stock' to enforce the check
             }
+
+            if ($details['payment_status'] === 'Received') {
+            // If the order is paid upon creation, record the accounting transaction immediately.
+            record_sales_transaction($order_id, $db);
+            }
         }
 
         $db->commit();
@@ -912,6 +917,14 @@ function update_order_details($order_id, $details, $post_data) {
             $stmt_payment_history = $db->prepare("INSERT INTO payment_status_history (order_id, payment_status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
             $stmt_payment_history->bind_param("sssis", $order_id, $details['payment_status'], $payment_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_payment_history->execute();
+        }
+
+        // Define the event trigger for a new payment
+            $is_payment_received_event = ($details['payment_status'] === 'Received' && $old_payment_status !== 'Received');
+
+        if ($is_payment_received_event) {
+            // If the payment was just marked as received, record the accounting transaction.
+            record_sales_transaction($order_id, $db);
         }
         
         $db->commit();
@@ -1407,19 +1420,14 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         $old_status = $current_state['status'];
         $new_status = $details['status'];
         
-        // --- LOGIC TO UPDATE LINKS (NEW, SMARTER METHOD) ---
+        // --- LOGIC TO UPDATE LINKS (SMARTER METHOD) ---
         if ($old_status === 'Draft' || $old_status === 'Ordered') {
-            // 1. Get existing links from DB
             $stmt_links_fetch = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
             $stmt_links_fetch->bind_param("s", $purchase_order_id);
             $stmt_links_fetch->execute();
             $existing_links_result = $stmt_links_fetch->get_result()->fetch_all(MYSQLI_ASSOC);
             $existing_links = array_column($existing_links_result, 'sales_order_id');
-
-            // 2. Get submitted links from Form
             $submitted_links = $post_data['linked_sales_orders'] ?? [];
-
-            // 3. Calculate what to ADD
             $links_to_add = array_diff($submitted_links, $existing_links);
             if (!empty($links_to_add)) {
                 $stmt_add = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
@@ -1432,8 +1440,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
                     }
                 }
             }
-
-            // 4. Calculate what to REMOVE
             $links_to_remove = array_diff($existing_links, $submitted_links);
             if (!empty($links_to_remove)) {
                 $stmt_remove = $db->prepare("DELETE FROM po_so_links WHERE purchase_order_id = ? AND sales_order_id = ?");
@@ -1457,6 +1463,7 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
+        $is_payment_event = ($new_status === 'Paid' && $old_status !== 'Paid'); // NEW EVENT TRIGGER
 
         if ($is_cancellation_event) {
             if (in_array($old_status, ['Received', 'Completed'])) {
@@ -1498,12 +1505,21 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
 
+            // Accounting Entry for Receiving Goods
+            record_inventory_purchase($purchase_order_id, $db);
+
             if (!empty($linked_order_ids)) {
                 foreach ($linked_order_ids as $linked_order_id) {
                     fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
                 }
                  $feedback_message .= " All linked Sales Orders were fulfilled.";
             }
+        }
+        
+        // AUTOMATION for Payment
+        if ($is_payment_event) {
+            record_purchase_payment($purchase_order_id, $db);
+            $feedback_message .= " Payment transaction was recorded in the ledger.";
         }
         
         $db->commit();
