@@ -827,10 +827,9 @@ function get_order_details($order_id) {
 
 /**
  * Updates the status and details of an existing order and tracks history.
- * - Handles optional event dates for status changes.
+ * - Handles optional event dates.
  * - Handles manual fulfillment of Pre-Book orders.
  * - NEW: Handles stock reversal when an Ex-Stock order is Canceled.
- * - NEW: Prevents changing an Ex-Stock order back to Pre-Book.
  *
  * @param string $order_id The ID of the order to update.
  * @param array $details An array of details to update.
@@ -846,7 +845,7 @@ function update_order_details($order_id, $details, $post_data) {
     $db->begin_transaction();
     try {
         // --- Get the current state of the order from the database BEFORE updating ---
-        $stmt_check = $db->prepare("SELECT status, payment_status, stock_type FROM orders WHERE order_id = ?");
+        $stmt_check = $db->prepare("SELECT status, payment_status, stock_type FROM orders WHERE order_id = ? FOR UPDATE");
         $stmt_check->bind_param("s", $order_id);
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
@@ -857,19 +856,19 @@ function update_order_details($order_id, $details, $post_data) {
         $old_payment_status = $current_state['payment_status'];
         $old_stock_type = $current_state['stock_type'];
 
-        // Get the NEW stock_type from the submitted form data
         $new_stock_type = $post_data['stock_type'] ?? $old_stock_type;
 
-        // --- NEW VALIDATION: Prevent illogical stock type change ---
+        // --- VALIDATION: Prevent illogical stock type change ---
         if ($old_stock_type === 'Ex-Stock' && $new_stock_type === 'Pre-Book') {
             throw new Exception("Cannot change a fulfilled Ex-Stock order back to Pre-Book.");
         }
-
-        $is_manual_fulfillment = ($old_stock_type === 'Pre-Book' && $new_stock_type === 'Ex-Stock');
         
-        // --- NEW CANCELLATION LOGIC ---
+        // --- DEFINE EVENT TRIGGERS ---
+        $is_manual_fulfillment = ($old_stock_type === 'Pre-Book' && $new_stock_type === 'Ex-Stock');
         $is_cancellation = ($details['order_status'] === 'Canceled' && $old_order_status !== 'Canceled');
+        $is_payment_received_event = ($details['payment_status'] === 'Received' && $old_payment_status !== 'Received');
 
+        // --- NEW: CANCELLATION LOGIC FOR STOCK REVERSAL ---
         if ($is_cancellation && $old_stock_type === 'Ex-Stock') {
             // This was an Ex-Stock order that is now being canceled. We must return the stock.
             $stmt_items = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
@@ -884,14 +883,15 @@ function update_order_details($order_id, $details, $post_data) {
                 adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
             }
         }
-        
-        // --- End of new logic, proceed with standard update ---
+        // --- END OF NEW LOGIC ---
 
+        // Update the main order table
         $stmt = $db->prepare("UPDATE orders SET status = ?, payment_method = ?, payment_status = ?, other_expenses = ?, remarks = ?, stock_type = ? WHERE order_id = ?");
         if (!$stmt) throw new Exception("Database error: Failed to prepare statement for order update.");
         $stmt->bind_param("sssdsss", $details['order_status'], $details['payment_method'], $details['payment_status'], $details['other_expenses'], $details['remarks'], $new_stock_type, $order_id);
         $stmt->execute();
         
+        // Handle stock deduction for manual fulfillment
         if ($is_manual_fulfillment) {
             $stmt_items = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
             if (!$stmt_items) throw new Exception("DB prepare failed for fetching order items.");
