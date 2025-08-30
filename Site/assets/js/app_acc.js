@@ -160,7 +160,7 @@ function initTransactionList() {
                     // --- CORRECTED: Added indentation to the credit-side account name ---
                     tr.innerHTML = `
                         <td>${new Date(txn.transaction_date).toLocaleDateString('en-GB')}</td>
-                        <td class="${isCredit ? 'ps-4 text-muted' : ''}">${escapeHtml(txn.account_name)}</td>
+                        <td style="${isCredit ? 'padding-left: 1.5rem; color: #6c757d;' : ''}">${escapeHtml(txn.account_name)}</td>
                         <td>${escapeHtml(txn.description)}</td>
                         <td class="text-end font-monospace">${debitAmount}</td>
                         <td class="text-end font-monospace">${creditAmount}</td>
