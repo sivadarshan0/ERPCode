@@ -100,7 +100,7 @@ $paid_pos_res = $db->query("
     FROM purchase_orders p
     LEFT JOIN acc_transactions t ON p.purchase_order_id = t.source_id 
         AND t.source_type = 'purchase_order' 
-        AND t.description LIKE 'Payment for PO%'
+        AND t.description LIKE 'Payment for PO #%' -- Correctly includes the '#'
     WHERE p.status = 'Paid'
     AND t.transaction_id IS NULL
 ");

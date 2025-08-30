@@ -308,18 +308,23 @@ function record_sales_transaction($order_id, $db) {
  * @throws Exception On failure.
  */
 function record_inventory_purchase($po_id, $db) {
-    // Step 1: Fetch the total cost of items from the PO
-    $stmt_po = $db->prepare("SELECT SUM(quantity * cost_price) as total_cost, po_date FROM purchase_order_items WHERE purchase_order_id = ?");
+    // CORRECTED: The query now joins with the main purchase_orders table to get the po_date
+    $stmt_po = $db->prepare("
+        SELECT p.po_date, SUM(pi.quantity * pi.cost_price) as total_cost 
+        FROM purchase_orders p
+        JOIN purchase_order_items pi ON p.purchase_order_id = pi.purchase_order_id
+        WHERE p.purchase_order_id = ?
+        GROUP BY p.purchase_order_id, p.po_date
+    ");
     if (!$stmt_po) throw new Exception("DB prepare failed for fetching PO total.");
     $stmt_po->bind_param("s", $po_id);
     $stmt_po->execute();
     $po = $stmt_po->get_result()->fetch_assoc();
 
-    if (!$po || $po['total_cost'] <= 0) {
+    if (!$po || !isset($po['total_cost']) || $po['total_cost'] <= 0) {
         return true; // No cost to record
     }
 
-    // Step 2: Get the required account IDs
     $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Inventory', 'Accounts Payable')");
     $stmt_acc->execute();
     $accounts_res = $stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -329,7 +334,6 @@ function record_inventory_purchase($po_id, $db) {
         throw new Exception("Could not find 'Inventory' or 'Accounts Payable' in the Chart of Accounts.");
     }
 
-    // Step 3: Create the journal entry
     $details = [
         'transaction_date'  => $po['po_date'],
         'description'       => 'Inventory received from PO #' . $po_id,
@@ -338,7 +342,6 @@ function record_inventory_purchase($po_id, $db) {
         'amount'            => $po['total_cost'],
     ];
 
-    // Renamed source_id to be more generic, source_ref_id
     return process_journal_entry($details, 'purchase_order', $po_id, $db);
 }
 // ----------------End----------------------
@@ -352,20 +355,24 @@ function record_inventory_purchase($po_id, $db) {
  * @return bool True on success.
  * @throws Exception On failure.
  */
-function record_purchase_payment($po_id, $db) {
-    // Step 1: Fetch the total cost of items from the PO
-    $stmt_po = $db->prepare("SELECT SUM(quantity * cost_price) as total_cost, po_date FROM purchase_order_items WHERE purchase_order_id = ?");
+function record_purchase_payment($po_id, $db, $event_date = null) {
+    // CORRECTED: The query now joins with the main purchase_orders table to get the po_date
+    $stmt_po = $db->prepare("
+        SELECT p.po_date, SUM(pi.quantity * pi.cost_price) as total_cost
+        FROM purchase_orders p
+        JOIN purchase_order_items pi ON p.purchase_order_id = pi.purchase_order_id
+        WHERE p.purchase_order_id = ?
+        GROUP BY p.purchase_order_id, p.po_date
+    ");
     if (!$stmt_po) throw new Exception("DB prepare failed for fetching PO total.");
     $stmt_po->bind_param("s", $po_id);
     $stmt_po->execute();
     $po = $stmt_po->get_result()->fetch_assoc();
 
-    if (!$po || $po['total_cost'] <= 0) {
+    if (!$po || !isset($po['total_cost']) || $po['total_cost'] <= 0) {
         return true; // No cost to record
     }
     
-    // Step 2: Get the required account IDs
-    // Assuming payment is from Bank Account. Could be enhanced later with payment method on PO.
     $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Bank Account', 'Accounts Payable')");
     $stmt_acc->execute();
     $accounts_res = $stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -375,9 +382,8 @@ function record_purchase_payment($po_id, $db) {
         throw new Exception("Could not find 'Bank Account' or 'Accounts Payable' in the Chart of Accounts.");
     }
 
-    // Step 3: Create the journal entry
     $details = [
-        'transaction_date'  => $event_date ? date('Y-m-d', strtotime($event_date)) : date('Y-m-d'),
+        'transaction_date'  => $event_date ? date('Y-m-d', strtotime($event_date)) : $po['po_date'],
         'description'       => 'Payment for PO #' . $po_id,
         'debit_account_id'  => $accounts['Accounts Payable'],
         'credit_account_id' => $accounts['Bank Account'],
