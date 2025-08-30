@@ -294,7 +294,7 @@ function record_sales_transaction($order_id, $db) {
     ];
     
     // We pass the source_type and source_id directly to a modified journal entry function
-    return process_automated_journal_entry($details, 'sales_order', $order_id, $db);
+    return process_journal_entry($details, 'sales_order', $order_id, $db);
 }
 // ----------------End----------------------
 
