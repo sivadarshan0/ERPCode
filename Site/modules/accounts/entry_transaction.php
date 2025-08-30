@@ -1,38 +1,35 @@
 <?php
 // File: /modules/accounts/entry_transaction.php
-// Page to create manual double-entry journal transactions.
+// FINAL version with all fields and buttons.
 
 session_start();
-$custom_js = 'app_acc'; // Load our dedicated accounts javascript
+$custom_js = 'app_acc';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 define('_IN_APP_', true);
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
-require_once __DIR__ . '/../../includes/functions_acc.php';
+require_once __DIR__ . '/../../includes/function_acc.php';
 
 require_login();
 
 $message = '';
 $message_type = '';
 
-// --- Handle Form Submission ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $details = [
             'transaction_date'  => $_POST['transaction_date'] ?? '',
+            'financial_year'    => $_POST['financial_year'] ?? '', // Added financial year
             'description'       => $_POST['description'] ?? '',
-            'remarks'           => $_POST['remarks'] ?? '',
+            'remarks'           => $_POST['remarks'] ?? '', // Added remarks
             'debit_account_id'  => $_POST['debit_account_id'] ?? '',
             'credit_account_id' => $_POST['credit_account_id'] ?? '',
             'amount'            => $_POST['amount'] ?? 0,
         ];
         
-        // --- THIS IS THE CRITICAL FIX ---
-        // We now call the correct, refactored function and provide the source_type.
         $new_txn_id = process_journal_entry($details, 'manual_entry', null, db());
-        // --- END FIX ---
         
         $_SESSION['success_message'] = "✅ Journal Entry #$new_txn_id successfully created.";
         header("Location: entry_transaction.php");
@@ -42,18 +39,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
     }
-
 }
 
-// Handle success message from session after redirect
 if (isset($_SESSION['success_message'])) {
     $message = $_SESSION['success_message'];
     $message_type = 'success';
     unset($_SESSION['success_message']);
 }
 
-// Fetch all active accounts to populate the dropdowns
-$all_accounts = search_chart_of_accounts(['is_active' => 1]);
+// Fetch all active accounts and sort them alphabetically for the dropdowns
+$db = db();
+$all_accounts_query = $db->query("SELECT * FROM acc_chartofaccounts WHERE is_active = 1 ORDER BY account_name ASC");
+$all_accounts = $all_accounts_query->fetch_all(MYSQLI_ASSOC);
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -79,25 +76,25 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-3">
-                                <label for="transaction_date" class="form-label">Transaction Date *</label>
+                                <label for="transaction_date" class="form-label">Date *</label>
                                 <input type="date" class="form-control" id="transaction_date" name="transaction_date" value="<?= date('Y-m-d') ?>" required>
                             </div>
-
-                            <!-- NEW: Financial Year Input -->
                             <div class="col-md-3">
                                 <label for="financial_year" class="form-label">Financial Year *</label>
                                 <input type="text" class="form-control" id="financial_year" name="financial_year" placeholder="e.g., 2024-2025" required>
                             </div>
-
                             <div class="col-md-6">
                                 <label for="description" class="form-label">Description *</label>
                                 <input type="text" class="form-control" id="description" name="description" placeholder="e.g., Paid monthly office rent" required>
                             </div>
-
+                            <div class="col-12">
+                                <label for="remarks" class="form-label">Remarks</label>
+                                <textarea class="form-control" id="remarks" name="remarks" rows="2" placeholder="Internal notes or further details..."></textarea>
+                            </div>
                             <div class="col-md-6">
                                 <label for="debit_account_id" class="form-label">Account to Debit (Receiving Account) *</label>
                                 <select class="form-select" id="debit_account_id" name="debit_account_id" required>
-                                    <option value="">Choose...</option>
+                                    <option value="" selected disabled>Choose...</option>
                                     <?php foreach ($all_accounts as $account): ?>
                                         <option value="<?= $account['account_id'] ?>">
                                             <?= htmlspecialchars($account['account_name']) ?> (<?= htmlspecialchars($account['account_type']) ?>)
@@ -106,11 +103,10 @@ require_once __DIR__ . '/../../includes/header.php';
                                 </select>
                                 <div class="form-text">e.g., Rent Expense, Inventory, Bank Account</div>
                             </div>
-
-                            <div class="col-md-6">
+                             <div class="col-md-6">
                                 <label for="credit_account_id" class="form-label">Account to Credit (Giving Account) *</label>
                                 <select class="form-select" id="credit_account_id" name="credit_account_id" required>
-                                    <option value="">Choose...</option>
+                                    <option value="" selected disabled>Choose...</option>
                                     <?php foreach ($all_accounts as $account): ?>
                                         <option value="<?= $account['account_id'] ?>">
                                             <?= htmlspecialchars($account['account_name']) ?> (<?= htmlspecialchars($account['account_type']) ?>)
@@ -119,7 +115,6 @@ require_once __DIR__ . '/../../includes/header.php';
                                 </select>
                                 <div class="form-text">e.g., Cash, Bank, Owner Equity</div>
                             </div>
-                            
                             <div class="col-md-4">
                                 <label for="amount" class="form-label">Amount *</label>
                                 <div class="input-group">
@@ -135,8 +130,8 @@ require_once __DIR__ . '/../../includes/header.php';
                     <button class="btn btn-primary" type="submit">
                         <i class="bi bi-save"></i> Save Transaction
                     </button>
-                    <!-- We will create this list page in a future step -->
                     <a href="/modules/accounts/list_transactions.php" class="btn btn-secondary">Transaction List</a>
+                    <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
                 </div>
             </form>
         </main>
