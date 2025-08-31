@@ -151,7 +151,7 @@ function initTransactionList() {
                     const debitAmount = txn.debit_amount ? numberFormatter.format(txn.debit_amount) : '';
                     const creditAmount = txn.credit_amount ? numberFormatter.format(txn.credit_amount) : '';
                     
-                    let sourceHtml = escapeHtml(txn.source_type);
+                    let sourceHtml = txn.source_type; // Display source type by default
                     if (txn.source_id) {
                         let url = '#';
                         if (txn.source_type === 'sales_order') {
@@ -162,6 +162,20 @@ function initTransactionList() {
                         sourceHtml = `<a href="${url}" target="_blank">${escapeHtml(txn.source_id)}</a>`;
                     }
                     
+                    // --- THIS IS THE CRITICAL FIX ---
+                    // Logic to build the Actions column
+                    let actionsHtml = '';
+                    // ONLY show the Cancel button if it's a 'manual_entry' and its status is 'Posted'
+                    if (txn.source_type === 'manual_entry' && txn.status === 'Posted' && txn.debit_amount !== null) {
+                        actionsHtml = `
+                            <button class="btn btn-xs btn-danger cancel-txn-btn" data-group-id="${escapeHtml(txn.transaction_group_id)}">
+                                Cancel
+                            </button>
+                        `;
+                    }
+                    
+                    const statusClass = txn.status === 'Posted' ? 'bg-success' : 'bg-secondary';
+
                     tr.innerHTML = `
                         <td>${new Date(txn.transaction_date).toLocaleDateString('en-GB')}</td>
                         <td>${escapeHtml(txn.financial_year)}</td>
@@ -169,7 +183,9 @@ function initTransactionList() {
                         <td>${escapeHtml(txn.description)}</td>
                         <td class="text-end font-monospace">${debitAmount}</td>
                         <td class="text-end font-monospace">${creditAmount}</td>
+                        <td><span class="badge ${statusClass}">${escapeHtml(txn.status)}</span></td>
                         <td>${sourceHtml}</td>
+                        <td>${actionsHtml}</td>
                     `;
                     tableBody.appendChild(tr);
                 });
@@ -195,6 +211,9 @@ function initTransactionList() {
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('accountSearchForm')) { initAccountList(); } // Call the list page handler
     if (document.getElementById('accountForm')) { initAccountEntry(); } // Call the entry page handler
-    if (document.getElementById('transactionSearchForm')) { initTransactionList(); }
+    if (document.getElementById('transactionSearchForm')) {
+        initTransactionList();
+        initTransactionCancel(); // <-- ADD THIS LINE
+    }
 });
 // ───────────────────────── End ──────────────────────────
