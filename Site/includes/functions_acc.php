@@ -514,3 +514,67 @@ function get_account_transactions($filters = []) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 // ----------------------------------End-----------------------------------------
+
+/**
+ * Cancels a manual journal entry by creating a reversing entry.
+ *
+ * @param string $transaction_group_id The group ID of the transaction to cancel.
+ * @return string The group ID of the new reversing transaction.
+ * @throws Exception On failure.
+ */
+function cancel_manual_journal_entry($transaction_group_id) {
+    $db = db();
+    if (!$db) throw new Exception("Database connection failed.");
+
+    $db->begin_transaction();
+    try {
+        // Step 1: Fetch the original debit and credit entries
+        $stmt_fetch = $db->prepare("SELECT * FROM acc_transactions WHERE transaction_group_id = ? AND status = 'Posted'");
+        $stmt_fetch->bind_param("s", $transaction_group_id);
+        $stmt_fetch->execute();
+        $original_txns = $stmt_fetch->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        if (count($original_txns) !== 2) {
+            throw new Exception("Transaction not found or is already canceled/invalid.");
+        }
+
+        // Identify original debit and credit
+        $original_debit = null;
+        $original_credit = null;
+        foreach($original_txns as $txn) {
+            if ($txn['debit_amount'] !== null) $original_debit = $txn;
+            if ($txn['credit_amount'] !== null) $original_credit = $txn;
+        }
+
+        if (!$original_debit || !$original_credit) {
+            throw new Exception("Original transaction is malformed.");
+        }
+
+        // Step 2: Create a new reversing journal entry
+        $reversal_details = [
+            'transaction_date'  => date('Y-m-d'),
+            'description'       => 'Reversal of transaction ' . $transaction_group_id,
+            'remarks'           => 'Automated reversal of manual entry.',
+            // The debit/credit accounts are now flipped
+            'debit_account_id'  => $original_credit['account_id'],
+            'credit_account_id' => $original_debit['account_id'],
+            'amount'            => $original_debit['debit_amount'],
+        ];
+        
+        $reversal_group_id = process_journal_entry($reversal_details, 'manual_entry', $transaction_group_id, $db);
+
+        // Step 3: Mark BOTH the original and the new reversal transaction as 'Canceled'
+        $stmt_update = $db->prepare("UPDATE acc_transactions SET status = 'Canceled' WHERE transaction_group_id IN (?, ?)");
+        $stmt_update->bind_param("ss", $transaction_group_id, $reversal_group_id);
+        $stmt_update->execute();
+        
+        $db->commit();
+        
+        return $reversal_group_id;
+
+    } catch (Exception $e) {
+        $db->rollback();
+        throw new Exception("Failed to cancel journal entry: " . $e->getMessage());
+    }
+}
+// ----------------------------------End-----------------------------------------

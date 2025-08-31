@@ -1,6 +1,6 @@
 <?php
 // File: /modules/accounts/list_transactions.php
-// FINAL version with Financial Year column and filter.
+// FINAL version with status column, cancel button, and cancel AJAX endpoint.
 
 session_start();
 $custom_js = 'app_acc';
@@ -10,32 +10,50 @@ define('_IN_APP_', true);
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
-require_once __DIR__ . '/../../includes/functions_acc.php';
+require_once __DIR__ . '/../../includes/functions_acc.php'; // Corrected filename
 
 require_login();
 
-// --- AJAX Endpoint for Live Search ---
-if (isset($_GET['action']) && $_GET['action'] === 'search') {
+// --- AJAX Endpoints ---
+if (isset($_GET['action'])) {
     header('Content-Type: application/json');
     try {
-        $filters = [
-            'date_from'      => $_GET['date_from'] ?? null,
-            'date_to'        => $_GET['date_to'] ?? null,
-            'account_id'     => $_GET['account_id'] ?? null,
-            'description'    => $_GET['description'] ?? null,
-            'financial_year' => $_GET['financial_year'] ?? null, // ADDED
-        ];
-        echo json_encode(get_account_transactions($filters));
+        switch ($_GET['action']) {
+            case 'search':
+                $filters = [
+                    'date_from'      => $_GET['date_from'] ?? null,
+                    'date_to'        => $_GET['date_to'] ?? null,
+                    'account_id'     => $_GET['account_id'] ?? null,
+                    'description'    => $_GET['description'] ?? null,
+                    'financial_year' => $_GET['financial_year'] ?? null,
+                ];
+                echo json_encode(get_account_transactions($filters));
+                break;
+            
+            case 'cancel_transaction':
+                if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                    throw new Exception('Invalid request method.');
+                }
+                $group_id = $_POST['group_id'] ?? null;
+                if (!$group_id) {
+                    throw new Exception('Transaction Group ID is missing.');
+                }
+                
+                $reversal_id = cancel_manual_journal_entry($group_id);
+                
+                echo json_encode(['success' => true, 'message' => "Transaction #$group_id canceled. Reversing entry #$reversal_id created."]);
+                break;
+        }
     } catch (Exception $e) { 
-        http_response_code(500); 
-        echo json_encode(['error' => $e->getMessage()]); 
+        http_response_code(400); 
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]); 
     }
-    exit;
+    exit; // Use exit instead of die() for consistency
 }
 
-// Initial page load
+// Initial page load data
 $all_accounts = get_all_active_accounts();
-$financial_years = get_distinct_financial_years(); // Get years for the filter
+$financial_years = get_distinct_financial_years();
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -53,6 +71,13 @@ require_once __DIR__ . '/../../includes/header.php';
                     </a>
                 </div>
             </div>
+            
+            <?php
+            if (isset($_SESSION['success_message'])) {
+                echo '<div class="alert alert-success alert-dismissible fade show" role="alert">' . htmlspecialchars($_SESSION['success_message']) . '</div>';
+                unset($_SESSION['success_message']);
+            }
+            ?>
 
             <!-- Search Filters -->
             <div class="card mb-4">
@@ -62,7 +87,6 @@ require_once __DIR__ . '/../../includes/header.php';
                         <div class="col-md-3">
                             <input type="text" class="form-control" id="search_date_range" placeholder="Select Date Range">
                         </div>
-                        <!-- NEW: Financial Year Filter -->
                         <div class="col-md-2">
                             <select id="search_financial_year" class="form-select">
                                 <option value="">All Years</option>
@@ -98,12 +122,14 @@ require_once __DIR__ . '/../../includes/header.php';
                             <thead class="table-light">
                                 <tr>
                                     <th>Date</th>
-                                    <th>Financial Year</th> <!-- NEW Column -->
+                                    <th>Financial Year</th>
                                     <th>Account</th>
                                     <th>Description</th>
                                     <th class="text-end">Debit</th>
                                     <th class="text-end">Credit</th>
+                                    <th>Status</th>
                                     <th>Source</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="transactionListTableBody">
