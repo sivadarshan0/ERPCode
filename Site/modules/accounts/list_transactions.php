@@ -1,9 +1,9 @@
 <?php
 // File: /modules/accounts/list_transactions.php
-// Page to display and filter all account transactions (General Ledger).
+// FINAL version with Financial Year column and filter.
 
 session_start();
-$custom_js = 'app_acc'; // Load our dedicated accounts javascript
+$custom_js = 'app_acc';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 define('_IN_APP_', true);
@@ -19,10 +19,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
     header('Content-Type: application/json');
     try {
         $filters = [
-            'date_from'    => $_GET['date_from'] ?? null,
-            'date_to'      => $_GET['date_to'] ?? null,
-            'account_id'   => $_GET['account_id'] ?? null,
-            'description'  => $_GET['description'] ?? null,
+            'date_from'      => $_GET['date_from'] ?? null,
+            'date_to'        => $_GET['date_to'] ?? null,
+            'account_id'     => $_GET['account_id'] ?? null,
+            'description'    => $_GET['description'] ?? null,
+            'financial_year' => $_GET['financial_year'] ?? null, // ADDED
         ];
         echo json_encode(get_account_transactions($filters));
     } catch (Exception $e) { 
@@ -33,8 +34,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
 }
 
 // Initial page load
-$initial_transactions = get_account_transactions();
 $all_accounts = get_all_active_accounts();
+$financial_years = get_distinct_financial_years(); // Get years for the filter
 
 require_once __DIR__ . '/../../includes/header.php';
 ?>
@@ -61,7 +62,18 @@ require_once __DIR__ . '/../../includes/header.php';
                         <div class="col-md-3">
                             <input type="text" class="form-control" id="search_date_range" placeholder="Select Date Range">
                         </div>
-                        <div class="col-md-4">
+                        <!-- NEW: Financial Year Filter -->
+                        <div class="col-md-2">
+                            <select id="search_financial_year" class="form-select">
+                                <option value="">All Years</option>
+                                <?php foreach ($financial_years as $fy): ?>
+                                    <option value="<?= htmlspecialchars($fy['financial_year']) ?>">
+                                        <?= htmlspecialchars($fy['financial_year']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                              <select id="search_account_id" class="form-select">
                                 <option value="">Filter by Account...</option>
                                 <?php foreach ($all_accounts as $account): ?>
@@ -71,7 +83,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <input type="text" class="form-control" id="search_description" placeholder="Search in Description...">
                         </div>
                     </form>
@@ -86,6 +98,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             <thead class="table-light">
                                 <tr>
                                     <th>Date</th>
+                                    <th>Financial Year</th> <!-- NEW Column -->
                                     <th>Account</th>
                                     <th>Description</th>
                                     <th class="text-end">Debit</th>

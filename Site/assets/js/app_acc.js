@@ -93,16 +93,20 @@ function initAccountEntry() {
 // ----- Transaction List Handler -----
 // -----------------------------------------
 
+// -----------------------------------------
+// ----- Transaction List Handler -----
+// -----------------------------------------
+
 function initTransactionList() {
     const searchForm = document.getElementById('transactionSearchForm');
     if (!searchForm) return;
 
     const tableBody = document.getElementById('transactionListTableBody');
     const dateRangeInput = document.getElementById('search_date_range');
+    const financialYearInput = document.getElementById('search_financial_year'); // ADDED
     const accountIdInput = document.getElementById('search_account_id');
     const descriptionInput = document.getElementById('search_description');
 
-    // --- Date Range Picker Initialization ---
     const picker = new Litepicker({
         element: dateRangeInput,
         singleMode: false,
@@ -122,6 +126,9 @@ function initTransactionList() {
             params.set('date_from', picker.getStartDate().format('YYYY-MM-DD'));
             params.set('date_to', picker.getEndDate().format('YYYY-MM-DD'));
         }
+        if (financialYearInput.value) { // ADDED
+            params.set('financial_year', financialYearInput.value);
+        }
         if (accountIdInput.value) {
             params.set('account_id', accountIdInput.value);
         }
@@ -134,18 +141,16 @@ function initTransactionList() {
             .then(data => {
                 tableBody.innerHTML = '';
                 if (data.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No transactions found matching your criteria.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No transactions found.</td></tr>`; // Colspan updated
                     return;
                 }
                 data.forEach(txn => {
                     const tr = document.createElement('tr');
                     const isCredit = txn.credit_amount !== null;
-                    
-                    // --- CORRECTED: Use Intl.NumberFormat for proper comma separation ---
                     const numberFormatter = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 });
                     const debitAmount = txn.debit_amount ? numberFormatter.format(txn.debit_amount) : '';
                     const creditAmount = txn.credit_amount ? numberFormatter.format(txn.credit_amount) : '';
-
+                    
                     let sourceHtml = escapeHtml(txn.source_type);
                     if (txn.source_id) {
                         let url = '#';
@@ -157,9 +162,9 @@ function initTransactionList() {
                         sourceHtml = `<a href="${url}" target="_blank">${escapeHtml(txn.source_id)}</a>`;
                     }
                     
-                    // --- CORRECTED: Added indentation to the credit-side account name ---
                     tr.innerHTML = `
                         <td>${new Date(txn.transaction_date).toLocaleDateString('en-GB')}</td>
+                        <td>${escapeHtml(txn.financial_year)}</td>
                         <td style="${isCredit ? 'padding-left: 1.5rem; color: #6c757d;' : ''}">${escapeHtml(txn.account_name)}</td>
                         <td>${escapeHtml(txn.description)}</td>
                         <td class="text-end font-monospace">${debitAmount}</td>
@@ -171,11 +176,12 @@ function initTransactionList() {
             })
             .catch(error => {
                 console.error('[TransactionSearch] Error:', error);
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Failed to load search results.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Failed to load results.</td></tr>`; // Colspan updated
             });
     }, 300);
 
     // Attach event listeners to all filter controls
+    financialYearInput.addEventListener('change', doTransactionSearch); // ADDED
     accountIdInput.addEventListener('change', doTransactionSearch);
     descriptionInput.addEventListener('input', doTransactionSearch);
     

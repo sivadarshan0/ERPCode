@@ -410,7 +410,21 @@ function record_purchase_payment($po_id, $db, $event_date = null) {
 }
 // ----------------------------------End-----------------------------------------
 
-// ... (your existing Journal Entry functions are here) ...
+/**
+ * Retrieves a list of distinct financial years from the transactions table.
+ *
+ * @return array A list of financial year strings.
+ */
+function get_distinct_financial_years() {
+    $db = db();
+    if (!$db) return [];
+
+    $sql = "SELECT DISTINCT financial_year FROM acc_transactions ORDER BY financial_year DESC";
+    $result = $db->query($sql);
+    
+    return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+}
+// ----------------------------------End-----------------------------------------
 
 // -----------------------------------------
 // ----- Transaction Reporting Functions -----
@@ -418,9 +432,9 @@ function record_purchase_payment($po_id, $db, $event_date = null) {
 
 /**
  * Searches and filters the account transactions (General Ledger).
+ * Now includes filtering by Financial Year.
  *
  * @param array $filters An associative array of filters.
- *                       Keys: 'date_from', 'date_to', 'account_id', 'description'.
  * @return array The list of transactions.
  */
 function get_account_transactions($filters = []) {
@@ -432,6 +446,7 @@ function get_account_transactions($filters = []) {
             t.transaction_id,
             t.transaction_group_id,
             t.transaction_date,
+            t.financial_year, -- ADDED this column
             t.description,
             t.remarks,
             t.debit_amount,
@@ -473,9 +488,16 @@ function get_account_transactions($filters = []) {
         $params[] = '%' . $filters['description'] . '%';
         $types .= 's';
     }
+    
+    // --- NEW: Filter by Financial Year ---
+    if (!empty($filters['financial_year'])) {
+        $sql .= " AND t.financial_year = ?";
+        $params[] = $filters['financial_year'];
+        $types .= 's';
+    }
+    // --- END NEW ---
 
-    // Order to group debits/credits from the same transaction together
-    $sql .= " ORDER BY t.transaction_date DESC, t.transaction_group_id ASC, t.credit_amount ASC";
+    $sql .= " ORDER BY t.transaction_date DESC, t.transaction_group_id DESC, t.credit_amount ASC";
     
     $stmt = $db->prepare($sql);
     if (!$stmt) {
