@@ -1392,8 +1392,9 @@ function search_purchase_orders($filters = []) {
 /**
  * Updates the status and details of an existing PO and tracks history.
  * - Uses a smart sync for linked orders.
- * - Handles automation when status is 'Received'.
+ * - Handles automation (GRN creation, SO fulfillment) when status is 'Received'.
  * - Handles logic and validation when status is 'Canceled'.
+ * - NOTE: This version is purely operational and does NOT create accounting entries.
  *
  * @param string $purchase_order_id The ID of the PO to update.
  * @param array $details An array of details to update.
@@ -1463,7 +1464,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
-        $is_payment_event = ($new_status === 'Paid' && $old_status !== 'Paid'); // NEW EVENT TRIGGER
 
         if ($is_cancellation_event) {
             if (in_array($old_status, ['Received', 'Completed'])) {
@@ -1475,12 +1475,16 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
                     $history_remark = "Fulfillment reverted: Linked PO #$purchase_order_id was canceled.";
                     
                     $stmt_so_update = $db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
-                    $stmt_so_update->bind_param("ss", $new_so_status, $linked_order_id);
-                    $stmt_so_update->execute();
+                    if ($stmt_so_update) {
+                        $stmt_so_update->bind_param("ss", $new_so_status, $linked_order_id);
+                        $stmt_so_update->execute();
+                    }
                     
                     $stmt_so_history = $db->prepare("INSERT INTO order_status_history (order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
-                    $stmt_so_history->bind_param("sssis", $linked_order_id, $new_so_status, $history_remark, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
-                    $stmt_so_history->execute();
+                    if ($stmt_so_history) {
+                        $stmt_so_history->bind_param("sssis", $linked_order_id, $new_so_status, $history_remark, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
+                        $stmt_so_history->execute();
+                    }
                 }
                 $feedback_message .= " Linked Sales Orders were reverted to 'Awaiting Stock'.";
             }
@@ -1505,9 +1509,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
 
-            // Accounting Entry for Receiving Goods
-            record_inventory_purchase($purchase_order_id, $db);
-
             if (!empty($linked_order_ids)) {
                 foreach ($linked_order_ids as $linked_order_id) {
                     fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
@@ -1516,12 +1517,7 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             }
         }
         
-        // AUTOMATION for Payment
-        if ($is_payment_event) {
-            $payment_date = $post_data['po_status_event_date'] ?? null;
-            record_purchase_payment($purchase_order_id, $db, $payment_date);            
-            $feedback_message .= " Payment transaction was recorded in the ledger.";
-        }
+        // NOTE: ALL AUTOMATION FOR 'Paid' STATUS HAS BEEN REMOVED.
         
         $db->commit();
         

@@ -1,6 +1,7 @@
 <?php
 // File: /scripts/sync_accounts.php
-// A one-time script to retroactively post existing sales and purchases to the accounting ledger.
+// A one-time script to retroactively post PAID SALES ORDERS to the accounting ledger.
+// NOTE: Purchase Order syncing has been removed as it is now a manual process.
 
 // Set up the environment
 define('_IN_APP_', true);
@@ -20,8 +21,6 @@ echo "=================================================\n\n";
 
 $db = db();
 $sales_posted = 0;
-$inventory_posted = 0;
-$payments_posted = 0;
 
 // -----------------------------------------
 // ----- 1. Sync Paid Sales Orders -----
@@ -57,96 +56,11 @@ echo "\n";
 
 
 // -----------------------------------------
-// ----- 2. Sync Received Purchase Orders (Inventory) -----
-// -----------------------------------------
-echo "Processing Received Purchase Orders (Inventory)...\n";
-$received_pos_res = $db->query("
-    SELECT p.purchase_order_id
-    FROM purchase_orders p
-    LEFT JOIN acc_transactions t ON p.purchase_order_id = t.source_id 
-        AND t.source_type = 'purchase_order' 
-        AND t.description LIKE 'Inventory received from PO%'
-    WHERE p.status IN ('Received', 'Paid')
-    AND t.transaction_id IS NULL
-");
-$received_pos = $received_pos_res->fetch_all(MYSQLI_ASSOC);
-
-if (empty($received_pos)) {
-    echo " -> No new received purchase orders to sync.\n";
-} else {
-    foreach ($received_pos as $po) {
-        $po_id = $po['purchase_order_id'];
-        try {
-            $db->begin_transaction();
-            record_inventory_purchase($po_id, $db);
-            $db->commit();
-            echo " -> Successfully posted inventory transaction for PO #$po_id.\n";
-            $inventory_posted++;
-        } catch (Exception $e) {
-            $db->rollback();
-            echo " -> ERROR processing PO Inventory #$po_id: " . $e->getMessage() . "\n";
-        }
-    }
-}
-echo "\n";
-
-
-// -----------------------------------------
-// ----- 3. Sync Paid Purchase Orders (Payment) -----
-// -----------------------------------------
-echo "Processing Paid Purchase Orders (Payment)...\n";
-$paid_pos_res = $db->query("
-    SELECT p.purchase_order_id
-    FROM purchase_orders p
-    WHERE 
-        -- Rule 1: The PO's CURRENT status must NOT be Canceled.
-        p.status != 'Canceled'
-    AND 
-        -- Rule 2: A 'Paid' event MUST exist in its history.
-        EXISTS (
-            SELECT 1 
-            FROM purchase_order_status_history h 
-            WHERE h.purchase_order_id = p.purchase_order_id AND h.status = 'Paid'
-        )
-    AND 
-        -- Rule 3: A payment transaction must NOT already exist for it in the ledger.
-        p.purchase_order_id NOT IN (
-            SELECT source_id FROM acc_transactions 
-            WHERE source_type = 'purchase_order' 
-            AND description LIKE 'Payment for PO #%'
-            AND source_id IS NOT NULL
-        )
-");
-$paid_pos = $paid_pos_res->fetch_all(MYSQLI_ASSOC);
-
-if (empty($paid_pos)) {
-    echo " -> No new paid purchase orders to sync.\n";
-} else {
-    foreach ($paid_pos as $po) {
-        $po_id = $po['purchase_order_id'];
-        try {
-            $db->begin_transaction();
-            record_purchase_payment($po_id, $db);
-            $db->commit();
-            echo " -> Successfully posted payment transaction for PO #$po_id.\n";
-            $payments_posted++;
-        } catch (Exception $e) {
-            $db->rollback();
-            echo " -> ERROR processing PO Payment #$po_id: " . $e->getMessage() . "\n";
-        }
-    }
-}
-echo "\n";
-
-
-// -----------------------------------------
 // ----- Summary Report -----
 // -----------------------------------------
 echo "=================================================\n";
 echo "Sync Complete!\n";
 echo "=================================================\n";
-echo "Sales Transactions Posted: $sales_posted\n";
-echo "Inventory Transactions Posted: $inventory_posted\n";
-echo "Purchase Payment Transactions Posted: $payments_posted\n\n";
+echo "Sales Transactions Posted: $sales_posted\n\n";
 
 ?>
