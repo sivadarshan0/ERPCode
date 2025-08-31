@@ -93,10 +93,6 @@ function initAccountEntry() {
 // ----- Transaction List Handler -----
 // -----------------------------------------
 
-// -----------------------------------------
-// ----- Transaction List Handler -----
-// -----------------------------------------
-
 function initTransactionList() {
     const searchForm = document.getElementById('transactionSearchForm');
     if (!searchForm) return;
@@ -205,6 +201,63 @@ function initTransactionList() {
     doTransactionSearch();
 }
 
+// ──────────────────────────────────────── End ─────────────────────────────────────────
+
+// -----------------------------------------
+// ----- Transaction Cancel Handler -----
+// -----------------------------------------
+
+function initTransactionCancel() {
+    const tableBody = document.getElementById('transactionListTableBody');
+    if (!tableBody) return;
+
+    // Use event delegation to listen for clicks on cancel buttons
+    tableBody.addEventListener('click', function(e) {
+        if (e.target.classList.contains('cancel-txn-btn')) {
+            const button = e.target;
+            const groupId = button.dataset.groupId;
+
+            if (!confirm(`Are you sure you want to cancel transaction group #${groupId}?\nThis will create a reversing entry and cannot be undone.`)) {
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+
+            const formData = new FormData();
+            formData.append('group_id', groupId);
+
+            fetch('/modules/accounts/list_transactions.php?action=cancel_transaction', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    // Find the doTransactionSearch function which is in the scope of initTransactionList and trigger it
+                    // This is a bit of a hack, a better way would be to use custom events or a shared state object
+                    // For now, we will just reload the search to refresh the list
+                    const searchForm = document.getElementById('transactionSearchForm');
+                    if (searchForm) {
+                        // A simple way to trigger the search again is to dispatch an event on one of the inputs
+                        document.getElementById('search_description').dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                } else {
+                    showAlert(data.error, 'danger');
+                    button.disabled = false;
+                    button.textContent = 'Cancel';
+                }
+            })
+            .catch(error => {
+                showAlert('An error occurred. Please try again.', 'danger');
+                button.disabled = false;
+                button.textContent = 'Cancel';
+                console.error('Cancel Transaction Error:', error);
+            });
+        }
+    });
+}
 // ──────────────────────────────────────── End ─────────────────────────────────────────
 
 // ──────────────────── DOM Ready ───────────────────────
