@@ -147,7 +147,7 @@ function initTransactionList() {
                     const debitAmount = txn.debit_amount ? numberFormatter.format(txn.debit_amount) : '';
                     const creditAmount = txn.credit_amount ? numberFormatter.format(txn.credit_amount) : '';
                     
-                    let sourceHtml = txn.source_type; // Display source type by default
+                    let sourceHtml = escapeHtml(txn.source_type);
                     if (txn.source_id) {
                         let url = '#';
                         if (txn.source_type === 'sales_order') {
@@ -157,20 +157,19 @@ function initTransactionList() {
                         }
                         sourceHtml = `<a href="${url}" target="_blank">${escapeHtml(txn.source_id)}</a>`;
                     }
-                    
-                    // --- THIS IS THE CRITICAL FIX ---
-                    // Logic to build the Actions column
+
+                    // --- DEFINITIVE FIX FOR THE CANCEL BUTTON ---
                     let actionsHtml = '';
-                    // ONLY show the Cancel button if it's a 'manual_entry' and its status is 'Posted'
-                    if (txn.source_type === 'manual_entry' && txn.status === 'Posted' && txn.debit_amount !== null) {
+                    // The button should only appear on the DEBIT row of a POSTED manual entry.
+                    if (txn.source_type === 'manual_entry' && txn.status === 'Posted' && !isCredit) {
                         actionsHtml = `
-                            <button class="btn btn-xs btn-danger cancel-txn-btn" data-group-id="${escapeHtml(txn.transaction_group_id)}">
-                                Cancel
+                            <button class="btn btn-sm btn-outline-danger cancel-txn-btn" data-group-id="${escapeHtml(txn.transaction_group_id)}">
+                                <i class="bi bi-x-circle"></i> Cancel
                             </button>
                         `;
                     }
                     
-                    const statusClass = txn.status === 'Posted' ? 'bg-success' : 'bg-secondary';
+                    const statusClass = txn.status === 'Posted' ? 'text-success' : 'text-danger';
 
                     tr.innerHTML = `
                         <td>${new Date(txn.transaction_date).toLocaleDateString('en-GB')}</td>
@@ -179,7 +178,7 @@ function initTransactionList() {
                         <td>${escapeHtml(txn.description)}</td>
                         <td class="text-end font-monospace">${debitAmount}</td>
                         <td class="text-end font-monospace">${creditAmount}</td>
-                        <td><span class="badge ${statusClass}">${escapeHtml(txn.status)}</span></td>
+                        <td><strong class="${statusClass}">${escapeHtml(txn.status)}</strong></td>
                         <td>${sourceHtml}</td>
                         <td>${actionsHtml}</td>
                     `;

@@ -446,11 +446,12 @@ function get_account_transactions($filters = []) {
             t.transaction_id,
             t.transaction_group_id,
             t.transaction_date,
-            t.financial_year, -- ADDED this column
+            t.financial_year,
             t.description,
             t.remarks,
             t.debit_amount,
             t.credit_amount,
+            t.status, -- THIS LINE WAS MISSING
             t.source_type,
             t.source_id,
             a.account_name,
