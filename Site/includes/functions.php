@@ -827,13 +827,12 @@ function get_order_details($order_id) {
 
 /**
  * Updates the status and details of an existing order and tracks history.
- * - Handles optional event dates.
- * - Handles manual fulfillment of Pre-Book orders.
- * - NEW: Handles stock reversal when an Ex-Stock order is Canceled.
+ * - Handles stock reversal when an Ex-Stock order is Canceled.
+ * - Handles manual fulfillment of Pre-Book orders, including updating item costs.
  *
  * @param string $order_id The ID of the order to update.
- * @param array $details An array of details to update.
- * @param array $post_data The raw POST data.
+ * @param array $details An array of header details to update.
+ * @param array $post_data The raw POST data, containing all form fields.
  * @return bool True on success.
  * @throws Exception On validation or database errors.
  */
@@ -846,6 +845,7 @@ function update_order_details($order_id, $details, $post_data) {
     try {
         // --- Get the current state of the order from the database BEFORE updating ---
         $stmt_check = $db->prepare("SELECT status, payment_status, stock_type FROM orders WHERE order_id = ? FOR UPDATE");
+        if (!$stmt_check) throw new Exception("DB prepare failed for order check.");
         $stmt_check->bind_param("s", $order_id);
         $stmt_check->execute();
         $current_state = $stmt_check->get_result()->fetch_assoc();
@@ -856,6 +856,7 @@ function update_order_details($order_id, $details, $post_data) {
         $old_payment_status = $current_state['payment_status'];
         $old_stock_type = $current_state['stock_type'];
 
+        // Get the NEW stock_type from the submitted form data
         $new_stock_type = $post_data['stock_type'] ?? $old_stock_type;
 
         // --- VALIDATION: Prevent illogical stock type change ---
@@ -868,44 +869,62 @@ function update_order_details($order_id, $details, $post_data) {
         $is_cancellation = ($details['order_status'] === 'Canceled' && $old_order_status !== 'Canceled');
         $is_payment_received_event = ($details['payment_status'] === 'Received' && $old_payment_status !== 'Received');
 
-        // --- NEW: CANCELLATION LOGIC FOR STOCK REVERSAL ---
+        // --- CANCELLATION LOGIC FOR STOCK REVERSAL ---
         if ($is_cancellation && $old_stock_type === 'Ex-Stock') {
-            // This was an Ex-Stock order that is now being canceled. We must return the stock.
             $stmt_items = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
             if (!$stmt_items) throw new Exception("DB prepare failed for fetching items for cancellation.");
             $stmt_items->bind_param("s", $order_id);
             $stmt_items->execute();
             $items_to_return = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
-
             foreach ($items_to_return as $item) {
                 $stock_reason = "Stock returned from canceled Order #" . $order_id;
-                // Use 'IN' to add the stock back to inventory
                 adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
             }
         }
-        // --- END OF NEW LOGIC ---
 
-        // Update the main order table
+        // --- UPDATE THE MAIN ORDER HEADER ---
         $stmt = $db->prepare("UPDATE orders SET status = ?, payment_method = ?, payment_status = ?, other_expenses = ?, remarks = ?, stock_type = ? WHERE order_id = ?");
         if (!$stmt) throw new Exception("Database error: Failed to prepare statement for order update.");
         $stmt->bind_param("sssdsss", $details['order_status'], $details['payment_method'], $details['payment_status'], $details['other_expenses'], $details['remarks'], $new_stock_type, $order_id);
         $stmt->execute();
         
-        // Handle stock deduction for manual fulfillment
+        // --- MANUAL FULFILLMENT LOGIC ---
         if ($is_manual_fulfillment) {
-            $stmt_items = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
-            if (!$stmt_items) throw new Exception("DB prepare failed for fetching order items.");
-            $stmt_items->bind_param("s", $order_id);
-            $stmt_items->execute();
-            $items_to_deduct = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
-
+            // Deduct stock for all items
+            $stmt_items_deduct = $db->prepare("SELECT item_id, quantity FROM order_items WHERE order_id = ?");
+            if (!$stmt_items_deduct) throw new Exception("DB prepare failed for fetching items to deduct.");
+            $stmt_items_deduct->bind_param("s", $order_id);
+            $stmt_items_deduct->execute();
+            $items_to_deduct = $stmt_items_deduct->get_result()->fetch_all(MYSQLI_ASSOC);
             foreach ($items_to_deduct as $item) {
                 $stock_reason = "Manually fulfilled from Pre-Book for Order #" . $order_id;
                 adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
             }
+
+            // --- THIS IS THE CRITICAL NEW PART ---
+            // Update cost_price and margin for each item from the hidden inputs
+            if (isset($post_data['items']['cost']) && isset($post_data['items']['margin'])) {
+                $item_ids = get_order_details($order_id)['items']; // Fetch items again to get their IDs in order
+                $costs = $post_data['items']['cost'];
+                $margins = $post_data['items']['margin'];
+                
+                if (count($item_ids) === count($costs) && count($item_ids) === count($margins)) {
+                    $stmt_update_items = $db->prepare("UPDATE order_items SET cost_price = ?, profit_margin = ? WHERE order_item_id = ?");
+                    if (!$stmt_update_items) throw new Exception("DB prepare failed for updating item costs.");
+                    
+                    for ($i = 0; $i < count($item_ids); $i++) {
+                        $order_item_id = $item_ids[$i]['order_item_id'];
+                        $cost = $costs[$i];
+                        $margin = $margins[$i];
+                        $stmt_update_items->bind_param("ddi", $cost, $margin, $order_item_id);
+                        $stmt_update_items->execute();
+                    }
+                }
+            }
+            // --- END CRITICAL PART ---
         }
 
-        // History logging logic
+        // History logging
         if ($old_order_status !== $details['order_status']) {
             $order_event_date = !empty($post_data['order_status_event_date']) ? $post_data['order_status_event_date'] : null;
             $stmt_history = $db->prepare("INSERT INTO order_status_history (order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
@@ -918,12 +937,9 @@ function update_order_details($order_id, $details, $post_data) {
             $stmt_payment_history->bind_param("sssis", $order_id, $details['payment_status'], $payment_event_date, $_SESSION['user_id'], $_SESSION['username']);
             $stmt_payment_history->execute();
         }
-
-        // Define the event trigger for a new payment
-            $is_payment_received_event = ($details['payment_status'] === 'Received' && $old_payment_status !== 'Received');
-
+        
+        // Accounting integration for received payments
         if ($is_payment_received_event) {
-            // If the payment was just marked as received, record the accounting transaction.
             record_sales_transaction($order_id, $db);
         }
         

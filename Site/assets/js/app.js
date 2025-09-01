@@ -426,7 +426,10 @@ function initOrderEntry() {
         }
     };
 
-    // --- LOGIC FOR EDIT MODE (Backdating Statuses) ---
+    if (otherExpensesInput) {
+        otherExpensesInput.addEventListener('input', calculateTotals);
+    }
+    
     if (isEditMode) {
         const orderStatusDateWrapper = document.getElementById('order_status_date_wrapper');
         const paymentStatusDateWrapper = document.getElementById('payment_status_date_wrapper');
@@ -454,7 +457,80 @@ function initOrderEntry() {
         }
     }
 
-    // --- LOGIC FOR CREATE MODE (Customer Search, Add Row Button, etc.) ---
+    if (stockTypeSelect) {
+        stockTypeSelect.addEventListener('change', () => {
+            toggleRowFields();
+
+            if (isEditMode) {
+                if (stockTypeSelect.value === 'Ex-Stock') {
+                    itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+                        const itemId = row.querySelector('.item-id-input')?.value;
+                        if (!itemId) return;
+
+                        fetch(`/modules/sales/entry_order.php?action=get_item_stock_details&item_id=${itemId}`)
+                            .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch item details'))
+                            .then(details => {
+                                if (details) {
+                                    const stockDisplay = row.querySelector('.stock-display');
+                                    const costDisplay = row.querySelector('.cost-display');
+                                    const marginDisplay = row.querySelector('.margin-input');
+                                    const priceDisplay = row.querySelector('.price-input');
+                                    
+                                    if (stockDisplay) stockDisplay.value = parseFloat(details.stock_on_hand).toFixed(2);
+                                    
+                                    const cost = parseFloat(details.last_cost) || 0;
+                                    if (costDisplay) costDisplay.value = cost.toFixed(2);
+                                    
+                                    const price = parseFloat(priceDisplay.value) || 0;
+                                    let margin = 0.00;
+                                    if (cost > 0 && price > 0) {
+                                        margin = ((price / cost) - 1) * 100;
+                                    }
+                                    if (marginDisplay) marginDisplay.value = margin.toFixed(2);
+
+                                    let costInputHidden = row.querySelector('input.cost-input-hidden');
+                                    if (!costInputHidden) {
+                                        costInputHidden = document.createElement('input');
+                                        costInputHidden.type = 'hidden';
+                                        costInputHidden.className = 'cost-input-hidden';
+                                        costInputHidden.name = 'items[cost][]';
+                                        row.appendChild(costInputHidden);
+                                    }
+                                    costInputHidden.value = cost.toFixed(2);
+                                    
+                                    let marginInputHidden = row.querySelector('input.margin-input-hidden');
+                                    if (!marginInputHidden) {
+                                        marginInputHidden = document.createElement('input');
+                                        marginInputHidden.type = 'hidden';
+                                        marginInputHidden.className = 'margin-input-hidden';
+                                        marginInputHidden.name = 'items[margin][]';
+                                        row.appendChild(marginInputHidden);
+                                    }
+                                    marginInputHidden.value = margin.toFixed(2);
+
+                                    validateRowStock(row);
+                                }
+                            });
+                    });
+                }
+            } else {
+                itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+                    row.querySelector('.item-search-input').value = '';
+                    row.querySelector('.item-id-input').value = '';
+                    row.querySelector('.uom-display').value = '';
+                    row.querySelector('.stock-display').value = '';
+                    row.querySelector('.cost-input').value = '0';
+                    row.querySelector('.cost-display').value = '0.00';
+                    row.querySelector('.margin-input').value = '0';
+                    row.querySelector('.price-input').value = '0.00';
+                    row.querySelector('.quantity-input').value = '1';
+                    validateRowStock(row);
+                });
+                calculateTotals();
+            }
+        });
+    }
+
     if (!isEditMode) {
         if (customerSearchInput) {
             const doCustomerLookup = debounce(() => {
@@ -503,179 +579,113 @@ function initOrderEntry() {
         };
 
         if (addRowBtn) addRowBtn.addEventListener('click', addRow);
+
+        if (itemRowsContainer) {
+            itemRowsContainer.addEventListener('click', e => {
+                if (e.target.closest('.remove-item-row')) {
+                    e.target.closest('.order-item-row').remove();
+                    calculateTotals();
+                }
+            });
+        
+            itemRowsContainer.addEventListener('input', e => {
+                const row = e.target.closest('.order-item-row');
+                if (!row) return;
+                if (e.target.classList.contains('item-search-input')) {
+                    debounce(() => {
+                        const searchInput = e.target;
+                        const resultsContainer = row.querySelector('.item-results');
+                        const name = searchInput.value.trim();
+                        const stockType = stockTypeSelect.value;
+                        if (name.length < 2) return resultsContainer.classList.add('d-none');
+                        fetch(`/modules/sales/entry_order.php?action=item_lookup&query=${encodeURIComponent(name)}&type=${stockType}`)
+                            .then(res => res.ok ? res.json() : Promise.reject('Item lookup failed'))
+                            .then(data => {
+                                resultsContainer.innerHTML = '';
+                                if (data && data.length > 0) {
+                                    data.forEach(item => {
+                                        const btn = document.createElement('button');
+                                        btn.type = 'button';
+                                        btn.className = 'list-group-item list-group-item-action py-1';
+                                        const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
+                                        btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
+                                        btn.addEventListener('click', () => {
+                                            row.querySelector('.item-id-input').value = item.item_id;
+                                            searchInput.value = item.name;
+                                            row.querySelector('.uom-display').value = item.uom;
+                                            if (stockType === 'Ex-Stock') {
+                                                row.querySelector('.stock-display').value = item.stock_on_hand;
+                                                const cost = parseFloat(item.last_cost) || 0;
+                                                row.querySelector('.cost-input').value = cost.toFixed(2);
+                                                row.querySelector('.cost-display').value = cost.toFixed(2);
+                                                row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
+                                            } else {
+                                                row.querySelector('.cost-display').focus();
+                                            }
+                                            resultsContainer.classList.add('d-none');
+                                            validateRowStock(row);
+                                        });
+                                        resultsContainer.appendChild(btn);
+                                    });
+                                    resultsContainer.classList.remove('d-none');
+                                }
+                            });
+                    }, 300)();
+                    return;
+                }
+                const costDisplayInput = row.querySelector('.cost-display');
+                const costHiddenInput = row.querySelector('.cost-input');
+                const marginInput = row.querySelector('.margin-input');
+                const priceInput = row.querySelector('.price-input');
+                if (e.target === costDisplayInput) { costHiddenInput.value = costDisplayInput.value; }
+                const cost = parseFloat(costHiddenInput.value) || 0;
+                if (e.target === marginInput || e.target === costDisplayInput) {
+                    const margin = parseFloat(marginInput.value) || 0;
+                    priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
+                } else if (e.target === priceInput) {
+                    const price = parseFloat(priceInput.value) || 0;
+                    if (cost > 0) {
+                        marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
+                    } else {
+                        marginInput.value = '0.00';
+                    }
+                }
+                if (e.target.matches('.price-input, .quantity-input, .margin-input, .cost-display')) {
+                    calculateTotals();
+                    validateRowStock(row);
+                }
+            });
+
+            itemRowsContainer.addEventListener('focus', (e) => {
+                if (e.target.classList.contains('cost-display') || e.target.classList.contains('margin-input')) {
+                    e.target.select();
+                }
+            }, true);
+        }
+
+        if (form) {
+            form.addEventListener('keydown', (e) => {
+                if (e.key !== 'Tab') return;
+                const activeElement = document.activeElement;
+                if (activeElement === otherExpensesInput) {
+                    const firstItemInput = itemRowsContainer?.querySelector('.item-search-input');
+                    if (firstItemInput) { e.preventDefault(); firstItemInput.focus(); }
+                    return;
+                }
+                if (addRowBtn) {
+                    const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
+                    const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
+                    if (activeElement === lastQuantityInput) { e.preventDefault(); addRowBtn.focus(); }
+                    if (activeElement === addRowBtn) { e.preventDefault(); createOrderBtn.focus(); }
+                }
+            });
+        }
         
         if (itemRowsContainer && itemRowsContainer.children.length === 0) {
             addRow();
         }
     }
-    
-    // --- EVENT LISTENERS THAT RUN IN BOTH CREATE AND EDIT MODE ---
-    
-    if (stockTypeSelect) {
-        stockTypeSelect.addEventListener('change', () => {
-            toggleRowFields();
 
-            if (isEditMode) {
-                if (stockTypeSelect.value === 'Ex-Stock') {
-                    itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                        const itemId = row.querySelector('.item-id-input')?.value;
-                        if (!itemId) return;
-
-                        fetch(`/modules/sales/entry_order.php?action=get_item_stock_details&item_id=${itemId}`)
-                            .then(res => res.ok ? res.json() : Promise.reject('Failed to fetch item details'))
-                            .then(details => {
-                                if (details) {
-                                    const stockDisplay = row.querySelector('.stock-display');
-                                    const costDisplay = row.querySelector('.cost-display');
-                                    const costInput = row.querySelector('.cost-input');
-                                    const marginInput = row.querySelector('.margin-input');
-                                    const priceInput = row.querySelector('.price-input');
-                                    
-                                    if(stockDisplay) stockDisplay.value = parseFloat(details.stock_on_hand).toFixed(2);
-                                    
-                                    const cost = parseFloat(details.last_cost) || 0;
-                                    
-                                    if(costInput) costInput.value = cost.toFixed(2);
-                                    if(costDisplay) costDisplay.value = cost.toFixed(2);
-                                    
-                                    const price = parseFloat(priceInput.value) || 0;
-
-                                    if (cost > 0 && price > 0) {
-                                        const newMargin = ((price / cost) - 1) * 100;
-                                        if (marginInput) marginInput.value = newMargin.toFixed(2);
-                                    } else {
-                                        if (marginInput) marginInput.value = '0.00';
-                                    }
-                                    validateRowStock(row);
-                                }
-                            })
-                            .catch(err => console.error(err));
-                    });
-                }
-            } else {
-                itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                    row.querySelector('.item-search-input').value = '';
-                    row.querySelector('.item-id-input').value = '';
-                    row.querySelector('.uom-display').value = '';
-                    row.querySelector('.stock-display').value = '';
-                    row.querySelector('.cost-input').value = '0';
-                    row.querySelector('.cost-display').value = '0.00';
-                    row.querySelector('.margin-input').value = '0';
-                    row.querySelector('.price-input').value = '0.00';
-                    row.querySelector('.quantity-input').value = '1';
-                    validateRowStock(row);
-                });
-                calculateTotals();
-            }
-        });
-    }
-
-    if (itemRowsContainer) {
-        itemRowsContainer.addEventListener('click', e => {
-            if (!isEditMode && e.target.closest('.remove-item-row')) {
-                e.target.closest('.order-item-row').remove();
-                calculateTotals();
-            }
-        });
-        
-        itemRowsContainer.addEventListener('input', e => {
-            if (isEditMode) return;
-            const row = e.target.closest('.order-item-row');
-            if (!row) return;
-
-            if (e.target.classList.contains('item-search-input')) {
-                debounce(() => {
-                    const searchInput = e.target;
-                    const resultsContainer = row.querySelector('.item-results');
-                    const name = searchInput.value.trim();
-                    const stockType = stockTypeSelect.value;
-                    if (name.length < 2) return resultsContainer.classList.add('d-none');
-                    fetch(`/modules/sales/entry_order.php?action=item_lookup&query=${encodeURIComponent(name)}&type=${stockType}`)
-                        .then(res => res.ok ? res.json() : Promise.reject('Item lookup failed'))
-                        .then(data => {
-                            resultsContainer.innerHTML = '';
-                            if (data && data.length > 0) {
-                                data.forEach(item => {
-                                    const btn = document.createElement('button');
-                                    btn.type = 'button';
-                                    btn.className = 'list-group-item list-group-item-action py-1';
-                                    const detailsHtml = stockType === 'Ex-Stock' ? `<small>Cost: ${item.last_cost || 'N/A'} | Stock: ${item.stock_on_hand}</small>` : `<small>ID: ${escapeHtml(item.item_id)}</small>`;
-                                    btn.innerHTML = `<strong>${escapeHtml(item.name)}</strong><br>${detailsHtml}`;
-                                    btn.addEventListener('click', () => {
-                                        row.querySelector('.item-id-input').value = item.item_id;
-                                        searchInput.value = item.name;
-                                        row.querySelector('.uom-display').value = item.uom;
-                                        if (stockType === 'Ex-Stock') {
-                                            row.querySelector('.stock-display').value = item.stock_on_hand;
-                                            const cost = parseFloat(item.last_cost) || 0;
-                                            row.querySelector('.cost-input').value = cost.toFixed(2);
-                                            row.querySelector('.cost-display').value = cost.toFixed(2);
-                                            row.querySelector('.margin-input').dispatchEvent(new Event('input', { bubbles: true }));
-                                        } else {
-                                            row.querySelector('.cost-display').focus();
-                                        }
-                                        resultsContainer.classList.add('d-none');
-                                        validateRowStock(row);
-                                    });
-                                    resultsContainer.appendChild(btn);
-                                });
-                                resultsContainer.classList.remove('d-none');
-                            }
-                        });
-                }, 300)();
-                return;
-            }
-            
-            const costDisplayInput = row.querySelector('.cost-display');
-            const costHiddenInput = row.querySelector('.cost-input');
-            const marginInput = row.querySelector('.margin-input');
-            const priceInput = row.querySelector('.price-input');
-            if (e.target === costDisplayInput) { costHiddenInput.value = costDisplayInput.value; }
-            const cost = parseFloat(costHiddenInput.value) || 0;
-            if (e.target === marginInput || e.target === costDisplayInput) {
-                const margin = parseFloat(marginInput.value) || 0;
-                priceInput.value = (cost * (1 + margin / 100)).toFixed(2);
-            } else if (e.target === priceInput) {
-                const price = parseFloat(priceInput.value) || 0;
-                if (cost > 0) {
-                    marginInput.value = (((price / cost) - 1) * 100).toFixed(2);
-                } else {
-                    marginInput.value = '0.00';
-                }
-            }
-            if (e.target.matches('.price-input, .quantity-input, .margin-input, .cost-display')) {
-                calculateTotals();
-                validateRowStock(row);
-            }
-        });
-
-        itemRowsContainer.addEventListener('focus', (e) => {
-            if (isEditMode) return;
-            if (e.target.classList.contains('cost-display') || e.target.classList.contains('margin-input')) {
-                e.target.select();
-            }
-        }, true);
-    }
-
-    if (form && !isEditMode) {
-        form.addEventListener('keydown', (e) => {
-            if (e.key !== 'Tab') return;
-            const activeElement = document.activeElement;
-            if (activeElement === otherExpensesInput) {
-                const firstItemInput = itemRowsContainer?.querySelector('.item-search-input');
-                if (firstItemInput) { e.preventDefault(); firstItemInput.focus(); }
-                return;
-            }
-            if (addRowBtn) {
-                const allQuantityInputs = Array.from(itemRowsContainer.querySelectorAll('.quantity-input'));
-                const lastQuantityInput = allQuantityInputs[allQuantityInputs.length - 1];
-                if (activeElement === lastQuantityInput) { e.preventDefault(); addRowBtn.focus(); }
-                if (activeElement === addRowBtn) { e.preventDefault(); createOrderBtn.focus(); }
-            }
-        });
-    }
-
-    // Initial setup on page load
     if (stockTypeSelect) {
         toggleRowFields();
     }
