@@ -255,7 +255,7 @@ function process_journal_entry($details, $source_type, $source_id, $db) {
 
 /**
  * Creates the accounting entries for a paid sales order.
- * This should be called when an order's payment_status becomes 'Received'.
+ * This function is now idempotent: it checks for existing entries and only creates what is missing.
  *
  * @param string $order_id The ID of the sales order.
  * @param mysqli $db The existing database connection for transaction integrity.
@@ -263,8 +263,8 @@ function process_journal_entry($details, $source_type, $source_id, $db) {
  * @throws Exception On failure.
  */
 function record_sales_transaction($order_id, $db) {
-    // Step 1: Fetch the necessary order details
-    $stmt_order = $db->prepare("SELECT total_amount, payment_method, order_date FROM orders WHERE order_id = ?");
+    // Step 1: Fetch the main order details, now including other_expenses
+    $stmt_order = $db->prepare("SELECT total_amount, other_expenses, payment_method, order_date FROM orders WHERE order_id = ?");
     if (!$stmt_order) throw new Exception("DB prepare failed for fetching order details.");
     $stmt_order->bind_param("s", $order_id);
     $stmt_order->execute();
@@ -274,43 +274,75 @@ function record_sales_transaction($order_id, $db) {
         throw new Exception("Sales Order #$order_id not found for accounting entry.");
     }
     
-    $amount = (float)$order['total_amount'];
-    if ($amount <= 0) {
-        // No financial transaction to record if the total is zero or less.
-        return true; 
+    // --- Step 2: Record the Sales Revenue Transaction (IF IT DOESN'T EXIST) ---
+    $stmt_check_rev = $db->prepare("SELECT transaction_id FROM acc_transactions WHERE source_type = 'sales_order' AND source_id = ? AND description LIKE 'Sales revenue from Order #%'");
+    $stmt_check_rev->bind_param("s", $order_id);
+    $stmt_check_rev->execute();
+    $revenue_exists = $stmt_check_rev->get_result()->num_rows > 0;
+    
+    if (!$revenue_exists) {
+        // Grand total for revenue is items total + other expenses
+        $revenue_amount = (float)$order['total_amount'] + (float)$order['other_expenses'];
+        if ($revenue_amount > 0) {
+            $debit_account_name = ($order['payment_method'] === 'COD') ? 'Cash in Hand' : 'Bank Account';
+            
+            $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN (?, 'Sales Revenue')");
+            $stmt_acc->bind_param("s", $debit_account_name);
+            $stmt_acc->execute();
+            $accounts_res = $stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC);
+            $accounts = array_column($accounts_res, 'account_id', 'account_name');
+            
+            if (!isset($accounts[$debit_account_name]) || !isset($accounts['Sales Revenue'])) {
+                throw new Exception("Could not find necessary system accounts ('$debit_account_name', 'Sales Revenue') in the Chart of Accounts.");
+            }
+
+            $revenue_details = [
+                'transaction_date'  => $order['order_date'],
+                'description'       => 'Sales revenue from Order #' . $order_id,
+                'debit_account_id'  => $accounts[$debit_account_name],
+                'credit_account_id' => $accounts['Sales Revenue'],
+                'amount'            => $revenue_amount,
+            ];
+            process_journal_entry($revenue_details, 'sales_order', $order_id, $db);
+        }
     }
 
-    // Step 2: Determine which asset account to Debit based on payment method
-    // In a larger system, these account names/IDs might come from a settings table.
-    $debit_account_name = ($order['payment_method'] === 'COD') ? 'Cash in Hand' : 'Bank Account';
-    $credit_account_name = 'Sales Revenue';
-    
-    // Fetch the actual account IDs
-    $stmt_acc = $db->prepare("SELECT account_id FROM acc_chartofaccounts WHERE account_name = ?");
-    
-    $stmt_acc->bind_param("s", $debit_account_name);
-    $stmt_acc->execute();
-    $debit_account_id = $stmt_acc->get_result()->fetch_assoc()['account_id'] ?? null;
-    
-    $stmt_acc->bind_param("s", $credit_account_name);
-    $stmt_acc->execute();
-    $credit_account_id = $stmt_acc->get_result()->fetch_assoc()['account_id'] ?? null;
-    
-    if (!$debit_account_id || !$credit_account_id) {
-        throw new Exception("Could not find the necessary system accounts ('$debit_account_name', '$credit_account_name') in the Chart of Accounts.");
-    }
+    // --- Step 3: Record the Cost of Goods Sold (COGS) Transaction (IF IT DOESN'T EXIST) ---
+    $stmt_check_cogs = $db->prepare("SELECT transaction_id FROM acc_transactions WHERE source_type = 'sales_order' AND source_id = ? AND description LIKE 'Cost of goods sold for Order #%'");
+    $stmt_check_cogs->bind_param("s", $order_id);
+    $stmt_check_cogs->execute();
+    $cogs_exists = $stmt_check_cogs->get_result()->num_rows > 0;
 
-    // Step 3: Use the manual journal entry function to create the balanced transaction
-    $details = [
-        'transaction_date'  => $order['order_date'],
-        'description'       => 'Sales revenue from Order #' . $order_id,
-        'debit_account_id'  => $debit_account_id,
-        'credit_account_id' => $credit_account_id,
-        'amount'            => $amount,
-    ];
+    if (!$cogs_exists) {
+        $stmt_items = $db->prepare("SELECT SUM(quantity * cost_price) as total_cogs FROM order_items WHERE order_id = ?");
+        if (!$stmt_items) throw new Exception("DB prepare failed for fetching order items for COGS.");
+        $stmt_items->bind_param("s", $order_id);
+        $stmt_items->execute();
+        $cogs_data = $stmt_items->get_result()->fetch_assoc();
+        
+        $cogs_amount = (float)($cogs_data['total_cogs'] ?? 0);
+        if ($cogs_amount > 0) {
+            $stmt_acc_cogs = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Cost of Goods Sold', 'Inventory')");
+            $stmt_acc_cogs->execute();
+            $accounts_cogs_res = $stmt_acc_cogs->get_result()->fetch_all(MYSQLI_ASSOC);
+            $cogs_accounts = array_column($accounts_cogs_res, 'account_id', 'account_name');
+
+            if (!isset($cogs_accounts['Cost of Goods Sold']) || !isset($cogs_accounts['Inventory'])) {
+                throw new Exception("Could not find necessary system accounts ('Cost of Goods Sold', 'Inventory') in the Chart of Accounts.");
+            }
+
+            $cogs_details = [
+                'transaction_date'  => $order['order_date'],
+                'description'       => 'Cost of goods sold for Order #' . $order_id,
+                'debit_account_id'  => $cogs_accounts['Cost of Goods Sold'],
+                'credit_account_id' => $cogs_accounts['Inventory'],
+                'amount'            => $cogs_amount,
+            ];
+            process_journal_entry($cogs_details, 'sales_order', $order_id, $db);
+        }
+    }
     
-    // We pass the source_type and source_id directly to a modified journal entry function
-    return process_journal_entry($details, 'sales_order', $order_id, $db);
+    return true;
 }
 // ----------------End----------------------
 
