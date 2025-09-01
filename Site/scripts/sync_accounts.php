@@ -29,9 +29,15 @@ echo "Processing Paid Sales Orders...\n";
 $paid_orders_res = $db->query("
     SELECT o.order_id 
     FROM orders o
-    LEFT JOIN acc_transactions t ON o.order_id = t.source_id AND t.source_type = 'sales_order'
-    WHERE o.payment_status = 'Received'
-    AND t.transaction_id IS NULL
+    WHERE 
+        o.payment_status = 'Received'
+    AND 
+        o.order_id NOT IN (
+            SELECT DISTINCT source_id FROM acc_transactions 
+            WHERE source_type = 'sales_order' 
+            AND description LIKE 'Cost of goods sold for Order #%'
+            AND source_id IS NOT NULL
+        )
 ");
 $paid_orders = $paid_orders_res->fetch_all(MYSQLI_ASSOC);
 
