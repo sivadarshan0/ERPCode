@@ -26,6 +26,7 @@ if (isset($_GET['action'])) {
                     'account_id'     => $_GET['account_id'] ?? null,
                     'description'    => $_GET['description'] ?? null,
                     'financial_year' => $_GET['financial_year'] ?? null,
+                    'status'         => $_GET['status'] ?? null, 
                 ];
                 echo json_encode(get_account_transactions($filters));
                 break;
@@ -97,7 +98,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                              <select id="search_account_id" class="form-select">
                                 <option value="">Filter by Account...</option>
                                 <?php foreach ($all_accounts as $account): ?>
@@ -107,7 +108,14 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2">
+                            <select id="search_status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="Posted">Posted</option>
+                                <option value="Canceled">Canceled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <input type="text" class="form-control" id="search_description" placeholder="Search in Description...">
                         </div>
                     </form>

@@ -102,6 +102,7 @@ function initTransactionList() {
     const financialYearInput = document.getElementById('search_financial_year'); // ADDED
     const accountIdInput = document.getElementById('search_account_id');
     const descriptionInput = document.getElementById('search_description');
+    const statusInput = document.getElementById('search_status');
 
     const picker = new Litepicker({
         element: dateRangeInput,
@@ -127,6 +128,9 @@ function initTransactionList() {
         }
         if (accountIdInput.value) {
             params.set('account_id', accountIdInput.value);
+        }
+        if (statusInput.value) { 
+            params.set('status', statusInput.value); 
         }
         if (descriptionInput.value) {
             params.set('description', descriptionInput.value);
@@ -194,6 +198,7 @@ function initTransactionList() {
     // Attach event listeners to all filter controls
     financialYearInput.addEventListener('change', doTransactionSearch); // ADDED
     accountIdInput.addEventListener('change', doTransactionSearch);
+    statusInput.addEventListener('change', doTransactionSearch);
     descriptionInput.addEventListener('input', doTransactionSearch);
     
     // Initial load
@@ -263,9 +268,7 @@ function initTransactionCancel() {
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('accountSearchForm')) { initAccountList(); } // Call the list page handler
     if (document.getElementById('accountForm')) { initAccountEntry(); } // Call the entry page handler
-    if (document.getElementById('transactionSearchForm')) {
-        initTransactionList();
-        initTransactionCancel(); // <-- ADD THIS LINE
-    }
+    if (document.getElementById('transactionSearchForm')) { initTransactionList(); initTransactionCancel(); } // <-- ADD THIS LINE
+    
 });
 // ───────────────────────── End ──────────────────────────

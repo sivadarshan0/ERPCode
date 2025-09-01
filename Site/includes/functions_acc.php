@@ -531,6 +531,13 @@ function get_account_transactions($filters = []) {
     }
     // --- END NEW ---
 
+    if (!empty($filters['status'])) {
+        $sql .= " AND t.status = ?";
+        $params[] = $filters['status'];
+        $types .= 's';
+    }
+    // --- END NEW BLOCK ---
+
     $sql .= " ORDER BY t.transaction_date DESC, t.transaction_group_id DESC, t.credit_amount ASC";
     
     $stmt = $db->prepare($sql);
