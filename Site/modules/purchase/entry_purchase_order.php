@@ -143,6 +143,57 @@ require_once __DIR__ . '/../../includes/header.php';
             <form method="POST" class="needs-validation" novalidate id="poForm">
                 <?php if($is_edit): ?><input type="hidden" name="purchase_order_id" value="<?= htmlspecialchars($po['purchase_order_id']) ?>"><?php endif; ?>
                 
+                <!-- Payment Confirmation Modal -->
+                <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="paymentModalLabel">Confirm Payment & Calculate Costs</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="paymentForm">
+                                    <div class="mb-3">
+                                        <label for="total_supplier_price" class="form-label">Total Supplier Price (INR)</label>
+                                        <input type="text" class="form-control" id="total_supplier_price" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="total_goods_cost" class="form-label">Total Amount Paid (LKR) *</label>
+                                        <input type="number" class="form-control" id="total_goods_cost" name="total_goods_cost" min="0.01" step="0.01" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="payment_paid_by_account_id" class="form-label">Goods Paid By *</label>
+                                        <select class="form-select" id="payment_paid_by_account_id" name="goods_paid_by_account_id" required>
+                                            <option value="">Choose payment source...</option>
+                                            <?php 
+                                            $current_group = '';
+                                            foreach ($payable_accounts as $account):
+                                                if ($account['account_type'] !== $current_group) {
+                                                    if ($current_group !== '') echo '</optgroup>';
+                                                    $current_group = $account['account_type'];
+                                                    echo '<optgroup label="' . htmlspecialchars($current_group) . 's">';
+                                                }
+                                            ?>
+                                                <option value="<?= $account['account_id'] ?>">
+                                                    <?= htmlspecialchars($account['account_name']) ?>
+                                                </option>
+                                            <?php 
+                                            endforeach;
+                                            if ($current_group !== '') echo '</optgroup>';
+                                            ?>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="submitPaymentBtn">Submit Payment</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END MODAL BLOCK -->
+
                 <div class="card">
                     <div class="card-header">Purchase Order Details</div>
                     <div class="card-body">
@@ -286,56 +337,5 @@ require_once __DIR__ . '/../../includes/header.php';
 <?php endif; ?>
 
 <!-- ADD THIS ENTIRE MODAL BLOCK -->
-
-<!-- Payment Confirmation Modal -->
-<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="paymentModalLabel">Confirm Payment & Calculate Costs</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="paymentForm">
-                    <div class="mb-3">
-                        <label for="total_supplier_price" class="form-label">Total Supplier Price (INR)</label>
-                        <input type="text" class="form-control" id="total_supplier_price" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label for="total_goods_cost" class="form-label">Total Amount Paid (LKR) *</label>
-                        <input type="number" class="form-control" id="total_goods_cost" name="total_goods_cost" min="0.01" step="0.01" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="payment_paid_by_account_id" class="form-label">Goods Paid By *</label>
-                        <select class="form-select" id="payment_paid_by_account_id" name="goods_paid_by_account_id" required>
-                            <option value="">Choose payment source...</option>
-                            <?php 
-                            $current_group = '';
-                            foreach ($payable_accounts as $account):
-                                if ($account['account_type'] !== $current_group) {
-                                    if ($current_group !== '') echo '</optgroup>';
-                                    $current_group = $account['account_type'];
-                                    echo '<optgroup label="' . htmlspecialchars($current_group) . 's">';
-                                }
-                            ?>
-                                <option value="<?= $account['account_id'] ?>">
-                                    <?= htmlspecialchars($account['account_name']) ?>
-                                </option>
-                            <?php 
-                            endforeach;
-                            if ($current_group !== '') echo '</optgroup>';
-                            ?>
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="submitPaymentBtn">Submit Payment</button>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- END MODAL BLOCK -->
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
