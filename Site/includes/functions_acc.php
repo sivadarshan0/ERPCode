@@ -619,3 +619,73 @@ function cancel_manual_journal_entry($transaction_group_id) {
     }
 }
 // ----------------------------------End-----------------------------------------
+
+/**
+ * Processes the supplier payment for a PO, updates item costs, and creates the journal entry.
+ *
+ * @param string $po_id The ID of the Purchase Order.
+ * @param float $total_paid_lkr The total amount paid in local currency.
+ * @param int $paid_by_account_id The ID of the account used for payment.
+ * @return bool True on success.
+ * @throws Exception On failure.
+ */
+function process_po_payment_and_costs($po_id, $total_paid_lkr, $paid_by_account_id) {
+    $db = db();
+    if (!$db) throw new Exception("Database connection failed.");
+
+    $db->begin_transaction();
+    try {
+        // Step 1: Save the payment details to the main PO record
+        $stmt_update_po = $db->prepare("UPDATE purchase_orders SET total_goods_cost = ?, goods_paid_by_account_id = ? WHERE purchase_order_id = ?");
+        if (!$stmt_update_po) throw new Exception("DB prepare failed for updating PO payment details.");
+        $stmt_update_po->bind_param("dis", $total_paid_lkr, $paid_by_account_id, $po_id);
+        $stmt_update_po->execute();
+
+        // Step 2: Fetch item supplier prices to calculate the total base cost
+        $stmt_fetch_items = $db->prepare("SELECT po_item_id, supplier_price, quantity FROM purchase_order_items WHERE purchase_order_id = ?");
+        $stmt_fetch_items->bind_param("s", $po_id);
+        $stmt_fetch_items->execute();
+        $items = $stmt_fetch_items->get_result()->fetch_all(MYSQLI_ASSOC);
+        
+        $total_supplier_price_inr = array_sum(array_map(function($item) {
+            return $item['supplier_price'] * $item['quantity'];
+        }, $items));
+
+        if ($total_supplier_price_inr == 0) {
+            throw new Exception("Total supplier price is zero. Cannot calculate exchange rate.");
+        }
+
+        // Step 3: Calculate exchange rate and update each item's cost_price
+        $exchange_rate = $total_paid_lkr / $total_supplier_price_inr;
+        $stmt_update_item = $db->prepare("UPDATE purchase_order_items SET cost_price = ? WHERE po_item_id = ?");
+        if (!$stmt_update_item) throw new Exception("DB prepare failed for updating item costs.");
+
+        foreach($items as $item) {
+            $item_landed_cost = ($item['supplier_price'] * $exchange_rate);
+            $stmt_update_item->bind_param("di", $item_landed_cost, $item['po_item_id']);
+            $stmt_update_item->execute();
+        }
+
+        // Step 4: Create the accounting journal entry
+        $stmt_po_date = $db->prepare("SELECT po_date FROM purchase_orders WHERE purchase_order_id = ?");
+        $stmt_po_date->bind_param("s", $po_id);
+        $stmt_po_date->execute();
+        $po_date = $stmt_po_date->get_result()->fetch_assoc()['po_date'];
+        
+        $payment_details = [
+            'transaction_date'  => $po_date,
+            'description'       => 'Payment for goods (Ref PO #' . $po_id . ')',
+            'debit_account_id'  => 17, // Placeholder for 'Accounts Payable' ID, should be looked up
+            'credit_account_id' => $paid_by_account_id,
+            'amount'            => $total_paid_lkr,
+        ];
+        process_journal_entry($payment_details, 'purchase_order', $po_id, $db);
+        
+        $db->commit();
+        return true;
+    } catch (Exception $e) {
+        $db->rollback();
+        throw new Exception("Failed to process PO payment: " . $e->getMessage());
+    }
+}
+// ----------------------------------End-----------------------------------------

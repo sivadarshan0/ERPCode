@@ -803,6 +803,82 @@ function initPoEntry() {
         }
     }
 
+    // --- NEW LOGIC FOR PAYMENT MODAL ---
+    if (isEditMode && statusSelect) {
+        const paymentModalEl = document.getElementById('paymentModal');
+        const paymentModal = new bootstrap.Modal(paymentModalEl);
+        let originalStatus = statusSelect.value;
+
+        statusSelect.addEventListener('change', function() {
+            const newStatus = this.value;
+
+            // If user selects "Paid" for the first time
+            if (newStatus === 'Paid' && originalStatus !== 'Paid') {
+                let totalSupplierPrice = 0;
+                // Calculate total supplier price from the item table
+                document.querySelectorAll('.po-item-row').forEach(row => {
+                    const price = parseFloat(row.querySelector('input[name="items[supplier_price][]"]')?.value) || 0;
+                    const qty = parseFloat(row.querySelector('input[name="items[quantity][]"]')?.value) || 0;
+                    totalSupplierPrice += price * qty;
+                });
+
+                // Populate and show the modal
+                document.getElementById('total_supplier_price').value = totalSupplierPrice.toFixed(2);
+                paymentModal.show();
+
+                // Revert status dropdown if user closes modal without submitting
+                paymentModalEl.addEventListener('hidden.bs.modal', () => {
+                    statusSelect.value = originalStatus;
+                }, { once: true });
+
+            }
+        });
+
+        const submitPaymentBtn = document.getElementById('submitPaymentBtn');
+        submitPaymentBtn.addEventListener('click', function() {
+            const paymentForm = document.getElementById('paymentForm');
+            const totalGoodsCost = document.getElementById('total_goods_cost').value;
+            const paidByAccountId = document.getElementById('payment_paid_by_account_id').value;
+
+            if (!totalGoodsCost || !paidByAccountId) {
+                alert('Please fill in all fields in the payment form.');
+                return;
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+            const formData = new FormData();
+            formData.append('purchase_order_id', document.querySelector('input[name="purchase_order_id"]').value);
+            formData.append('total_goods_cost', totalGoodsCost);
+            formData.append('goods_paid_by_account_id', paidByAccountId);
+            
+            // This needs a new AJAX endpoint
+            fetch('/modules/purchase/entry_purchase_order.php?action=process_payment', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    paymentModal.hide();
+                    // Now, submit the main form to update status and other details
+                    form.submit();
+                } else {
+                    alert('Error: ' + data.error);
+                    this.disabled = false;
+                    this.innerHTML = 'Submit Payment';
+                }
+            })
+            .catch(err => {
+                alert('An unexpected error occurred. Please try again.');
+                this.disabled = false;
+                this.innerHTML = 'Submit Payment';
+                console.error(err);
+            });
+        });
+    }
+
     // --- Multi-Order Linking UI logic ---
     if (preOrderSearchInput && preOrderResults && linkedOrdersContainer) {
         const addLinkedOrderTag = (orderId, customerName) => {

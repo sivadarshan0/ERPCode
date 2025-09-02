@@ -1043,60 +1043,56 @@ function search_orders($filters = []) {
 // -----------------------------------------
 
 /**
- * Processes a complete Purchase Order.
- * Now handles linking to multiple sales orders via the po_so_links table.
+ * Processes a new Purchase Order.
+ * Now saves supplier_price and weight_grams for each item.
  *
- * @param string $po_date The date of the Purchase Order.
- * @param string $supplier_name The name of the supplier.
+ * @param array $details An array of header details for the PO.
  * @param array $items An array of items for the PO.
- * @param string $remarks Optional remarks.
- * @param string $status The initial status of the PO.
  * @param array $linked_sales_orders An array of Sales Order IDs to link.
  * @return string The ID of the newly created Purchase Order.
  * @throws Exception On validation or database errors.
  */
-function process_purchase_order($po_date, $supplier_name, $items, $remarks, $status = 'Draft', $linked_sales_orders = []) {
+function process_purchase_order($details, $items, $linked_sales_orders = []) {
     $db = db();
     if (!$db) {
         throw new Exception("Database connection failed.");
     }
 
     // --- Validation ---
-    if (empty($po_date) || !is_array($items) || empty($items)) {
+    if (empty($details['po_date']) || !is_array($items) || empty($items)) {
         throw new Exception("PO date and at least one item are required.");
     }
     foreach ($items as $item) {
         if (empty($item['item_id']) || !isset($item['quantity']) || !is_numeric($item['quantity']) || $item['quantity'] <= 0) {
-            throw new Exception("Invalid data in item rows. Each item needs an ID and a valid quantity.");
+            throw new Exception("Invalid data in item rows: Each item needs an ID and a valid quantity.");
         }
-        if (!isset($item['cost_price']) || !is_numeric($item['cost_price'])) {
-            throw new Exception("Invalid data in item rows. Each item needs a valid cost price.");
+        if (!isset($item['supplier_price']) || !is_numeric($item['supplier_price'])) {
+            throw new Exception("Invalid data in item rows: Each item needs a valid supplier price.");
+        }
+        if (!isset($item['weight_grams']) || !is_numeric($item['weight_grams'])) {
+            throw new Exception("Invalid data in item rows: Each item needs a valid weight.");
         }
     }
 
     $db->begin_transaction();
-
     try {
-        // Step 1: Get user details from session
         $user_id = $_SESSION['user_id'];
         $user_name = $_SESSION['username'] ?? 'Unknown';
-
-        // Step 2: Create the main Purchase Order record (no longer contains linked_sales_order_id)
         $purchase_order_id = generate_sequence_id('purchase_order_id', 'purchase_orders', 'purchase_order_id');
         
+        // The main INSERT no longer saves paid_by_account_id on creation
         $stmt_po = $db->prepare(
             "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
         if (!$stmt_po) throw new Exception("Database prepare failed for PO header: " . $db->error);
         
-        $stmt_po->bind_param("sssssis", $purchase_order_id, $po_date, $supplier_name, $status, $remarks, $user_id, $user_name);
+        $stmt_po->bind_param("sssssis", $purchase_order_id, $details['po_date'], $details['supplier_name'], $details['status'], $details['remarks'], $user_id, $user_name);
         $stmt_po->execute();
 
-        // Step 3: Insert links into the new po_so_links table
+        // Insert links into the po_so_links table
         if (!empty($linked_sales_orders)) {
             $stmt_links = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
             if (!$stmt_links) throw new Exception("Database prepare failed for PO links: " . $db->error);
-            
             foreach ($linked_sales_orders as $sales_order_id) {
                 $trimmed_so_id = trim($sales_order_id);
                 if (!empty($trimmed_so_id)) {
@@ -1106,32 +1102,30 @@ function process_purchase_order($po_date, $supplier_name, $items, $remarks, $sta
             }
         }
 
-        // Step 4: Log the initial status in the history table
+        // Log the initial status in the history table
         $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
         if (!$stmt_history) throw new Exception("Database prepare failed for PO history: " . $db->error);
-        $stmt_history->bind_param("ssis", $purchase_order_id, $status, $user_id, $user_name);
+        $stmt_history->bind_param("ssis", $purchase_order_id, $details['status'], $user_id, $user_name);
         $stmt_history->execute();
 
-        // Step 5: Add items to the purchase_order_items table
+        // MODIFIED: Add items with new fields to the purchase_order_items table
         $stmt_items = $db->prepare(
-            "INSERT INTO purchase_order_items (purchase_order_id, item_id, quantity, cost_price) VALUES (?, ?, ?, ?)"
+            "INSERT INTO purchase_order_items (purchase_order_id, item_id, supplier_price, weight_grams, quantity, cost_price) VALUES (?, ?, ?, ?, ?, ?)"
         );
         if (!$stmt_items) throw new Exception("Database prepare failed for PO items: " . $db->error);
 
         foreach ($items as $item) {
-            $stmt_items->bind_param("ssdd", $purchase_order_id, $item['item_id'], $item['quantity'], $item['cost_price']);
+            $cost_price = 0.00; // Cost price is initially zero
+            $stmt_items->bind_param("ssdddd", $purchase_order_id, $item['item_id'], $item['supplier_price'], $item['weight_grams'], $item['quantity'], $cost_price);
             $stmt_items->execute();
         }
 
-        // If everything was successful, commit the transaction
         $db->commit();
         
-        return $purchase_order_id; // Return the new PO ID
+        return $purchase_order_id;
 
     } catch (Exception $e) {
-        // If any part of the process failed, roll back everything
         $db->rollback();
-        // Pass the error message up to the calling page
         throw new Exception("Failed to process Purchase Order: " . $e->getMessage());
     }
 }

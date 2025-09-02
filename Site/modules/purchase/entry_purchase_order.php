@@ -25,12 +25,29 @@ if (isset($_GET['action'])) {
                 $query = trim($_GET['query'] ?? '');
                 echo json_encode(strlen($query) >= 2 ? search_open_pre_orders($query) : []);
                 break;
-        }
-    } catch (Exception $e) { 
-        http_response_code(500); 
-        echo json_encode(['error' => $e->getMessage()]); 
-    }
-    exit;
+            case 'process_payment':
+                if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                    throw new Exception('Invalid request method.');
+                }
+                $po_id = $_POST['purchase_order_id'] ?? null;
+                $total_goods_cost = $_POST['total_goods_cost'] ?? 0;
+                $paid_by_account_id = $_POST['goods_paid_by_account_id'] ?? null;
+
+                if (!$po_id || !$total_goods_cost || !$paid_by_account_id) {
+                    throw new Exception("Missing required payment data.");
+                }
+                
+                // We created this function in the previous step
+                process_po_payment_and_costs($po_id, $total_goods_cost, $paid_by_account_id);
+                
+                echo json_encode(['success' => true]);
+                break;
+                    }
+                } catch (Exception $e) { 
+                    http_response_code(500); 
+                    echo json_encode(['error' => $e->getMessage()]); 
+                }
+                exit;
 }
 
 $message = '';
@@ -66,24 +83,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } else {
-            $po_date = $_POST['po_date'] ?? '';
-            $supplier_name = $_POST['supplier_name'] ?? '';
-            $status = $_POST['status'] ?? 'Draft';
-            $remarks = $_POST['remarks'] ?? '';
+            $details_to_create = [
+                'po_date' => $_POST['po_date'] ?? '',
+                'supplier_name' => $_POST['supplier_name'] ?? '',
+                'status' => $_POST['status'] ?? 'Draft',
+                'remarks' => $_POST['remarks'] ?? '',
+            ];
             $linked_sales_orders = $_POST['linked_sales_orders'] ?? [];
-            
-            $item_ids = $_POST['items']['id'] ?? [];
-            $quantities = $_POST['items']['quantity'] ?? [];
-            $costs = $_POST['items']['cost_price'] ?? [];
 
             $items_to_process = [];
-            foreach ($item_ids as $index => $item_id) {
+            foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
                 if (!empty($item_id)) {
-                    $items_to_process[] = ['item_id' => $item_id, 'quantity' => $quantities[$index], 'cost_price' => $costs[$index]];
+                    $items_to_process[] = [
+                        'item_id' => $item_id,
+                        'supplier_price' => $_POST['items']['supplier_price'][$index],
+                        'weight_grams' => $_POST['items']['weight_grams'][$index],
+                        'quantity' => $_POST['items']['quantity'][$index]
+                    ];
                 }
             }
-            
-            $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status, $linked_sales_orders);
+
+            $new_po_id = process_purchase_order($details_to_create, $items_to_process, $linked_sales_orders);
             $_SESSION['success_message'] = "✅ Purchase Order #$new_po_id successfully created.";
             header("Location: entry_purchase_order.php");
             exit;
@@ -193,12 +213,23 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-sm">
-                                <thead><tr><th style="width: 50%;">Item</th><th style="width: 20%;">Quantity</th><th style="width: 20%;">Cost Price</th><?php if (!$is_edit): ?><th>Actions</th><?php endif; ?></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width: 35%;">Item</th>
+                                    <th style="width: 15%;">Supplier Price (INR)</th>
+                                    <th style="width: 15%;">Weight (g)</th>
+                                    <th style="width: 10%;">Quantity</th>
+                                    <th style="width: 15%;">Landed Cost (LKR)</th>
+                                    <?php if (!$is_edit): ?><th>Actions</th><?php endif; ?>
+                                </tr>
+                            </thead>    
                                 <tbody id="poItemRows">
                                     <?php if ($is_edit && !empty($po['items'])): ?>
                                         <?php foreach ($po['items'] as $item): ?>
                                         <tr>
                                             <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                            <td><?= htmlspecialchars(number_format($item['supplier_price'], 2)) ?></td>
+                                            <td><?= htmlspecialchars(number_format($item['weight_grams'], 2)) ?></td>
                                             <td><?= htmlspecialchars(number_format($item['quantity'], 2)) ?></td>
                                             <td><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
                                         </tr>
@@ -230,12 +261,81 @@ require_once __DIR__ . '/../../includes/header.php';
 <?php if (!$is_edit): ?>
 <template id="poItemRowTemplate">
     <tr class="po-item-row">
-        <td class="position-relative"><input type="hidden" name="items[id][]" class="item-id-input"><input type="text" class="form-control form-control-sm item-search-input" placeholder="Start typing item name..." required><div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div></td>
-        <td><input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required></td>
-        <td><input type="number" class="form-control form-control-sm cost-price-input" name="items[cost_price][]" value="0.00" min="0.00" step="0.01" required></td>
-        <td><button type="button" class="btn btn-danger btn-sm remove-item-row"><i class="bi bi-trash"></i></button></td>
+        <td class="position-relative">
+            <input type="hidden" name="items[id][]" class="item-id-input">
+            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Start typing item name..." required>
+            <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="items[supplier_price][]" value="0.00" min="0.00" step="0.01" required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="items[weight_grams][]" value="0" min="0" step="1" required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm cost-price-input" name="items[cost_price][]" value="0.00" readonly>
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm remove-item-row"><i class="bi bi-trash"></i></button>
+        </td>
     </tr>
 </template>
 <?php endif; ?>
+
+<!-- ADD THIS ENTIRE MODAL BLOCK -->
+
+<!-- Payment Confirmation Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Confirm Payment & Calculate Costs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    <div class="mb-3">
+                        <label for="total_supplier_price" class="form-label">Total Supplier Price (INR)</label>
+                        <input type="text" class="form-control" id="total_supplier_price" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="total_goods_cost" class="form-label">Total Amount Paid (LKR) *</label>
+                        <input type="number" class="form-control" id="total_goods_cost" name="total_goods_cost" min="0.01" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_paid_by_account_id" class="form-label">Goods Paid By *</label>
+                        <select class="form-select" id="payment_paid_by_account_id" name="goods_paid_by_account_id" required>
+                            <option value="">Choose payment source...</option>
+                            <?php 
+                            $current_group = '';
+                            foreach ($payable_accounts as $account):
+                                if ($account['account_type'] !== $current_group) {
+                                    if ($current_group !== '') echo '</optgroup>';
+                                    $current_group = $account['account_type'];
+                                    echo '<optgroup label="' . htmlspecialchars($current_group) . 's">';
+                                }
+                            ?>
+                                <option value="<?= $account['account_id'] ?>">
+                                    <?= htmlspecialchars($account['account_name']) ?>
+                                </option>
+                            <?php 
+                            endforeach;
+                            if ($current_group !== '') echo '</optgroup>';
+                            ?>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitPaymentBtn">Submit Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- END MODAL BLOCK -->
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
