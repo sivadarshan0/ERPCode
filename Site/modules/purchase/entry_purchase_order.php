@@ -9,8 +9,20 @@ define('_IN_APP_', true);
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/functions_acc.php';
 
 require_login();
+
+// --- ADD THIS ENTIRE BLOCK TO FETCH THE ACCOUNTS ---
+$db = db();
+$payable_accounts_query = $db->query("
+    SELECT account_id, account_name, account_type 
+    FROM acc_chartofaccounts 
+    WHERE is_active = 1 AND account_type IN ('Asset', 'Equity', 'Liability')
+    ORDER BY account_type, account_name ASC
+");
+$payable_accounts = $payable_accounts_query->fetch_all(MYSQLI_ASSOC);
+// --- END OF BLOCK TO ADD ---
 
 // --- AJAX Endpoints ---
 if (isset($_GET['action'])) {
