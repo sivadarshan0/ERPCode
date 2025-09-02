@@ -339,7 +339,8 @@ require_once __DIR__ . '/../../includes/header.php';
             <input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required>
         </td>
         <td>
-            <input type="number" class="form-control form-control-sm cost-price-input" name="items[cost_price][]" value="0.00" readonly>
+            <!-- THIS IS THE FIX: The readonly field should NOT be 'required' -->
+            <input type="number" class="form-control form-control-sm cost-price-input" name="items[cost_price][]" value="0.00" readonly tabindex="-1">
         </td>
         <td>
             <button type="button" class="btn btn-danger btn-sm remove-item-row"><i class="bi bi-trash"></i></button>
