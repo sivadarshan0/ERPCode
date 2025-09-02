@@ -65,5 +65,11 @@
     })();
 </script>
 
+<script>
+    console.log('--- FINAL SCRIPT CHECK ---');
+    console.log('Type of debounce:', typeof debounce);
+    console.log('Type of initPoEntry:', typeof initPoEntry);
+</script>
+
 </body>
 </html>
