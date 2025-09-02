@@ -1115,7 +1115,8 @@ function process_purchase_order($details, $items, $linked_sales_orders = []) {
         if (!$stmt_items) throw new Exception("Database prepare failed for PO items: " . $db->error);
 
         foreach ($items as $item) {
-            $cost_price = 0.00; // Cost price is initially zero
+            // cost_price is ALWAYS 0 on initial creation. It's calculated later.
+            $cost_price = 0.00; 
             $stmt_items->bind_param("ssdddd", $purchase_order_id, $item['item_id'], $item['supplier_price'], $item['weight_grams'], $item['quantity'], $cost_price);
             $stmt_items->execute();
         }

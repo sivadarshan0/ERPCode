@@ -95,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
         } else {
+            // --- Create Logic ---
             $details_to_create = [
                 'po_date' => $_POST['po_date'] ?? '',
                 'supplier_name' => $_POST['supplier_name'] ?? '',
@@ -104,22 +105,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $linked_sales_orders = $_POST['linked_sales_orders'] ?? [];
 
             $items_to_process = [];
+            // Loop through a field we know exists, like the item_id
             foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
                 if (!empty($item_id)) {
                     $items_to_process[] = [
                         'item_id' => $item_id,
-                        'supplier_price' => $_POST['items']['supplier_price'][$index],
-                        'weight_grams' => $_POST['items']['weight_grams'][$index],
-                        'quantity' => $_POST['items']['quantity'][$index]
+                        'supplier_price' => $_POST['items']['supplier_price'][$index] ?? 0,
+                        'weight_grams' => $_POST['items']['weight_grams'][$index] ?? 0,
+                        'quantity' => $_POST['items']['quantity'][$index] ?? 1,
+                        // The cost_price is not submitted from the form, it's always 0 on creation.
+                        // The backend function will handle setting this default.
                     ];
                 }
             }
-
+            
             $new_po_id = process_purchase_order($details_to_create, $items_to_process, $linked_sales_orders);
+            
             $_SESSION['success_message'] = "✅ Purchase Order #$new_po_id successfully created.";
             header("Location: entry_purchase_order.php");
             exit;
         }
+        
     } catch (Exception $e) {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
