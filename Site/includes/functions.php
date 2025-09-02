@@ -1474,11 +1474,60 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
+        $is_payment_event = ($new_status === 'Paid' && $old_status !== 'Paid');
 
         if ($is_cancellation_event) {
+            // --- CANCELLATION WORKFLOW ---
             if (in_array($old_status, ['Received', 'Completed'])) {
                 throw new Exception("Cannot cancel this PO because its status is '$old_status'. Please cancel the corresponding GRN first to reverse the stock.");
             }
+
+            // --- 2. NEW: Financial Reversal ---
+            // Find all 'Posted' transactions for this PO
+            $stmt_find_txns = $db->prepare("SELECT * FROM acc_transactions WHERE source_id = ? AND source_type = 'purchase_order' AND status = 'Posted'");
+            $stmt_find_txns->bind_param("s", $purchase_order_id);
+            $stmt_find_txns->execute();
+            $posted_txns = $stmt_find_txns->get_result()->fetch_all(MYSQLI_ASSOC);
+
+            if (!empty($posted_txns)) {
+                $reversal_desc = "Reversal for canceled PO #" . $purchase_order_id;
+                
+                // Group by transaction_group_id to reverse each entry
+                $grouped_txns = [];
+                foreach ($posted_txns as $txn) {
+                    $grouped_txns[$txn['transaction_group_id']][] = $txn;
+                }
+
+                foreach ($grouped_txns as $group_id => $txns) {
+                    $original_debit = null;
+                    $original_credit = null;
+                    foreach ($txns as $t) {
+                        if ($t['debit_amount'] !== null) $original_debit = $t;
+                        if ($t['credit_amount'] !== null) $original_credit = $t;
+                    }
+
+                    if ($original_debit && $original_credit) {
+                        $reversal_details = [
+                            'transaction_date'  => date('Y-m-d'),
+                            'description'       => $reversal_desc,
+                            'remarks'           => 'Automated reversal for PO cancellation.',
+                            'debit_account_id'  => $original_credit['account_id'], // Flip credit to debit
+                            'credit_account_id' => $original_debit['account_id'], // Flip debit to credit
+                            'amount'            => $original_debit['debit_amount']
+                        ];
+                        $reversal_group_id = process_journal_entry($reversal_details, 'purchase_order', $purchase_order_id, $db);
+
+                        // Mark original and reversal as Canceled
+                        $stmt_update_txn = $db->prepare("UPDATE acc_transactions SET status = 'Canceled' WHERE transaction_group_id IN (?, ?)");
+                        $stmt_update_txn->bind_param("ss", $group_id, $reversal_group_id);
+                        $stmt_update_txn->execute();
+                    }
+                }
+                $feedback_message .= " Associated financial transactions were reversed.";
+            }
+            // --- END NEW FINANCIAL REVERSAL ---
+
+            // 3. Revert Linked Sales Orders
             if (!empty($linked_order_ids)) {
                 foreach($linked_order_ids as $linked_order_id) {
                     $new_so_status = 'Awaiting Stock';
