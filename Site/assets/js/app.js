@@ -769,6 +769,7 @@ function initOrderList() {
 // -----------------------------------------
 // ----- Purchase Order Entry Handler -----
 // -----------------------------------------
+
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
@@ -788,7 +789,7 @@ function initPoEntry() {
         poDateInput.focus();
     }
 
-    // --- Backdating UI logic (Only for Edit Mode) ---
+    // --- Backdating & Modal UI logic (Only for Edit Mode) ---
     if (isEditMode && statusSelect) {
         const statusDateWrapper = document.getElementById('po_status_date_wrapper');
         if (statusDateWrapper) {
@@ -801,82 +802,79 @@ function initPoEntry() {
                 }
             });
         }
-    }
 
-    // --- NEW LOGIC FOR PAYMENT MODAL ---
-    if (isEditMode && statusSelect) {
         const paymentModalEl = document.getElementById('paymentModal');
-        const paymentModal = new bootstrap.Modal(paymentModalEl);
-        let originalStatus = statusSelect.value;
+        if (paymentModalEl) {
+            const paymentModal = new bootstrap.Modal(paymentModalEl);
+            let originalStatusOnLoad = statusSelect.value;
 
-        statusSelect.addEventListener('change', function() {
-            const newStatus = this.value;
+            statusSelect.addEventListener('change', function() {
+                const newStatus = this.value;
 
-            // If user selects "Paid" for the first time
-            if (newStatus === 'Paid' && originalStatus !== 'Paid') {
-                let totalSupplierPrice = 0;
-                // Calculate total supplier price from the item table
-                document.querySelectorAll('.po-item-row').forEach(row => {
-                    const price = parseFloat(row.querySelector('input[name="items[supplier_price][]"]')?.value) || 0;
-                    const qty = parseFloat(row.querySelector('input[name="items[quantity][]"]')?.value) || 0;
-                    totalSupplierPrice += price * qty;
-                });
+                if (newStatus === 'Paid' && originalStatusOnLoad !== 'Paid') {
+                    let totalSupplierPrice = 0;
+                    
+                    // In edit mode, the item data is in static <td> elements.
+                    document.querySelectorAll('#poItemRows tr').forEach(row => {
+                        const priceText = row.cells[1]?.textContent.replace(/,/g, '') || '0';
+                        const qtyText = row.cells[3]?.textContent.replace(/,/g, '') || '0';
+                        const price = parseFloat(priceText);
+                        const qty = parseFloat(qtyText);
+                        totalSupplierPrice += price * qty;
+                    });
 
-                // Populate and show the modal
-                document.getElementById('total_supplier_price').value = totalSupplierPrice.toFixed(2);
-                paymentModal.show();
+                    document.getElementById('total_supplier_price').value = totalSupplierPrice.toFixed(2);
+                    paymentModal.show();
 
-                // Revert status dropdown if user closes modal without submitting
-                paymentModalEl.addEventListener('hidden.bs.modal', () => {
-                    statusSelect.value = originalStatus;
-                }, { once: true });
-
-            }
-        });
-
-        const submitPaymentBtn = document.getElementById('submitPaymentBtn');
-        submitPaymentBtn.addEventListener('click', function() {
-            const paymentForm = document.getElementById('paymentForm');
-            const totalGoodsCost = document.getElementById('total_goods_cost').value;
-            const paidByAccountId = document.getElementById('payment_paid_by_account_id').value;
-
-            if (!totalGoodsCost || !paidByAccountId) {
-                alert('Please fill in all fields in the payment form.');
-                return;
-            }
-            
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-
-            const formData = new FormData();
-            formData.append('purchase_order_id', document.querySelector('input[name="purchase_order_id"]').value);
-            formData.append('total_goods_cost', totalGoodsCost);
-            formData.append('goods_paid_by_account_id', paidByAccountId);
-            
-            // This needs a new AJAX endpoint
-            fetch('/modules/purchase/entry_purchase_order.php?action=process_payment', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    paymentModal.hide();
-                    // Now, submit the main form to update status and other details
-                    form.submit();
-                } else {
-                    alert('Error: ' + data.error);
-                    this.disabled = false;
-                    this.innerHTML = 'Submit Payment';
+                    paymentModalEl.addEventListener('hidden.bs.modal', () => {
+                        statusSelect.value = originalStatusOnLoad;
+                    }, { once: true });
                 }
-            })
-            .catch(err => {
-                alert('An unexpected error occurred. Please try again.');
-                this.disabled = false;
-                this.innerHTML = 'Submit Payment';
-                console.error(err);
             });
-        });
+
+            const submitPaymentBtn = document.getElementById('submitPaymentBtn');
+            if (submitPaymentBtn) {
+                submitPaymentBtn.addEventListener('click', function() {
+                    const totalGoodsCost = document.getElementById('total_goods_cost').value;
+                    const paidByAccountId = document.getElementById('payment_paid_by_account_id').value;
+
+                    if (!totalGoodsCost || !paidByAccountId) {
+                        alert('Please fill in all fields in the payment form.');
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+                    const formData = new FormData();
+                    formData.append('purchase_order_id', document.querySelector('input[name="purchase_order_id"]').value);
+                    formData.append('total_goods_cost', totalGoodsCost);
+                    formData.append('goods_paid_by_account_id', paidByAccountId);
+                    
+                    fetch('/modules/purchase/entry_purchase_order.php?action=process_payment', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            paymentModal.hide();
+                            form.submit();
+                        } else {
+                            alert('Error: ' + data.error);
+                            this.disabled = false;
+                            this.innerHTML = 'Submit Payment';
+                        }
+                    })
+                    .catch(err => {
+                        alert('An unexpected error occurred. Please try again.');
+                        this.disabled = false;
+                        this.innerHTML = 'Submit Payment';
+                        console.error(err);
+                    });
+                });
+            }
+        }
     }
 
     // --- Multi-Order Linking UI logic ---
@@ -906,33 +904,30 @@ function initPoEntry() {
                 return;
             }
             fetch(`/modules/purchase/entry_purchase_order.php?action=pre_order_lookup&query=${encodeURIComponent(query)}`)
-                .then(res => {
-                    if (!res.ok) { throw new Error(`Server responded with ${res.status}`); }
-                    return res.json();
-                })
+                .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
                 .then(data => {
-                    preOrderResults.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(order => {
-                            const btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.className = 'list-group-item list-group-item-action';
-                            btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
-                            btn.addEventListener('click', () => {
-                                addLinkedOrderTag(order.order_id, order.customer_name);
-                                preOrderResults.classList.add('d-none');
-                                preOrderSearchInput.focus();
+                    if (preOrderResults) {
+                        preOrderResults.innerHTML = '';
+                        if (data && data.length > 0) {
+                            data.forEach(order => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'list-group-item list-group-item-action';
+                                btn.innerHTML = `<strong>${escapeHtml(order.order_id)}</strong> - ${escapeHtml(order.customer_name)}`;
+                                btn.addEventListener('click', () => {
+                                    addLinkedOrderTag(order.order_id, order.customer_name);
+                                    preOrderResults.classList.add('d-none');
+                                    preOrderSearchInput.focus();
+                                });
+                                preOrderResults.appendChild(btn);
                             });
-                            preOrderResults.appendChild(btn);
-                        });
-                        preOrderResults.classList.remove('d-none');
-                    } else {
-                        preOrderResults.classList.add('d-none');
+                            preOrderResults.classList.remove('d-none');
+                        } else {
+                            preOrderResults.classList.add('d-none');
+                        }
                     }
                 })
-                .catch(error => {
-                     console.error('[PreOrderLookup] Error:', error);
-                });
+                .catch(error => console.error('[PreOrderLookup] Error:', error));
         }, 300));
 
         document.addEventListener('click', e => {
@@ -976,25 +971,26 @@ function initPoEntry() {
                 fetch(`/modules/purchase/entry_purchase_order.php?action=item_lookup&query=${encodeURIComponent(name)}`)
                     .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                     .then(data => {
-                        if (!resultsContainer) return;
-                        resultsContainer.innerHTML = '';
-                        if (data && data.length > 0) {
-                            data.forEach(item => {
-                                const button = document.createElement('button');
-                                button.type = 'button';
-                                button.className = 'list-group-item list-group-item-action py-2';
-                                button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
-                                button.addEventListener('click', () => {
-                                    const parentRow = searchInput.closest('.po-item-row');
-                                    parentRow.querySelector('.item-id-input').value = item.item_id;
-                                    searchInput.value = item.name;
-                                    resultsContainer.classList.add('d-none');
-                                    parentRow.querySelector('.quantity-input').focus();
+                        if (resultsContainer) {
+                            resultsContainer.innerHTML = '';
+                            if (data && data.length > 0) {
+                                data.forEach(item => {
+                                    const button = document.createElement('button');
+                                    button.type = 'button';
+                                    button.className = 'list-group-item list-group-item-action py-2';
+                                    button.innerHTML = `<strong>${escapeHtml(item.name)}</strong> <small class="text-muted">(${escapeHtml(item.item_id)})</small>`;
+                                    button.addEventListener('click', () => {
+                                        const parentRow = searchInput.closest('.po-item-row');
+                                        parentRow.querySelector('.item-id-input').value = item.item_id;
+                                        searchInput.value = item.name;
+                                        resultsContainer.classList.add('d-none');
+                                        parentRow.querySelector('.quantity-input').focus();
+                                    });
+                                    resultsContainer.appendChild(button);
                                 });
-                                resultsContainer.appendChild(button);
-                            });
-                            resultsContainer.classList.remove('d-none');
-                        } else { resultsContainer.classList.add('d-none'); }
+                                resultsContainer.classList.remove('d-none');
+                            } else { resultsContainer.classList.add('d-none'); }
+                        }
                     })
                     .catch(error => console.error('[POItemLookup] Error:', error));
             }
