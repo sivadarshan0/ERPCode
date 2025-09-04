@@ -1328,7 +1328,37 @@ document.addEventListener('DOMContentLoaded', function () {
     setupFormSubmitSpinner(document.getElementById('stockAdjustmentForm'));
     setupFormSubmitSpinner(document.getElementById('grnForm'));
     setupFormSubmitSpinner(document.getElementById('orderForm'));
-    setupFormSubmitSpinner(document.getElementById('poForm'));
+    // We are now handling the PO form manually, so we comment this out.
+    // setupFormSubmitSpinner(document.getElementById('poForm'));
+
+    // --- DEFINITIVE FIX: MANUAL SUBMIT FOR PO FORM ---
+    const forceSaveButton = document.getElementById('savePoBtn');
+    if (forceSaveButton) {
+        const poForm = document.getElementById('poForm');
+        
+        console.log('Attaching force save listener to button: savePoBtn');
+        
+        forceSaveButton.addEventListener('click', function(event) {
+            event.preventDefault(); // Always prevent default for a button click
+            console.log('Manual save button was clicked.');
+            
+            if (poForm && poForm.checkValidity()) {
+                console.log('Form is valid. Manually submitting...');
+                
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+                
+                poForm.submit();
+            } else {
+                console.log('Form is invalid. Showing validation errors.');
+                // Add the 'was-validated' class to show Bootstrap's styling for errors
+                if (poForm) {
+                    poForm.classList.add('was-validated');
+                }
+            }
+        });
+    }
+    // --- END FIX ---
 
     const staticAlerts = document.querySelectorAll('.alert-dismissible');
     staticAlerts.forEach(alert => {
