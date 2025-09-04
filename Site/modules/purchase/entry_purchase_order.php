@@ -45,13 +45,15 @@ if (isset($_GET['action'])) {
                 $po_id = $_POST['purchase_order_id'] ?? null;
                 $total_goods_cost = $_POST['total_goods_cost'] ?? 0;
                 $paid_by_account_id = $_POST['goods_paid_by_account_id'] ?? null;
+                // Get the payment date from the main form's backdating input
+                $payment_date = $_POST['po_status_event_date'] ?? null;
 
                 if (!$po_id || !$total_goods_cost || !$paid_by_account_id) {
                     throw new Exception("Missing required payment data.");
                 }
                 
-                // We created this function in the previous step
-                process_po_payment_and_costs($po_id, $total_goods_cost, $paid_by_account_id);
+                // Pass the new payment_date to the function
+                process_po_payment_and_costs($po_id, $total_goods_cost, $paid_by_account_id, $payment_date);
                 
                 echo json_encode(['success' => true]);
                 break;
