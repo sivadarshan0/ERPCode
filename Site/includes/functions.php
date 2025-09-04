@@ -1044,7 +1044,6 @@ function search_orders($filters = []) {
 
 /**
  * Processes a new Purchase Order.
- * Now saves supplier_price and weight_grams for each item.
  *
  * @param array $details An array of header details for the PO.
  * @param array $items An array of items for the PO.
@@ -1080,7 +1079,6 @@ function process_purchase_order($details, $items, $linked_sales_orders = []) {
         $user_name = $_SESSION['username'] ?? 'Unknown';
         $purchase_order_id = generate_sequence_id('purchase_order_id', 'purchase_orders', 'purchase_order_id');
         
-        // The main INSERT no longer saves paid_by_account_id on creation
         $stmt_po = $db->prepare(
             "INSERT INTO purchase_orders (purchase_order_id, po_date, supplier_name, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
@@ -1089,7 +1087,7 @@ function process_purchase_order($details, $items, $linked_sales_orders = []) {
         $stmt_po->bind_param("sssssis", $purchase_order_id, $details['po_date'], $details['supplier_name'], $details['status'], $details['remarks'], $user_id, $user_name);
         $stmt_po->execute();
 
-        // Insert links into the po_so_links table
+        // --- THIS IS THE COMPLETE LINK INSERTION LOGIC ---
         if (!empty($linked_sales_orders)) {
             $stmt_links = $db->prepare("INSERT INTO po_so_links (purchase_order_id, sales_order_id) VALUES (?, ?)");
             if (!$stmt_links) throw new Exception("Database prepare failed for PO links: " . $db->error);
@@ -1101,23 +1099,24 @@ function process_purchase_order($details, $items, $linked_sales_orders = []) {
                 }
             }
         }
+        // --- END OF LINK INSERTION LOGIC ---
 
-        // Log the initial status in the history table
         $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
         if (!$stmt_history) throw new Exception("Database prepare failed for PO history: " . $db->error);
         $stmt_history->bind_param("ssis", $purchase_order_id, $details['status'], $user_id, $user_name);
         $stmt_history->execute();
 
-        // MODIFIED: Add items with new fields to the purchase_order_items table
         $stmt_items = $db->prepare(
             "INSERT INTO purchase_order_items (purchase_order_id, item_id, supplier_price, weight_grams, quantity, cost_price) VALUES (?, ?, ?, ?, ?, ?)"
         );
         if (!$stmt_items) throw new Exception("Database prepare failed for PO items: " . $db->error);
 
         foreach ($items as $item) {
-            // cost_price is ALWAYS 0 on initial creation. It's calculated later.
-            $cost_price = 0.00; 
-            $stmt_items->bind_param("ssdddd", $purchase_order_id, $item['item_id'], $item['supplier_price'], $item['weight_grams'], $item['quantity'], $cost_price);
+            $cost_price = 0.00;
+            $supplier_price = $item['supplier_price'] ?? 0;
+            $weight_grams = $item['weight_grams'] ?? 0;
+            $quantity = $item['quantity'] ?? 1;
+            $stmt_items->bind_param("ssdddd", $purchase_order_id, $item['item_id'], $supplier_price, $weight_grams, $quantity, $cost_price);
             $stmt_items->execute();
         }
 
