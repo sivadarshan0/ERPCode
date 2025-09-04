@@ -177,7 +177,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <form id="paymentForm">
+                                
                                     <div class="mb-3">
                                         <label for="total_supplier_price" class="form-label">Total Supplier Price (INR)</label>
                                         <input type="text" class="form-control" id="total_supplier_price" readonly>
@@ -208,7 +208,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                             ?>
                                         </select>
                                     </div>
-                                </form>
+                                
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

@@ -784,30 +784,6 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
-    // --- NEW MANUAL SUBMIT LOGIC ---
-    const saveButton = document.getElementById('savePoBtn');
-    if (saveButton) {
-        saveButton.addEventListener('click', function() {
-            console.log('Manual save button clicked.');
-            
-            // First, check if the form is valid according to the browser
-            if (form.checkValidity()) {
-                console.log('Form is valid. Manually submitting...');
-                
-                // Add the spinner effect manually
-                this.disabled = true;
-                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
-
-                // Manually submit the form
-                form.submit();
-            } else {
-                // If invalid, show the browser's validation messages
-                console.log('Form is invalid. Reporting validity...');
-                form.reportValidity();
-            }
-        });
-    }
-    // --- END NEW LOGIC ---
 
     const isEditMode = !!document.querySelector('input[name="purchase_order_id"]');
     const statusSelect = document.getElementById('status');
@@ -827,18 +803,14 @@ function initPoEntry() {
     // --- Backdating & Modal UI logic (Only for Edit Mode) ---
     if (isEditMode && statusSelect) {
         const statusDateWrapper = document.getElementById('po_status_date_wrapper');
-        if (statusDateWrapper) {
-            const originalStatus = statusSelect.value;
-            statusSelect.addEventListener('change', function() {
-                if (this.value !== originalStatus) {
-                    statusDateWrapper.classList.remove('d-none');
-                } else {
-                    statusDateWrapper.classList.add('d-none');
-                }
-            });
-        }
-
         const paymentModalEl = document.getElementById('paymentModal');
+        const totalGoodsCostInput = document.getElementById('total_goods_cost');
+        const paidByAccountIdInput = document.getElementById('payment_paid_by_account_id');
+
+        // On page load, modal fields are not required
+        if (totalGoodsCostInput) totalGoodsCostInput.required = false;
+        if (paidByAccountIdInput) paidByAccountIdInput.required = false;
+
         if (paymentModalEl) {
             const paymentModal = new bootstrap.Modal(paymentModalEl);
             let originalStatusOnLoad = statusSelect.value;
@@ -846,23 +818,34 @@ function initPoEntry() {
             statusSelect.addEventListener('change', function() {
                 const newStatus = this.value;
 
+                // Handle backdating UI
+                if (statusDateWrapper) {
+                    if (newStatus !== originalStatusOnLoad) {
+                        statusDateWrapper.classList.remove('d-none');
+                    } else {
+                        statusDateWrapper.classList.add('d-none');
+                    }
+                }
+
+                // Handle payment modal UI
                 if (newStatus === 'Paid' && originalStatusOnLoad !== 'Paid') {
-                    let totalSupplierPrice = 0;
+                    totalGoodsCostInput.required = true;
+                    paidByAccountIdInput.required = true;
                     
-                    // In edit mode, the item data is in static <td> elements.
+                    let totalSupplierPrice = 0;
                     document.querySelectorAll('#poItemRows tr').forEach(row => {
                         const priceText = row.cells[1]?.textContent.replace(/,/g, '') || '0';
                         const qtyText = row.cells[3]?.textContent.replace(/,/g, '') || '0';
-                        const price = parseFloat(priceText);
-                        const qty = parseFloat(qtyText);
-                        totalSupplierPrice += price * qty;
+                        totalSupplierPrice += (parseFloat(priceText) * parseFloat(qtyText));
                     });
-
+                    
                     document.getElementById('total_supplier_price').value = totalSupplierPrice.toFixed(2);
                     paymentModal.show();
 
                     paymentModalEl.addEventListener('hidden.bs.modal', () => {
                         statusSelect.value = originalStatusOnLoad;
+                        totalGoodsCostInput.required = false;
+                        paidByAccountIdInput.required = false;
                     }, { once: true });
                 }
             });
@@ -870,41 +853,31 @@ function initPoEntry() {
             const submitPaymentBtn = document.getElementById('submitPaymentBtn');
             if (submitPaymentBtn) {
                 submitPaymentBtn.addEventListener('click', function() {
-                    const totalGoodsCost = document.getElementById('total_goods_cost').value;
-                    const paidByAccountId = document.getElementById('payment_paid_by_account_id').value;
-
-                    if (!totalGoodsCost || !paidByAccountId) {
-                        alert('Please fill in all fields in the payment form.');
-                        return;
+                    if (!totalGoodsCostInput.value || !paidByAccountIdInput.value) {
+                        alert('Please fill in all fields in the payment form.'); return;
                     }
-                    
                     this.disabled = true;
                     this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-
                     const formData = new FormData();
                     formData.append('purchase_order_id', document.querySelector('input[name="purchase_order_id"]').value);
-                    formData.append('total_goods_cost', totalGoodsCost);
-                    formData.append('goods_paid_by_account_id', paidByAccountId);
-                    
-                    fetch('/modules/purchase/entry_purchase_order.php?action=process_payment', {
-                        method: 'POST',
-                        body: formData
-                    })
+                    formData.append('total_goods_cost', totalGoodsCostInput.value);
+                    formData.append('goods_paid_by_account_id', paidByAccountIdInput.value);
+                    fetch('/modules/purchase/entry_purchase_order.php?action=process_payment', { method: 'POST', body: formData })
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
+                            totalGoodsCostInput.required = false;
+                            paidByAccountIdInput.required = false;
                             paymentModal.hide();
                             form.submit();
                         } else {
                             alert('Error: ' + data.error);
-                            this.disabled = false;
-                            this.innerHTML = 'Submit Payment';
+                            this.disabled = false; this.innerHTML = 'Submit Payment';
                         }
                     })
                     .catch(err => {
-                        alert('An unexpected error occurred. Please try again.');
-                        this.disabled = false;
-                        this.innerHTML = 'Submit Payment';
+                        alert('An unexpected error occurred.');
+                        this.disabled = false; this.innerHTML = 'Submit Payment';
                         console.error(err);
                     });
                 });
@@ -915,29 +888,16 @@ function initPoEntry() {
     // --- Multi-Order Linking UI logic ---
     if (preOrderSearchInput && preOrderResults && linkedOrdersContainer) {
         const addLinkedOrderTag = (orderId, customerName) => {
-            if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) {
-                preOrderSearchInput.value = '';
-                return;
-            }
+            if (linkedOrdersContainer.querySelector(`input[value="${orderId}"]`)) { preOrderSearchInput.value = ''; return; }
             const tag = document.createElement('span');
             tag.className = 'badge bg-primary d-flex align-items-center';
-            tag.innerHTML = `
-                <input type="hidden" name="linked_sales_orders[]" value="${escapeHtml(orderId)}">
-                <a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">
-                    ${escapeHtml(orderId)} (${escapeHtml(customerName)})
-                </a>
-                <button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>
-            `;
+            tag.innerHTML = `<input type="hidden" name="linked_sales_orders[]" value="${escapeHtml(orderId)}"><a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank" class="text-white text-decoration-none">${escapeHtml(orderId)} (${escapeHtml(customerName)})</a><button type="button" class="btn-close btn-close-white ms-2 remove-linked-order" aria-label="Remove"></button>`;
             linkedOrdersContainer.appendChild(tag);
             preOrderSearchInput.value = '';
         };
-
         preOrderSearchInput.addEventListener('input', debounce(() => {
             const query = preOrderSearchInput.value.trim();
-            if (query.length < 2) {
-                if (preOrderResults) preOrderResults.classList.add('d-none');
-                return;
-            }
+            if (query.length < 2) { if (preOrderResults) preOrderResults.classList.add('d-none'); return; }
             fetch(`/modules/purchase/entry_purchase_order.php?action=pre_order_lookup&query=${encodeURIComponent(query)}`)
                 .then(res => res.ok ? res.json() : Promise.reject('Pre-Order search failed'))
                 .then(data => {
@@ -957,20 +917,16 @@ function initPoEntry() {
                                 preOrderResults.appendChild(btn);
                             });
                             preOrderResults.classList.remove('d-none');
-                        } else {
-                            preOrderResults.classList.add('d-none');
-                        }
+                        } else { preOrderResults.classList.add('d-none'); }
                     }
                 })
                 .catch(error => console.error('[PreOrderLookup] Error:', error));
         }, 300));
-
         document.addEventListener('click', e => {
             if (preOrderResults && !preOrderResults.contains(e.target) && e.target !== preOrderSearchInput) {
                 preOrderResults.classList.add('d-none');
             }
         });
-
         linkedOrdersContainer.addEventListener('click', (e) => {
             if (e.target.classList.contains('remove-linked-order')) {
                 e.target.closest('.badge').remove();
@@ -990,13 +946,11 @@ function initPoEntry() {
         };
         addRow(false);
         if (addRowBtn) addRowBtn.addEventListener('click', () => addRow(true));
-
         itemRowsContainer.addEventListener('click', function(e) {
             if (e.target.closest('.remove-item-row')) {
                 e.target.closest('.po-item-row').remove();
             }
         });
-
         itemRowsContainer.addEventListener('input', debounce((e) => {
             if (e.target.classList.contains('item-search-input')) {
                 const searchInput = e.target;
