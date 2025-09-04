@@ -1,4 +1,14 @@
 <?php
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "<pre>";
+    echo "--- FORM SUBMISSION DATA ---\n\n";
+    print_r($_POST);
+    echo "</pre>";
+    exit; // Stop the script immediately after printing
+}
+?>
+
+<?php
 // File: /modules/purchase/entry_purchase_order.php
 // FINAL VALIDATED version with multi-order linking and backdating.
 
