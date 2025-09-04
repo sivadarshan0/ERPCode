@@ -103,16 +103,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // --- Create Logic ---
-            $details_to_create = [
-                'po_date' => $_POST['po_date'] ?? '',
-                'supplier_name' => $_POST['supplier_name'] ?? '',
-                'status' => $_POST['status'] ?? 'Draft',
-                'remarks' => $_POST['remarks'] ?? '',
-            ];
+            $po_date = $_POST['po_date'] ?? '';
+            $supplier_name = $_POST['supplier_name'] ?? '';
+            $status = $_POST['status'] ?? 'Draft';
+            $remarks = $_POST['remarks'] ?? '';
             $linked_sales_orders = $_POST['linked_sales_orders'] ?? [];
 
             $items_to_process = [];
-            // Loop through a field we know exists, like the item_id
             foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
                 if (!empty($item_id)) {
                     $items_to_process[] = [
@@ -120,16 +117,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'supplier_price' => $_POST['items']['supplier_price'][$index] ?? 0,
                         'weight_grams' => $_POST['items']['weight_grams'][$index] ?? 0,
                         'quantity' => $_POST['items']['quantity'][$index] ?? 1,
-                        // The cost_price is not submitted from the form, it's always 0 on creation.
-                        // The backend function will handle setting this default.
                     ];
                 }
             }
             
-            $new_po_id = process_purchase_order($details_to_create, $items_to_process, $linked_sales_orders);
+            // This now passes the parameters individually as the function expects.
+            $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status, $linked_sales_orders);
             
             $_SESSION['success_message'] = "✅ Purchase Order #$new_po_id successfully created.";
-            header("Location: entry_purchase_order.php");
+            header("Location: entry_purchase_order.php?purchase_order_id=" . $new_po_id);
             exit;
         }
         
