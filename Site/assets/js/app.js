@@ -784,6 +784,8 @@ function initOrderList() {
 // -----------------------------------------
 
 function initPoEntry() {
+    try {
+        console.log('--- Starting initPoEntry execution ---');
     const form = document.getElementById('poForm');
     if (!form) return;
 
@@ -987,7 +989,16 @@ function initPoEntry() {
             }
         }, 300));
     }
+    console.log('--- Finished initPoEntry execution without errors ---');
+
+    } catch (error) {
+        // If ANY error occurs inside the function, it will be caught and displayed here
+        console.error('!!!!!!!! A FATAL ERROR OCCURRED IN initPoEntry !!!!!!!!');
+        console.error(error);
+        alert('A fatal JavaScript error occurred. Please check the console.');
+    }
 }
+
 
 // -----------------------------------------
 // ----- GRN List Handler -----
