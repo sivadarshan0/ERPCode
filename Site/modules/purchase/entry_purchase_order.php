@@ -165,7 +165,7 @@ require_once __DIR__ . '/../../includes/header.php';
             <div id="alert-message" class="alert alert-<?= $message_type ?> alert-dismissible fade show" role="alert"><?= htmlspecialchars($message) ?></div>
             <?php endif; ?>
 
-            <form method="POST" action="/modules/purchase/entry_purchase_order.php<?= $is_edit ? '?purchase_order_id=' . htmlspecialchars($po['purchase_order_id']) : '' ?>" class="needs-validation" novalidate id="poForm">
+            <form method="POST" action="/modules/purchase/entry_purchase_order.php<?= $is_edit ? '?purchase_order_id=' . htmlspecialchars($po['purchase_order_id']) : '' ?>" class="needs-validation" id="poForm">
                 <?php if($is_edit): ?><input type="hidden" name="purchase_order_id" value="<?= htmlspecialchars($po['purchase_order_id']) ?>"><?php endif; ?>
                 
                 <!-- Payment Confirmation Modal -->
@@ -184,11 +184,11 @@ require_once __DIR__ . '/../../includes/header.php';
                                     </div>
                                     <div class="mb-3">
                                         <label for="total_goods_cost" class="form-label">Total Amount Paid (LKR) *</label>
-                                        <input type="number" class="form-control" id="total_goods_cost" name="total_goods_cost" min="0.01" step="0.01" required>
+                                        <input type="number" class="form-control" id="total_goods_cost" name="total_goods_cost" min="0.01" step="0.01">
                                     </div>
                                     <div class="mb-3">
                                         <label for="payment_paid_by_account_id" class="form-label">Goods Paid By *</label>
-                                        <select class="form-select" id="payment_paid_by_account_id" name="goods_paid_by_account_id" required>
+                                        <select class="form-select" id="payment_paid_by_account_id" name="goods_paid_by_account_id">
                                             <option value="">Choose payment source...</option>
                                             <?php 
                                             $current_group = '';
