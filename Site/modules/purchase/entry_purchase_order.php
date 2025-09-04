@@ -334,5 +334,34 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
+<?php if (!$is_edit): ?>
+<template id="poItemRowTemplate">
+    <tr class="po-item-row">
+        <td class="position-relative">
+            <input type="hidden" name="items[id][]" class="item-id-input">
+            <input type="text" class="form-control form-control-sm item-search-input" placeholder="Start typing item name..." required>
+            <div class="item-results list-group mt-1 position-absolute w-100 d-none" style="z-index: 100;"></div>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="items[supplier_price][]" value="0.00" min="0.00" step="0.01" required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm" name="items[weight_grams][]" value="0" min="0" step="1" required>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm quantity-input" name="items[quantity][]" value="1" min="1" step="1" required>
+        </td>
+        <td>
+            <!-- THIS IS THE FIX: The readonly field should NOT be 'required' -->
+            <input type="number" class="form-control form-control-sm cost-price-input" name="items[cost_price][]" value="0.00" readonly tabindex="-1">
+        </td>
+        <td>
+            <button type="button" class="btn btn-danger btn-sm remove-item-row"><i class="bi bi-trash"></i></button>
+        </td>
+    </tr>
+</template>
+<?php endif; ?>
+
+<!-- ADD THIS ENTIRE MODAL BLOCK -->
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
