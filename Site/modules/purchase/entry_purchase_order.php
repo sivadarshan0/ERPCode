@@ -1,14 +1,4 @@
 <?php
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    echo "<pre>";
-    echo "--- FORM SUBMISSION DATA ---\n\n";
-    print_r($_POST);
-    echo "</pre>";
-    exit; // Stop the script immediately after printing
-}
-?>
-
-<?php
 // File: /modules/purchase/entry_purchase_order.php
 // FINAL VALIDATED version with multi-order linking and backdating.
 
@@ -113,13 +103,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // --- Create Logic ---
-            $po_date = $_POST['po_date'] ?? '';
-            $supplier_name = $_POST['supplier_name'] ?? '';
-            $status = $_POST['status'] ?? 'Draft';
-            $remarks = $_POST['remarks'] ?? '';
+            $details_to_create = [
+                'po_date' => $_POST['po_date'] ?? '',
+                'supplier_name' => $_POST['supplier_name'] ?? '',
+                'status' => $_POST['status'] ?? 'Draft',
+                'remarks' => $_POST['remarks'] ?? '',
+            ];
             $linked_sales_orders = $_POST['linked_sales_orders'] ?? [];
 
             $items_to_process = [];
+            // Loop through a field we know exists, like the item_id
             foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
                 if (!empty($item_id)) {
                     $items_to_process[] = [
@@ -127,15 +120,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'supplier_price' => $_POST['items']['supplier_price'][$index] ?? 0,
                         'weight_grams' => $_POST['items']['weight_grams'][$index] ?? 0,
                         'quantity' => $_POST['items']['quantity'][$index] ?? 1,
+                        // The cost_price is not submitted from the form, it's always 0 on creation.
+                        // The backend function will handle setting this default.
                     ];
                 }
             }
             
-            // This now passes the parameters individually as the function expects.
-            $new_po_id = process_purchase_order($po_date, $supplier_name, $items_to_process, $remarks, $status, $linked_sales_orders);
+            $new_po_id = process_purchase_order($details_to_create, $items_to_process, $linked_sales_orders);
             
             $_SESSION['success_message'] = "✅ Purchase Order #$new_po_id successfully created.";
-            header("Location: entry_purchase_order.php?purchase_order_id=" . $new_po_id);
+            header("Location: entry_purchase_order.php");
             exit;
         }
         
@@ -328,19 +322,20 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-header"><i class="bi bi-clock-history"></i> Status History</div>
                     <div class="card-body"><ul class="list-group list-group-flush"><?php foreach ($po['status_history'] as $history): ?><li class="list-group-item d-flex justify-content-between align-items-center"><div>Status set to <strong><?= htmlspecialchars($history['status']) ?></strong><small class="d-block text-muted">by <?= htmlspecialchars($history['created_by_name']) ?></small></div><span class="badge bg-secondary rounded-pill"><?= date("d-M-Y h:i A", strtotime($history['event_date'] ?? $history['created_at'])) ?></span></li><?php endforeach; ?></ul></div>
                 </div>
+                
+                <?php endif; ?>
+
                 <div class="col-12 mt-4">
                     <button class="btn btn-primary" type="submit"><i class="bi bi-<?= $is_edit ? 'floppy' : 'save' ?>"></i> <?= $is_edit ? 'Update Purchase Order' : 'Save Purchase Order' ?></button>
                     <a href="/modules/purchase/list_purchase_order.php" class="btn btn-secondary">PO List</a>
                     <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
                 </div>
-                <?php endif; ?>
-
-                
             </form>
         </main>
     </div>
 </div>
 
+//
 <?php if (!$is_edit): ?>
 <template id="poItemRowTemplate">
     <tr class="po-item-row">
