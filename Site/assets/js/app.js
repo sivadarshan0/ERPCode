@@ -784,6 +784,18 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
+    // --- DEFINITIVE DEBUG BLOCK ---
+    console.log('initPoEntry is running. Attaching direct submit listener.');
+    form.addEventListener('submit', function(event) {
+        // Prevent the form from actually submitting for the test
+        event.preventDefault(); 
+        
+        // If you see this alert, the submit event IS FIRING.
+        alert('SUCCESS: The form submit event has fired!'); 
+        
+        console.log('Form submit event was successfully captured.');
+    });
+    // --- END DEBUG BLOCK ---
 
     const isEditMode = !!document.querySelector('input[name="purchase_order_id"]');
     const statusSelect = document.getElementById('status');
