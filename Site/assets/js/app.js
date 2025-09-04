@@ -15,12 +15,23 @@ function showAlert(message, type = 'danger') {
 }
 
 function setupFormSubmitSpinner(formElement) {
-    if (!formElement) return;
+    if (!formElement) {
+        // This is a safety check, not part of the main debug
+        return; 
+    }
+
+    // --- DEBUGGING FORM SUBMISSION ---
+    console.log('Attaching submit listener to form:', formElement.id);
+
     formElement.addEventListener('submit', function (event) {
+        console.log('Submit event fired for form:', this.id);
+
         if (!this.checkValidity()) {
+            console.log('Form is INVALID. Preventing submission.');
             event.preventDefault();
             event.stopPropagation();
         } else {
+            console.log('Form is VALID. Allowing submission.');
             const submitBtn = this.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
