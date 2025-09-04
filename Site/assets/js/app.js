@@ -784,18 +784,30 @@ function initOrderList() {
 function initPoEntry() {
     const form = document.getElementById('poForm');
     if (!form) return;
-    // --- DEFINITIVE DEBUG BLOCK ---
-    console.log('initPoEntry is running. Attaching direct submit listener.');
-    form.addEventListener('submit', function(event) {
-        // Prevent the form from actually submitting for the test
-        event.preventDefault(); 
-        
-        // If you see this alert, the submit event IS FIRING.
-        alert('SUCCESS: The form submit event has fired!'); 
-        
-        console.log('Form submit event was successfully captured.');
-    });
-    // --- END DEBUG BLOCK ---
+    // --- NEW MANUAL SUBMIT LOGIC ---
+    const saveButton = document.getElementById('savePoBtn');
+    if (saveButton) {
+        saveButton.addEventListener('click', function() {
+            console.log('Manual save button clicked.');
+            
+            // First, check if the form is valid according to the browser
+            if (form.checkValidity()) {
+                console.log('Form is valid. Manually submitting...');
+                
+                // Add the spinner effect manually
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+                // Manually submit the form
+                form.submit();
+            } else {
+                // If invalid, show the browser's validation messages
+                console.log('Form is invalid. Reporting validity...');
+                form.reportValidity();
+            }
+        });
+    }
+    // --- END NEW LOGIC ---
 
     const isEditMode = !!document.querySelector('input[name="purchase_order_id"]');
     const statusSelect = document.getElementById('status');
