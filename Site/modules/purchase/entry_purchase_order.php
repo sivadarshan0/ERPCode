@@ -162,7 +162,10 @@ require_once __DIR__ . '/../../includes/header.php';
             <?php endif; ?>
 
             <form method="POST" action="/modules/purchase/entry_purchase_order.php<?= $is_edit ? '?purchase_order_id=' . htmlspecialchars($po['purchase_order_id']) : '' ?>" class="needs-validation" id="poForm">
-                <?php if($is_edit): ?><input type="hidden" name="purchase_order_id" value="<?= htmlspecialchars($po['purchase_order_id']) ?>"><?php endif; ?>
+                <?php if($is_edit): ?><input type="hidden" name="purchase_order_id" value="<?= htmlspecialchars($po['purchase_order_id']) ?>">
+                    <input type="hidden" id="hidden_total_goods_cost" name="total_goods_cost">
+                    <input type="hidden" id="hidden_goods_paid_by_account_id" name="goods_paid_by_account_id">                    
+                <?php endif; ?>
                 
                 <!-- Payment Confirmation Modal -->
                 <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">

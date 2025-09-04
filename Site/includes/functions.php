@@ -1401,10 +1401,7 @@ function search_purchase_orders($filters = []) {
 
 /**
  * Updates the status and details of an existing PO and tracks history.
- * - Uses a smart sync for linked orders.
- * - Handles automation (GRN creation, SO fulfillment) when status is 'Received'.
- * - Handles logic and validation when status is 'Canceled'.
- * - NOTE: This version is purely operational and does NOT create accounting entries.
+ * - FINAL version with single-click save logic for payments.
  *
  * @param string $purchase_order_id The ID of the PO to update.
  * @param array $details An array of details to update.
@@ -1431,7 +1428,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         $old_status = $current_state['status'];
         $new_status = $details['status'];
         
-        // --- LOGIC TO UPDATE LINKS (SMARTER METHOD) ---
         if ($old_status === 'Draft' || $old_status === 'Ordered') {
             $stmt_links_fetch = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
             $stmt_links_fetch->bind_param("s", $purchase_order_id);
@@ -1465,7 +1461,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             }
         }
         
-        // --- Fetch the final, updated list of linked orders for the automation step ---
         $stmt_final_links = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
         $stmt_final_links->bind_param("s", $purchase_order_id);
         $stmt_final_links->execute();
@@ -1474,50 +1469,29 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
-        $is_payment_event = ($new_status === 'Paid' && $old_status !== 'Paid');
 
         if ($is_cancellation_event) {
-            // --- CANCELLATION WORKFLOW ---
             if (in_array($old_status, ['Received', 'Completed'])) {
                 throw new Exception("Cannot cancel this PO because its status is '$old_status'. Please cancel the corresponding GRN first to reverse the stock.");
             }
-
-            // --- 2. NEW: Financial Reversal ---
-            // Find all 'Posted' transactions for this PO
+            // Financial Reversal logic...
             $stmt_find_txns = $db->prepare("SELECT * FROM acc_transactions WHERE source_id = ? AND source_type = 'purchase_order' AND status = 'Posted'");
             $stmt_find_txns->bind_param("s", $purchase_order_id);
             $stmt_find_txns->execute();
             $posted_txns = $stmt_find_txns->get_result()->fetch_all(MYSQLI_ASSOC);
-
             if (!empty($posted_txns)) {
                 $reversal_desc = "Reversal for canceled PO #" . $purchase_order_id;
-                
-                // Group by transaction_group_id to reverse each entry
                 $grouped_txns = [];
-                foreach ($posted_txns as $txn) {
-                    $grouped_txns[$txn['transaction_group_id']][] = $txn;
-                }
-
+                foreach ($posted_txns as $txn) { $grouped_txns[$txn['transaction_group_id']][] = $txn; }
                 foreach ($grouped_txns as $group_id => $txns) {
-                    $original_debit = null;
-                    $original_credit = null;
+                    $original_debit = null; $original_credit = null;
                     foreach ($txns as $t) {
                         if ($t['debit_amount'] !== null) $original_debit = $t;
                         if ($t['credit_amount'] !== null) $original_credit = $t;
                     }
-
                     if ($original_debit && $original_credit) {
-                        $reversal_details = [
-                            'transaction_date'  => date('Y-m-d'),
-                            'description'       => $reversal_desc,
-                            'remarks'           => 'Automated reversal for PO cancellation.',
-                            'debit_account_id'  => $original_credit['account_id'], // Flip credit to debit
-                            'credit_account_id' => $original_debit['account_id'], // Flip debit to credit
-                            'amount'            => $original_debit['debit_amount']
-                        ];
+                        $reversal_details = ['transaction_date' => date('Y-m-d'),'description' => $reversal_desc,'remarks' => 'Automated reversal for PO cancellation.','debit_account_id' => $original_credit['account_id'],'credit_account_id' => $original_debit['account_id'],'amount' => $original_debit['debit_amount']];
                         $reversal_group_id = process_journal_entry($reversal_details, 'purchase_order', $purchase_order_id, $db);
-
-                        // Mark original and reversal as Canceled
                         $stmt_update_txn = $db->prepare("UPDATE acc_transactions SET status = 'Canceled' WHERE transaction_group_id IN (?, ?)");
                         $stmt_update_txn->bind_param("ss", $group_id, $reversal_group_id);
                         $stmt_update_txn->execute();
@@ -1525,36 +1499,39 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
                 }
                 $feedback_message .= " Associated financial transactions were reversed.";
             }
-            // --- END NEW FINANCIAL REVERSAL ---
-
-            // 3. Revert Linked Sales Orders
             if (!empty($linked_order_ids)) {
                 foreach($linked_order_ids as $linked_order_id) {
                     $new_so_status = 'Awaiting Stock';
                     $history_remark = "Fulfillment reverted: Linked PO #$purchase_order_id was canceled.";
-                    
                     $stmt_so_update = $db->prepare("UPDATE orders SET status = ? WHERE order_id = ?");
-                    if ($stmt_so_update) {
-                        $stmt_so_update->bind_param("ss", $new_so_status, $linked_order_id);
-                        $stmt_so_update->execute();
-                    }
-                    
+                    if ($stmt_so_update) { $stmt_so_update->bind_param("ss", $new_so_status, $linked_order_id); $stmt_so_update->execute(); }
                     $stmt_so_history = $db->prepare("INSERT INTO order_status_history (order_id, status, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
-                    if ($stmt_so_history) {
-                        $stmt_so_history->bind_param("sssis", $linked_order_id, $new_so_status, $history_remark, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
-                        $stmt_so_history->execute();
-                    }
+                    if ($stmt_so_history) { $stmt_so_history->bind_param("sssis", $linked_order_id, $new_so_status, $history_remark, $_SESSION['user_id'], 'System for ' . $_SESSION['username']); $stmt_so_history->execute(); }
                 }
                 $feedback_message .= " Linked Sales Orders were reverted to 'Awaiting Stock'.";
             }
         }
+
+        // --- THIS IS THE CRITICAL NEW LOGIC ---
+        $total_goods_cost = $post_data['total_goods_cost'] ?? 0;
+        $paid_by_account_id = $post_data['goods_paid_by_account_id'] ?? null;
+        $is_payment_event = ($new_status === 'Paid' && $old_status !== 'Paid');
+        if ($is_payment_event) {
+            if ($total_goods_cost > 0 && $paid_by_account_id) {
+                $payment_date = $post_data['po_status_event_date'] ?? null;
+                process_po_payment_and_costs($purchase_order_id, $total_goods_cost, $paid_by_account_id, $payment_date);
+                $feedback_message .= " Payment was processed and costs were updated.";
+            } else {
+                throw new Exception("To set status to 'Paid', you must provide payment details via the pop-up.");
+            }
+        }
+        // --- END CRITICAL LOGIC ---
 
         // UPDATE THE PO DETAILS AND HISTORY
         $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
         if (!$stmt) throw new Exception("DB prepare failed for PO update.");
         $stmt->bind_param("ssss", $new_status, $details['supplier_name'], $details['remarks'], $purchase_order_id);
         $stmt->execute();
-
         if ($old_status !== $new_status) {
             $po_event_date = !empty($post_data['po_status_event_date']) ? $post_data['po_status_event_date'] : null;
             $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
@@ -1567,7 +1544,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         if ($is_receiving_event) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
-
             if (!empty($linked_order_ids)) {
                 foreach ($linked_order_ids as $linked_order_id) {
                     fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
@@ -1575,8 +1551,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
                  $feedback_message .= " All linked Sales Orders were fulfilled.";
             }
         }
-        
-        // NOTE: ALL AUTOMATION FOR 'Paid' STATUS HAS BEEN REMOVED.
         
         $db->commit();
         
