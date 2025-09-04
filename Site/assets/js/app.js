@@ -1,6 +1,8 @@
 // File: assets/js/app.js
 // Final validated version with all modules and all UI/UX refinements.
 
+console.log('app.js has loaded.');
+
 function showAlert(message, type = 'danger') {
     const alertContainer = document.querySelector('main') || document.body;
     const alertDiv = document.createElement('div');

@@ -5,6 +5,8 @@
 // ----- Chart of Accounts List Handler -----
 // -----------------------------------------
 
+console.log('app_acc.js has loaded.');
+
 function initAccountList() {
     const searchForm = document.getElementById('accountSearchForm');
     if (!searchForm) return;
