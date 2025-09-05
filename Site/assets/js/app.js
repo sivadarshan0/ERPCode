@@ -782,7 +782,6 @@ function initOrderList() {
 // -----------------------------------------
 // ----- Purchase Order Entry Handler -----
 // -----------------------------------------
-
 function initPoEntry() {
     try {
         console.log('--- Starting initPoEntry execution ---');
@@ -806,33 +805,40 @@ function initPoEntry() {
         if (isEditMode && statusSelect) {
             const statusDateWrapper = document.getElementById('po_status_date_wrapper');
             const paymentModalEl = document.getElementById('paymentModal');
-            const receiptModalEl = document.getElementById('receiptModal'); // NEW for Receipt
+            const receiptModalEl = document.getElementById('receiptModal');
             const totalGoodsCostInput = document.getElementById('total_goods_cost');
             const paidByAccountIdInput = document.getElementById('payment_paid_by_account_id');
+            const logisticCostInput = document.getElementById('total_logistic_cost');
+            const logisticPaidByInput = document.getElementById('logistic_paid_by_account_id');
 
-            if (statusDateWrapper) {
-                const originalStatus = statusSelect.value;
-                statusSelect.addEventListener('change', function() {
-                    if (this.value !== originalStatus) {
-                        statusDateWrapper.classList.remove('d-none');
-                    } else {
-                        statusDateWrapper.classList.add('d-none');
-                    }
-                });
-            }
+            // On page load, all modal fields are NOT required.
+            if (totalGoodsCostInput) totalGoodsCostInput.required = false;
+            if (paidByAccountIdInput) paidByAccountIdInput.required = false;
+            if (logisticCostInput) logisticCostInput.required = false;
+            if (logisticPaidByInput) logisticPaidByInput.required = false;
 
             if (paymentModalEl && receiptModalEl) {
                 const paymentModal = new bootstrap.Modal(paymentModalEl);
-                const receiptModal = new bootstrap.Modal(receiptModalEl); // NEW for Receipt
+                const receiptModal = new bootstrap.Modal(receiptModalEl);
                 let originalStatusOnLoad = statusSelect.value;
                 let paymentSubmitted = false;
-                let receiptSubmitted = false; // NEW for Receipt
+                let receiptSubmitted = false;
 
                 statusSelect.addEventListener('change', function() {
                     const newStatus = this.value;
 
+                    if (statusDateWrapper) {
+                        if (newStatus !== originalStatusOnLoad) {
+                            statusDateWrapper.classList.remove('d-none');
+                        } else {
+                            statusDateWrapper.classList.add('d-none');
+                        }
+                    }
+                    
                     if (newStatus === 'Paid' && originalStatusOnLoad !== 'Paid') {
                         paymentSubmitted = false;
+                        totalGoodsCostInput.required = true;
+                        paidByAccountIdInput.required = true;
                         let totalSupplierPrice = 0;
                         document.querySelectorAll('#poItemRows tr').forEach(row => {
                             const priceText = row.cells[1]?.textContent.replace(/,/g, '') || '0';
@@ -843,63 +849,44 @@ function initPoEntry() {
                         paymentModal.show();
                     }
                     
-                    // --- NEW: Receipt Modal Trigger ---
                     if (newStatus === 'Received' && originalStatusOnLoad !== 'Received') {
-                        receiptSubmitted = false; // Reset flag
+                        receiptSubmitted = false;
+                        logisticCostInput.required = true;
+                        logisticPaidByInput.required = true;
                         receiptModal.show();
                     }
                 });
 
                 paymentModalEl.addEventListener('hide.bs.modal', () => {
-                    if (!paymentSubmitted) {
-                        statusSelect.value = originalStatusOnLoad;
-                    }
+                    if (!paymentSubmitted) { statusSelect.value = originalStatusOnLoad; }
+                    totalGoodsCostInput.required = false;
+                    paidByAccountIdInput.required = false;
                 });
-
-                // --- NEW: Receipt Modal Hide Listener ---
+                
                 receiptModalEl.addEventListener('hide.bs.modal', () => {
-                    if (!receiptSubmitted) {
-                        statusSelect.value = originalStatusOnLoad;
-                    }
+                    if (!receiptSubmitted) { statusSelect.value = originalStatusOnLoad; }
+                    logisticCostInput.required = false;
+                    logisticPaidByInput.required = false;
                 });
 
                 const submitPaymentBtn = document.getElementById('submitPaymentBtn');
                 if (submitPaymentBtn) {
                     submitPaymentBtn.addEventListener('click', function() {
-                        const totalGoodsCostValue = totalGoodsCostInput.value;
-                        const paidByAccountIdValue = paidByAccountIdInput.value;
-                        if (!totalGoodsCostValue || !paidByAccountIdValue) {
-                            alert('Please fill in all fields in the payment form.');
-                            return;
-                        }
+                        if (!totalGoodsCostInput.value || !paidByAccountIdInput.value) { alert('Please fill in all fields in the payment form.'); return; }
                         paymentSubmitted = true;
-                        const hiddenTotalCost = document.getElementById('hidden_total_goods_cost');
-                        const hiddenPaidBy = document.getElementById('hidden_goods_paid_by_account_id');
-                        if (hiddenTotalCost) hiddenTotalCost.value = totalGoodsCostValue;
-                        if (hiddenPaidBy) hiddenPaidBy.value = paidByAccountIdValue;
+                        document.getElementById('hidden_total_goods_cost').value = totalGoodsCostInput.value;
+                        document.getElementById('hidden_goods_paid_by_account_id').value = paidByAccountIdInput.value;
                         paymentModal.hide();
                     });
                 }
-
-                // --- NEW: Receipt Modal Submit Button Listener ---
+                
                 const submitReceiptBtn = document.getElementById('submitReceiptBtn');
                 if (submitReceiptBtn) {
                     submitReceiptBtn.addEventListener('click', function() {
-                        const logisticCostInput = document.getElementById('total_logistic_cost');
-                        const logisticPaidByInput = document.getElementById('logistic_paid_by_account_id');
-
-                        if (!logisticCostInput.value || !logisticPaidByInput.value) {
-                            alert('Please fill in all fields in the receipt form.');
-                            return;
-                        }
-                        
+                        if (!logisticCostInput.value || !logisticPaidByInput.value) { alert('Please fill in all fields in the receipt form.'); return; }
                         receiptSubmitted = true;
-
-                        const hiddenLogisticCost = document.getElementById('hidden_total_logistic_cost');
-                        const hiddenLogisticPaidBy = document.getElementById('hidden_logistic_paid_by_account_id');
-                        if(hiddenLogisticCost) hiddenLogisticCost.value = logisticCostInput.value;
-                        if(hiddenLogisticPaidBy) hiddenLogisticPaidBy.value = logisticPaidByInput.value;
-
+                        document.getElementById('hidden_total_logistic_cost').value = logisticCostInput.value;
+                        document.getElementById('hidden_logistic_paid_by_account_id').value = logisticPaidByInput.value;
                         receiptModal.hide();
                     });
                 }

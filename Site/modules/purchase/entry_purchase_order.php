@@ -373,7 +373,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <?php endif; ?>
 
                 <div class="col-12 mt-4">
-                    <button class="btn btn-primary" type="button" id="savePoBtn"><i class="bi bi-save"></i> Save Purchase Order</button>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save Purchase Order</button>
                     <a href="/modules/purchase/list_purchase_order.php" class="btn btn-secondary">PO List</a>
                     <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
                 </div>
