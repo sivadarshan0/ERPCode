@@ -1401,10 +1401,10 @@ function search_purchase_orders($filters = []) {
 
 /**
  * Updates the status and details of an existing PO and tracks history.
- * - FINAL version with single-click save logic for payments.
+ * - FINAL version with consolidated single-click save logic for payments.
  *
  * @param string $purchase_order_id The ID of the PO to update.
- * @param array $details An array of details to update.
+ * @param array $details An array of header details to update.
  * @param array $post_data The raw POST data.
  * @return array An array containing a success boolean and a feedback message.
  * @throws Exception On validation or database errors.
@@ -1469,12 +1469,12 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
 
         $is_receiving_event = ($new_status === 'Received' && $old_status !== 'Received');
         $is_cancellation_event = ($new_status === 'Canceled' && $old_status !== 'Canceled');
+        $is_payment_event = ($new_status === 'Paid' && $old_status !== 'Paid');
 
         if ($is_cancellation_event) {
             if (in_array($old_status, ['Received', 'Completed'])) {
                 throw new Exception("Cannot cancel this PO because its status is '$old_status'. Please cancel the corresponding GRN first to reverse the stock.");
             }
-            // Financial Reversal logic...
             $stmt_find_txns = $db->prepare("SELECT * FROM acc_transactions WHERE source_id = ? AND source_type = 'purchase_order' AND status = 'Posted'");
             $stmt_find_txns->bind_param("s", $purchase_order_id);
             $stmt_find_txns->execute();
@@ -1512,26 +1512,39 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             }
         }
 
-        // --- THIS IS THE CRITICAL NEW LOGIC ---
+        // --- DEFINITIVE FIX: Consolidate all updates into one dynamic query ---
         $total_goods_cost = $post_data['total_goods_cost'] ?? 0;
         $paid_by_account_id = $post_data['goods_paid_by_account_id'] ?? null;
-        $is_payment_event = ($new_status === 'Paid' && $old_status !== 'Paid');
+        
+        $sql = "UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ?";
+        $types = "sss";
+        $params = [
+            $new_status,
+            $details['supplier_name'],
+            $details['remarks']
+        ];
+        
         if ($is_payment_event) {
             if ($total_goods_cost > 0 && $paid_by_account_id) {
-                $payment_date = $post_data['po_status_event_date'] ?? null;
-                process_po_payment_and_costs($purchase_order_id, $total_goods_cost, $paid_by_account_id, $payment_date);
-                $feedback_message .= " Payment was processed and costs were updated.";
+                $sql .= ", total_goods_cost = ?, goods_paid_by_account_id = ?";
+                $types .= "di";
+                $params[] = $total_goods_cost;
+                $params[] = $paid_by_account_id;
             } else {
                 throw new Exception("To set status to 'Paid', you must provide payment details via the pop-up.");
             }
         }
-        // --- END CRITICAL LOGIC ---
-
-        // UPDATE THE PO DETAILS AND HISTORY
-        $stmt = $db->prepare("UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ? WHERE purchase_order_id = ?");
-        if (!$stmt) throw new Exception("DB prepare failed for PO update.");
-        $stmt->bind_param("ssss", $new_status, $details['supplier_name'], $details['remarks'], $purchase_order_id);
+        
+        $sql .= " WHERE purchase_order_id = ?";
+        $types .= "s";
+        $params[] = $purchase_order_id;
+        
+        $stmt = $db->prepare($sql);
+        if (!$stmt) throw new Exception("DB prepare failed for PO main update.");
+        $stmt->bind_param($types, ...$params);
         $stmt->execute();
+        // --- END FIX ---
+
         if ($old_status !== $new_status) {
             $po_event_date = !empty($post_data['po_status_event_date']) ? $post_data['po_status_event_date'] : null;
             $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
@@ -1540,7 +1553,12 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             $stmt_history->execute();
         }
         
-        // AUTOMATION for Receiving
+        if ($is_payment_event) {
+            $payment_date = $post_data['po_status_event_date'] ?? null;
+            process_po_payment_and_costs($purchase_order_id, $total_goods_cost, $paid_by_account_id, $payment_date);
+            $feedback_message .= " Payment was processed and recorded.";
+        }
+        
         if ($is_receiving_event) {
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";

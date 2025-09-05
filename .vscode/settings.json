@@ -6,7 +6,7 @@
                 "enableSsl": "Disabled"
             },
             "previewLimit": 50,
-            "server": "10.0.7.108",
+            "server": "172.20.10.6",
             "port": 3306,
             "driver": "MariaDB",
             "name": "Pi4MariaDB",
