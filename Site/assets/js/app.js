@@ -803,10 +803,10 @@ function initPoEntry() {
             poDateInput.focus();
         }
 
-        // Replace this entire block in your initPoEntry function
         if (isEditMode && statusSelect) {
             const statusDateWrapper = document.getElementById('po_status_date_wrapper');
             const paymentModalEl = document.getElementById('paymentModal');
+            const receiptModalEl = document.getElementById('receiptModal'); // NEW for Receipt
             const totalGoodsCostInput = document.getElementById('total_goods_cost');
             const paidByAccountIdInput = document.getElementById('payment_paid_by_account_id');
 
@@ -821,16 +821,18 @@ function initPoEntry() {
                 });
             }
 
-            if (paymentModalEl) {
+            if (paymentModalEl && receiptModalEl) {
                 const paymentModal = new bootstrap.Modal(paymentModalEl);
+                const receiptModal = new bootstrap.Modal(receiptModalEl); // NEW for Receipt
                 let originalStatusOnLoad = statusSelect.value;
-                let paymentSubmitted = false; // --- NEW FLAG ---
+                let paymentSubmitted = false;
+                let receiptSubmitted = false; // NEW for Receipt
 
                 statusSelect.addEventListener('change', function() {
                     const newStatus = this.value;
+
                     if (newStatus === 'Paid' && originalStatusOnLoad !== 'Paid') {
-                        paymentSubmitted = false; // Reset flag every time modal is triggered
-                        
+                        paymentSubmitted = false;
                         let totalSupplierPrice = 0;
                         document.querySelectorAll('#poItemRows tr').forEach(row => {
                             const priceText = row.cells[1]?.textContent.replace(/,/g, '') || '0';
@@ -840,12 +842,23 @@ function initPoEntry() {
                         document.getElementById('total_supplier_price').value = totalSupplierPrice.toFixed(2);
                         paymentModal.show();
                     }
+                    
+                    // --- NEW: Receipt Modal Trigger ---
+                    if (newStatus === 'Received' && originalStatusOnLoad !== 'Received') {
+                        receiptSubmitted = false; // Reset flag
+                        receiptModal.show();
+                    }
                 });
-                
-                // This event now only runs when the modal starts to hide
+
                 paymentModalEl.addEventListener('hide.bs.modal', () => {
-                    // If the payment was NOT submitted, revert the status.
                     if (!paymentSubmitted) {
+                        statusSelect.value = originalStatusOnLoad;
+                    }
+                });
+
+                // --- NEW: Receipt Modal Hide Listener ---
+                receiptModalEl.addEventListener('hide.bs.modal', () => {
+                    if (!receiptSubmitted) {
                         statusSelect.value = originalStatusOnLoad;
                     }
                 });
@@ -859,16 +872,35 @@ function initPoEntry() {
                             alert('Please fill in all fields in the payment form.');
                             return;
                         }
-                        
-                        // --- SET THE FLAG ---
                         paymentSubmitted = true;
-
                         const hiddenTotalCost = document.getElementById('hidden_total_goods_cost');
                         const hiddenPaidBy = document.getElementById('hidden_goods_paid_by_account_id');
                         if (hiddenTotalCost) hiddenTotalCost.value = totalGoodsCostValue;
                         if (hiddenPaidBy) hiddenPaidBy.value = paidByAccountIdValue;
-                        
                         paymentModal.hide();
+                    });
+                }
+
+                // --- NEW: Receipt Modal Submit Button Listener ---
+                const submitReceiptBtn = document.getElementById('submitReceiptBtn');
+                if (submitReceiptBtn) {
+                    submitReceiptBtn.addEventListener('click', function() {
+                        const logisticCostInput = document.getElementById('total_logistic_cost');
+                        const logisticPaidByInput = document.getElementById('logistic_paid_by_account_id');
+
+                        if (!logisticCostInput.value || !logisticPaidByInput.value) {
+                            alert('Please fill in all fields in the receipt form.');
+                            return;
+                        }
+                        
+                        receiptSubmitted = true;
+
+                        const hiddenLogisticCost = document.getElementById('hidden_total_logistic_cost');
+                        const hiddenLogisticPaidBy = document.getElementById('hidden_logistic_paid_by_account_id');
+                        if(hiddenLogisticCost) hiddenLogisticCost.value = logisticCostInput.value;
+                        if(hiddenLogisticPaidBy) hiddenLogisticPaidBy.value = logisticPaidByInput.value;
+
+                        receiptModal.hide();
                     });
                 }
             }
@@ -979,7 +1011,6 @@ function initPoEntry() {
         alert('A fatal JavaScript error occurred. Please check the console.');
     }
 }
-
 
 // -----------------------------------------
 // ----- GRN List Handler -----

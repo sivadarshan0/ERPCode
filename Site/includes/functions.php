@@ -1401,7 +1401,7 @@ function search_purchase_orders($filters = []) {
 
 /**
  * Updates the status and details of an existing PO and tracks history.
- * - FINAL version with consolidated single-click save logic for payments.
+ * - FINAL version with all automation for Payment and Receipt modals.
  *
  * @param string $purchase_order_id The ID of the PO to update.
  * @param array $details An array of header details to update.
@@ -1512,17 +1512,15 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             }
         }
 
-        // --- DEFINITIVE FIX: Consolidate all updates into one dynamic query ---
         $total_goods_cost = $post_data['total_goods_cost'] ?? 0;
         $paid_by_account_id = $post_data['goods_paid_by_account_id'] ?? null;
+        $total_logistic_cost = $post_data['total_logistic_cost'] ?? 0;
+        $logistic_paid_by_account_id = $post_data['logistic_paid_by_account_id'] ?? null;
         
+        // --- DYNAMICALLY BUILD THE MAIN UPDATE QUERY ---
         $sql = "UPDATE purchase_orders SET status = ?, supplier_name = ?, remarks = ?";
         $types = "sss";
-        $params = [
-            $new_status,
-            $details['supplier_name'],
-            $details['remarks']
-        ];
+        $params = [ $new_status, $details['supplier_name'], $details['remarks'] ];
         
         if ($is_payment_event) {
             if ($total_goods_cost > 0 && $paid_by_account_id) {
@@ -1534,6 +1532,16 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
                 throw new Exception("To set status to 'Paid', you must provide payment details via the pop-up.");
             }
         }
+
+        if ($is_receiving_event) {
+            if ($total_logistic_cost > 0 && !$logistic_paid_by_account_id) {
+                throw new Exception("To set status to 'Received' with a logistic cost, you must provide the logistic payment source.");
+            }
+            $sql .= ", total_logistic_cost = ?, logistic_paid_by_account_id = ?";
+            $types .= "di";
+            $params[] = $total_logistic_cost;
+            $params[] = $logistic_paid_by_account_id;
+        }
         
         $sql .= " WHERE purchase_order_id = ?";
         $types .= "s";
@@ -1543,7 +1551,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         if (!$stmt) throw new Exception("DB prepare failed for PO main update.");
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
-        // --- END FIX ---
 
         if ($old_status !== $new_status) {
             $po_event_date = !empty($post_data['po_status_event_date']) ? $post_data['po_status_event_date'] : null;
@@ -1560,6 +1567,8 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         }
         
         if ($is_receiving_event) {
+            process_po_receipt_and_logistics($purchase_order_id, $total_logistic_cost, $logistic_paid_by_account_id, $db);
+            $feedback_message .= " Landed costs were finalized.";
             $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
             $feedback_message .= " GRN #$new_grn_id was automatically created.";
             if (!empty($linked_order_ids)) {
@@ -1571,7 +1580,6 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         }
         
         $db->commit();
-        
         return ['success' => true, 'message' => $feedback_message];
 
     } catch (Exception $e) {

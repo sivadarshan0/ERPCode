@@ -164,7 +164,9 @@ require_once __DIR__ . '/../../includes/header.php';
             <form method="POST" action="/modules/purchase/entry_purchase_order.php<?= $is_edit ? '?purchase_order_id=' . htmlspecialchars($po['purchase_order_id']) : '' ?>" class="needs-validation" id="poForm">
                 <?php if($is_edit): ?><input type="hidden" name="purchase_order_id" value="<?= htmlspecialchars($po['purchase_order_id']) ?>">
                     <input type="hidden" id="hidden_total_goods_cost" name="total_goods_cost">
-                    <input type="hidden" id="hidden_goods_paid_by_account_id" name="goods_paid_by_account_id">                    
+                    <input type="hidden" id="hidden_goods_paid_by_account_id" name="goods_paid_by_account_id">
+                    <input type="hidden" id="hidden_total_logistic_cost" name="total_logistic_cost">
+                    <input type="hidden" id="hidden_logistic_paid_by_account_id" name="logistic_paid_by_account_id">                    
                 <?php endif; ?>
                 
                 <!-- Payment Confirmation Modal -->
@@ -217,6 +219,52 @@ require_once __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
                 <!-- END MODAL BLOCK -->
+                
+                <!-- Receipt & Logistics Confirmation Modal -->
+                <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="receiptModalLabel">Confirm Receipt & Finalize Landed Costs</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="total_logistic_cost" class="form-label">Total Logistic Cost (LKR) *</label>
+                                    <input type="number" class="form-control" id="total_logistic_cost" name="total_logistic_cost" min="0.00" step="0.01" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="logistic_paid_by_account_id" class="form-label">Logistic Paid By *</label>
+                                    <select class="form-select" id="logistic_paid_by_account_id" name="logistic_paid_by_account_id" required>
+                                        <option value="">Choose payment source...</option>
+                                        <?php 
+                                        $current_group = '';
+                                        // Re-use the $payable_accounts variable we already have
+                                        foreach ($payable_accounts as $account):
+                                            if ($account['account_type'] !== $current_group) {
+                                                if ($current_group !== '') echo '</optgroup>';
+                                                $current_group = $account['account_type'];
+                                                echo '<optgroup label="' . htmlspecialchars($current_group) . 's">';
+                                            }
+                                        ?>
+                                            <option value="<?= $account['account_id'] ?>">
+                                                <?= htmlspecialchars($account['account_name']) ?>
+                                            </option>
+                                        <?php 
+                                        endforeach;
+                                        if ($current_group !== '') echo '</optgroup>';
+                                        ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="submitReceiptBtn">Confirm Receipt</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END NEW MODAL BLOCK -->
 
                 <div class="card">
                     <div class="card-header">Purchase Order Details</div>
@@ -334,7 +382,6 @@ require_once __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
-//
 <?php if (!$is_edit): ?>
 <template id="poItemRowTemplate">
     <tr class="po-item-row">

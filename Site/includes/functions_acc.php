@@ -348,99 +348,93 @@ function record_sales_transaction($order_id, $db) {
 // ----------------End----------------------
 
 /**
- * Creates the accounting entries for receiving goods from a PO.
- * Debits Inventory, Credits Accounts Payable.
+ * Processes the receipt of a PO, finalizes landed costs, and creates all logistics and inventory journal entries.
  *
  * @param string $po_id The ID of the Purchase Order.
+ * @param float $total_logistic_cost The total logistic cost in local currency.
+ * @param int $logistic_paid_by_account_id The ID of the account that paid for logistics.
  * @param mysqli $db The existing database connection.
- * @return bool True on success.
+ * @return void
  * @throws Exception On failure.
  */
-function record_inventory_purchase($po_id, $db) {
-    // CORRECTED: The query now joins with the main purchase_orders table to get the po_date
-    $stmt_po = $db->prepare("
-        SELECT p.po_date, SUM(pi.quantity * pi.cost_price) as total_cost 
-        FROM purchase_orders p
-        JOIN purchase_order_items pi ON p.purchase_order_id = pi.purchase_order_id
-        WHERE p.purchase_order_id = ?
-        GROUP BY p.purchase_order_id, p.po_date
-    ");
-    if (!$stmt_po) throw new Exception("DB prepare failed for fetching PO total.");
-    $stmt_po->bind_param("s", $po_id);
-    $stmt_po->execute();
-    $po = $stmt_po->get_result()->fetch_assoc();
+function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logistic_paid_by_account_id, $db) {
+    // Step 1: Save the logistic details to the main PO record
+    $stmt_update_po = $db->prepare("UPDATE purchase_orders SET total_logistic_cost = ?, logistic_paid_by_account_id = ? WHERE purchase_order_id = ?");
+    if (!$stmt_update_po) throw new Exception("DB prepare failed for updating PO logistic details.");
+    $stmt_update_po->bind_param("dis", $total_logistic_cost, $logistic_paid_by_account_id, $po_id);
+    $stmt_update_po->execute();
 
-    if (!$po || !isset($po['total_cost']) || $po['total_cost'] <= 0) {
-        return true; // No cost to record
+    // Step 2: Fetch all items to get their weights and current cost_price
+    $stmt_fetch_items = $db->prepare("SELECT po_item_id, cost_price, weight_grams, quantity FROM purchase_order_items WHERE purchase_order_id = ?");
+    $stmt_fetch_items->bind_param("s", $po_id);
+    $stmt_fetch_items->execute();
+    $items = $stmt_fetch_items->get_result()->fetch_all(MYSQLI_ASSOC);
+    
+    $total_weight = array_sum(array_map(fn($item) => $item['weight_grams'] * $item['quantity'], $items));
+
+    if ($total_weight <= 0) {
+        // If there's no weight, we cannot distribute the cost. For now, we'll skip this step.
+        // A more advanced system might distribute by value or quantity.
+    } else {
+        // Step 3: Calculate cost per gram and update each item's final landed cost
+        $cost_per_gram = $total_logistic_cost / $total_weight;
+        $stmt_update_item = $db->prepare("UPDATE purchase_order_items SET cost_price = ? WHERE po_item_id = ?");
+        if (!$stmt_update_item) throw new Exception("DB prepare failed for updating final item costs.");
+
+        foreach($items as $item) {
+            $prorated_logistic_cost = ($item['weight_grams'] * $cost_per_gram);
+            $final_landed_cost = $item['cost_price'] + $prorated_logistic_cost;
+            $stmt_update_item->bind_param("di", $final_landed_cost, $item['po_item_id']);
+            $stmt_update_item->execute();
+        }
     }
 
+    // --- Step 4: Create Accounting Journal Entries ---
+    $stmt_po_date = $db->prepare("SELECT po_date FROM purchase_orders WHERE purchase_order_id = ?");
+    $stmt_po_date->bind_param("s", $po_id);
+    $stmt_po_date->execute();
+    $po_date = $stmt_po_date->get_result()->fetch_assoc()['po_date'];
+
+    // Get necessary account IDs
     $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Inventory', 'Accounts Payable')");
     $stmt_acc->execute();
-    $accounts_res = $stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC);
-    $accounts = array_column($accounts_res, 'account_id', 'account_name');
-
+    $accounts = array_column($stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC), 'account_id', 'account_name');
     if (!isset($accounts['Inventory']) || !isset($accounts['Accounts Payable'])) {
-        throw new Exception("Could not find 'Inventory' or 'Accounts Payable' in the Chart of Accounts.");
+        throw new Exception("Critical Error: 'Inventory' or 'Accounts Payable' account not found.");
     }
-
-    $details = [
-        'transaction_date'  => $po['po_date'],
-        'description'       => 'Inventory received from PO #' . $po_id,
-        'debit_account_id'  => $accounts['Inventory'],
-        'credit_account_id' => $accounts['Accounts Payable'],
-        'amount'            => $po['total_cost'],
+    
+    // Entry A: Record the logistic cost payment
+    $logistic_details = [
+        'transaction_date'  => $po_date,
+        'description'       => 'Payment for logistics (Ref PO #' . $po_id . ')',
+        'remarks'           => '',
+        'debit_account_id'  => $accounts['Inventory'], // Debit Inventory
+        'credit_account_id' => $logistic_paid_by_account_id, // Credit the account that paid
+        'amount'            => $total_logistic_cost,
     ];
+    process_journal_entry($logistic_details, 'purchase_order', $po_id, $db);
 
-    return process_journal_entry($details, 'purchase_order', $po_id, $db);
+    // Entry B: Record the main inventory asset value (this is the cost of goods only)
+    $goods_cost_stmt = $db->prepare("SELECT total_goods_cost FROM purchase_orders WHERE purchase_order_id = ?");
+    $goods_cost_stmt->bind_param("s", $po_id);
+    $goods_cost_stmt->execute();
+    $total_goods_cost = $goods_cost_stmt->get_result()->fetch_assoc()['total_goods_cost'] ?? 0;
+    
+    if($total_goods_cost > 0) {
+        $inventory_asset_details = [
+            'transaction_date'  => $po_date,
+            'description'       => 'Inventory received from PO #' . $po_id,
+            'remarks'           => '',
+            'debit_account_id'  => $accounts['Inventory'],
+            'credit_account_id' => $accounts['Accounts Payable'],
+            'amount'            => $total_goods_cost,
+        ];
+        process_journal_entry($inventory_asset_details, 'purchase_order', $po_id, $db);
+    }
 }
 // ----------------End----------------------
 
-/**
- * Creates the accounting entries for paying a supplier for a PO.
- * Debits Accounts Payable, Credits Cash/Bank.
- *
- * @param string $po_id The ID of the Purchase Order.
- * @param mysqli $db The existing database connection.
- * @return bool True on success.
- * @throws Exception On failure.
- */
-function record_purchase_payment($po_id, $db, $event_date = null) {
-    // CORRECTED: The query now joins with the main purchase_orders table to get the po_date
-    $stmt_po = $db->prepare("
-        SELECT p.po_date, SUM(pi.quantity * pi.cost_price) as total_cost
-        FROM purchase_orders p
-        JOIN purchase_order_items pi ON p.purchase_order_id = pi.purchase_order_id
-        WHERE p.purchase_order_id = ?
-        GROUP BY p.purchase_order_id, p.po_date
-    ");
-    if (!$stmt_po) throw new Exception("DB prepare failed for fetching PO total.");
-    $stmt_po->bind_param("s", $po_id);
-    $stmt_po->execute();
-    $po = $stmt_po->get_result()->fetch_assoc();
 
-    if (!$po || !isset($po['total_cost']) || $po['total_cost'] <= 0) {
-        return true; // No cost to record
-    }
-    
-    $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Bank Account', 'Accounts Payable')");
-    $stmt_acc->execute();
-    $accounts_res = $stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC);
-    $accounts = array_column($accounts_res, 'account_id', 'account_name');
-
-    if (!isset($accounts['Bank Account']) || !isset($accounts['Accounts Payable'])) {
-        throw new Exception("Could not find 'Bank Account' or 'Accounts Payable' in the Chart of Accounts.");
-    }
-
-    $details = [
-        'transaction_date'  => $event_date ? date('Y-m-d', strtotime($event_date)) : $po['po_date'],
-        'description'       => 'Payment for PO #' . $po_id,
-        'debit_account_id'  => $accounts['Accounts Payable'],
-        'credit_account_id' => $accounts['Bank Account'],
-        'amount'            => $po['total_cost'],
-    ];
-
-    return process_journal_entry($details, 'purchase_order', $po_id, $db);
-}
 // ----------------------------------End-----------------------------------------
 
 /**
