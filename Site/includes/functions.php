@@ -524,11 +524,11 @@ function cancel_grn($grn_id) {
         if (!$grn) {
             throw new Exception("GRN #$grn_id not found.");
         }
-        if ($grn['status'] !== 'Posted') {
-            throw new Exception("This GRN cannot be canceled because its status is not 'Posted'.");
+        if ($grn['status'] !== 'Posted' && $grn['status'] !== 'Completed') {
+            throw new Exception("This GRN cannot be canceled because its status is not 'Posted' or 'Completed'.");
         }
 
-        // Step 2: Reverse stock adjustments (Unchanged)
+        // Step 2: Reverse stock adjustments
         $stmt_items = $db->prepare("SELECT item_id, quantity FROM grn_items WHERE grn_id = ?");
         if (!$stmt_items) throw new Exception("DB prepare failed for fetching GRN items.");
         $stmt_items->bind_param("s", $grn_id);
@@ -538,6 +538,7 @@ function cancel_grn($grn_id) {
         if (!empty($items_to_reverse)) {
             foreach ($items_to_reverse as $item) {
                 $stock_reason = "Stock reversed from canceled GRN #" . $grn_id;
+                // CORRECTED: The function call now passes all 6 arguments, including the crucial $db object.
                 adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
             }
         }
@@ -548,8 +549,6 @@ function cancel_grn($grn_id) {
         $stmt_update->bind_param("s", $grn_id);
         $stmt_update->execute();
 
-        // --- THIS IS THE CRITICAL NEW LOGIC ---
-        
         // Step 4: Find the parent PO ID from the GRN remarks
         $parent_po_id = null;
         if (preg_match('/PO #(PUR[0-9]+)/', $grn['remarks'], $matches)) {
@@ -596,7 +595,6 @@ function cancel_grn($grn_id) {
             $stmt_po_history->bind_param("ssis", $parent_po_id, $new_po_status, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
             $stmt_po_history->execute();
         }
-        // --- END OF NEW LOGIC ---
 
         $db->commit();
         return true;
