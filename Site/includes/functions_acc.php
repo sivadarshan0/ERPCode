@@ -435,6 +435,7 @@ function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logisti
         process_journal_entry($inventory_asset_details, 'purchase_order', $po_id, $db);
     }
 }
+}
 // ----------------End----------------------
 
 
