@@ -1552,6 +1552,7 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         $stmt->bind_param($types, ...$params);
         $stmt->execute();
 
+        // --- UPDATE HISTORY and then CALL AUTOMATIONS ---
         if ($old_status !== $new_status) {
             $po_event_date = !empty($post_data['po_status_event_date']) ? $post_data['po_status_event_date'] : null;
             $stmt_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, event_date, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
@@ -1567,10 +1568,10 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         }
         
         if ($is_receiving_event) {
-            process_po_receipt_and_logistics($purchase_order_id, $total_logistic_cost, $logistic_paid_by_account_id, $db);
-            $feedback_message .= " Landed costs were finalized.";
-            $new_grn_id = auto_generate_grn_from_po($purchase_order_id, $db);
-            $feedback_message .= " GRN #$new_grn_id was automatically created.";
+            $receipt_date = $post_data['po_status_event_date'] ?? null;
+            $new_grn_id = process_po_receipt_and_logistics($purchase_order_id, $total_logistic_cost, $logistic_paid_by_account_id, $db, $receipt_date);
+            $feedback_message .= " Landed costs were finalized and GRN #$new_grn_id was automatically created.";
+
             if (!empty($linked_order_ids)) {
                 foreach ($linked_order_ids as $linked_order_id) {
                     fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
@@ -1580,6 +1581,7 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         }
         
         $db->commit();
+        
         return ['success' => true, 'message' => $feedback_message];
 
     } catch (Exception $e) {

@@ -395,6 +395,9 @@ function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logisti
     $stmt_po_date->execute();
     $po_date = $stmt_po_date->get_result()->fetch_assoc()['po_date'];
 
+    // Use the event_date from the "Status Date" input. Fall back to today's date if not provided.
+    $transaction_date_for_logistics = $event_date ? date('Y-m-d', strtotime($event_date)) : date('Y-m-d');
+
     // Get necessary account IDs
     $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Inventory', 'Accounts Payable')");
     $stmt_acc->execute();
@@ -403,15 +406,15 @@ function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logisti
         throw new Exception("Critical Error: 'Inventory' or 'Accounts Payable' account not found.");
     }
     
-    // Entry A: Record the logistic cost payment
-    $logistic_details = [
-        'transaction_date'  => $po_date,
-        'description'       => 'Payment for logistics (Ref PO #' . $po_id . ')',
-        'remarks'           => '',
-        'debit_account_id'  => $accounts['Inventory'], // Debit Inventory
-        'credit_account_id' => $logistic_paid_by_account_id, // Credit the account that paid
-        'amount'            => $total_logistic_cost,
-    ];
+    if ($total_logistic_cost > 0 && $logistic_paid_by_account_id) {
+        $logistic_details = [
+            'transaction_date'  => $transaction_date_for_logistics, // USE THE CORRECT DATE
+            'description'       => 'Payment for logistics (Ref PO #' . $po_id . ')',
+            'remarks'           => '',
+            'debit_account_id'  => $accounts['Inventory'],
+            'credit_account_id' => $logistic_paid_by_account_id,
+            'amount'            => $total_logistic_cost,
+        ];
     process_journal_entry($logistic_details, 'purchase_order', $po_id, $db);
 
     // Entry B: Record the main inventory asset value (this is the cost of goods only)
