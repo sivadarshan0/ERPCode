@@ -434,6 +434,24 @@ function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logisti
         ];
         process_journal_entry($inventory_asset_details, 'purchase_order', $po_id, $db);
     }
+
+    // Step 4: Create the GRN which adjusts the stock levels. This MUST happen.
+    $new_grn_id = auto_generate_grn_from_po($po_id, $db);
+
+    // Step 5: Fulfill any linked sales orders
+    $stmt_final_links = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
+    $stmt_final_links->bind_param("s", $po_id);
+    $stmt_final_links->execute();
+    $final_links_result = $stmt_final_links->get_result()->fetch_all(MYSQLI_ASSOC);
+    $linked_order_ids = array_column($final_links_result, 'sales_order_id');
+
+    if (!empty($linked_order_ids)) {
+        foreach ($linked_order_ids as $linked_order_id) {
+            fulfill_linked_sales_order($linked_order_id, $po_id, $db);
+        }
+    }
+
+    return $new_grn_id; // Return the GRN ID for the feedback message
 }
 }
 // ----------------End----------------------

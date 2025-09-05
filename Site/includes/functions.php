@@ -1567,15 +1567,15 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
             $feedback_message .= " Payment was processed and recorded.";
         }
         
+        // --- THIS IS THE FINAL FIX ---
         if ($is_receiving_event) {
             $receipt_date = $post_data['po_status_event_date'] ?? null;
+            // The process_po_receipt_and_logistics function now handles everything, including GRN creation.
             $new_grn_id = process_po_receipt_and_logistics($purchase_order_id, $total_logistic_cost, $logistic_paid_by_account_id, $db, $receipt_date);
+            
             $feedback_message .= " Landed costs were finalized and GRN #$new_grn_id was automatically created.";
 
             if (!empty($linked_order_ids)) {
-                foreach ($linked_order_ids as $linked_order_id) {
-                    fulfill_linked_sales_order($linked_order_id, $purchase_order_id, $db);
-                }
                  $feedback_message .= " All linked Sales Orders were fulfilled.";
             }
         }
