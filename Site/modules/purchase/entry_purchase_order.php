@@ -231,11 +231,11 @@ require_once __DIR__ . '/../../includes/header.php';
                             <div class="modal-body">
                                 <div class="mb-3">
                                     <label for="total_logistic_cost" class="form-label">Total Logistic Cost (LKR) *</label>
-                                    <input type="number" class="form-control" id="total_logistic_cost" name="total_logistic_cost" min="0.00" step="0.01" required>
+                                    <input type="number" class="form-control" id="total_logistic_cost" name="total_logistic_cost" min="0.00" step="0.01">
                                 </div>
                                 <div class="mb-3">
                                     <label for="logistic_paid_by_account_id" class="form-label">Logistic Paid By *</label>
-                                    <select class="form-select" id="logistic_paid_by_account_id" name="logistic_paid_by_account_id" required>
+                                    <select class="form-select" id="logistic_paid_by_account_id" name="logistic_paid_by_account_id">
                                         <option value="">Choose payment source...</option>
                                         <?php 
                                         $current_group = '';

@@ -782,6 +782,7 @@ function initOrderList() {
 // -----------------------------------------
 // ----- Purchase Order Entry Handler -----
 // -----------------------------------------
+
 function initPoEntry() {
     try {
         console.log('--- Starting initPoEntry execution ---');
@@ -811,7 +812,6 @@ function initPoEntry() {
             const logisticCostInput = document.getElementById('total_logistic_cost');
             const logisticPaidByInput = document.getElementById('logistic_paid_by_account_id');
 
-            // On page load, all modal fields are NOT required.
             if (totalGoodsCostInput) totalGoodsCostInput.required = false;
             if (paidByAccountIdInput) paidByAccountIdInput.required = false;
             if (logisticCostInput) logisticCostInput.required = false;
@@ -826,7 +826,6 @@ function initPoEntry() {
 
                 statusSelect.addEventListener('change', function() {
                     const newStatus = this.value;
-
                     if (statusDateWrapper) {
                         if (newStatus !== originalStatusOnLoad) {
                             statusDateWrapper.classList.remove('d-none');
@@ -834,7 +833,6 @@ function initPoEntry() {
                             statusDateWrapper.classList.add('d-none');
                         }
                     }
-                    
                     if (newStatus === 'Paid' && originalStatusOnLoad !== 'Paid') {
                         paymentSubmitted = false;
                         totalGoodsCostInput.required = true;
@@ -848,7 +846,6 @@ function initPoEntry() {
                         document.getElementById('total_supplier_price').value = totalSupplierPrice.toFixed(2);
                         paymentModal.show();
                     }
-                    
                     if (newStatus === 'Received' && originalStatusOnLoad !== 'Received') {
                         receiptSubmitted = false;
                         logisticCostInput.required = true;
