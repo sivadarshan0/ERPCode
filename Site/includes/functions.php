@@ -502,12 +502,11 @@ function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_na
 }
 
 /**
- * Cancels a GRN and reverses the stock adjustments.
- * This function performs all actions within a single database transaction.
+ * Cancels a GRN, reverses stock, reverses associated PO accounting entries, and reverts the PO status.
  *
  * @param string $grn_id The ID of the GRN to cancel.
  * @return bool True on success.
- * @throws Exception On failure, including if stock would go negative.
+ * @throws Exception On failure.
  */
 function cancel_grn($grn_id) {
     $db = db();
@@ -515,8 +514,8 @@ function cancel_grn($grn_id) {
 
     $db->begin_transaction();
     try {
-        // Step 1: Lock the GRN row and verify its status is 'Posted'
-        $stmt_check = $db->prepare("SELECT status FROM grn WHERE grn_id = ? FOR UPDATE");
+        // Step 1: Lock the GRN row and get its details
+        $stmt_check = $db->prepare("SELECT status, remarks FROM grn WHERE grn_id = ? FOR UPDATE");
         if (!$stmt_check) throw new Exception("DB prepare failed for GRN status check.");
         $stmt_check->bind_param("s", $grn_id);
         $stmt_check->execute();
@@ -529,39 +528,81 @@ function cancel_grn($grn_id) {
             throw new Exception("This GRN cannot be canceled because its status is not 'Posted'.");
         }
 
-        // Step 2: Fetch all items that were on this GRN
+        // Step 2: Reverse stock adjustments (Unchanged)
         $stmt_items = $db->prepare("SELECT item_id, quantity FROM grn_items WHERE grn_id = ?");
         if (!$stmt_items) throw new Exception("DB prepare failed for fetching GRN items.");
         $stmt_items->bind_param("s", $grn_id);
         $stmt_items->execute();
         $items_to_reverse = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
 
-        if (empty($items_to_reverse)) {
-            // This is a safety check; if there are no items, we can just cancel the GRN.
-        } else {
-            // Step 3: Loop through each item and REVERSE the stock adjustment
+        if (!empty($items_to_reverse)) {
             foreach ($items_to_reverse as $item) {
                 $stock_reason = "Stock reversed from canceled GRN #" . $grn_id;
-                // Use 'OUT' to deduct the stock that was previously added.
-                // The 'Ex-Stock' check will prevent stock from going negative, which is a critical safety feature.
                 adjust_stock_level($item['item_id'], 'OUT', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
             }
         }
 
-        // Step 4: Update the GRN's status to 'Canceled'
+        // Step 3: Update the GRN's status to 'Canceled'
         $stmt_update = $db->prepare("UPDATE grn SET status = 'Canceled' WHERE grn_id = ?");
         if (!$stmt_update) throw new Exception("DB prepare failed for updating GRN status.");
         $stmt_update->bind_param("s", $grn_id);
         $stmt_update->execute();
 
-        // If all steps were successful, commit the transaction
+        // --- THIS IS THE CRITICAL NEW LOGIC ---
+        
+        // Step 4: Find the parent PO ID from the GRN remarks
+        $parent_po_id = null;
+        if (preg_match('/PO #(PUR[0-9]+)/', $grn['remarks'], $matches)) {
+            $parent_po_id = $matches[1];
+        }
+
+        if ($parent_po_id) {
+            // Step 5: Find and reverse all 'Posted' financial transactions for this PO
+            $stmt_find_txns = $db->prepare("SELECT * FROM acc_transactions WHERE source_id = ? AND source_type = 'purchase_order' AND status = 'Posted'");
+            $stmt_find_txns->bind_param("s", $parent_po_id);
+            $stmt_find_txns->execute();
+            $posted_txns = $stmt_find_txns->get_result()->fetch_all(MYSQLI_ASSOC);
+
+            if (!empty($posted_txns)) {
+                $reversal_desc = "Reversal for canceled GRN #" . $grn_id;
+                $grouped_txns = [];
+                foreach ($posted_txns as $txn) { $grouped_txns[$txn['transaction_group_id']][] = $txn; }
+
+                foreach ($grouped_txns as $group_id => $txns) {
+                    $original_debit = null; $original_credit = null;
+                    foreach ($txns as $t) {
+                        if ($t['debit_amount'] !== null) $original_debit = $t;
+                        if ($t['credit_amount'] !== null) $original_credit = $t;
+                    }
+                    if ($original_debit && $original_credit) {
+                        $reversal_details = ['transaction_date' => date('Y-m-d'), 'description' => $reversal_desc, 'remarks' => 'Automated reversal for GRN cancellation.', 'debit_account_id' => $original_credit['account_id'], 'credit_account_id' => $original_debit['account_id'], 'amount' => $original_debit['debit_amount']];
+                        $reversal_group_id = process_journal_entry($reversal_details, 'purchase_order', $parent_po_id, $db);
+                        $stmt_update_txn = $db->prepare("UPDATE acc_transactions SET status = 'Canceled' WHERE transaction_group_id IN (?, ?)");
+                        $stmt_update_txn->bind_param("ss", $group_id, $reversal_group_id);
+                        $stmt_update_txn->execute();
+                    }
+                }
+            }
+
+            // Step 6: Revert the parent PO's status to 'Ordered'
+            $new_po_status = 'Ordered';
+            $stmt_update_po = $db->prepare("UPDATE purchase_orders SET status = ? WHERE purchase_order_id = ?");
+            $stmt_update_po->bind_param("ss", $new_po_status, $parent_po_id);
+            $stmt_update_po->execute();
+            
+            // Step 7: Log the PO status change
+            $history_remark = "Status reverted to 'Ordered' due to cancellation of GRN #" . $grn_id;
+            $stmt_po_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
+            $stmt_po_history->bind_param("ssis", $parent_po_id, $new_po_status, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
+            $stmt_po_history->execute();
+        }
+        // --- END OF NEW LOGIC ---
+
         $db->commit();
         return true;
 
     } catch (Exception $e) {
-        // If any step failed, roll back all changes
         $db->rollback();
-        // Pass the specific error message up (e.g., the stock-level error)
         throw new Exception("Failed to cancel GRN: " . $e->getMessage());
     }
 }
