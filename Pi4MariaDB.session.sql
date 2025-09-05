@@ -6,4 +6,8 @@ DELETE FROM purchase_order_status_history WHERE purchase_order_id = 'PUR000007' 
 
 UPDATE purchase_orders SET status = 'Ordered' WHERE purchase_order_id = 'PUR000007';
 
+UPDATE purchase_order_items SET cost_price = 0.00 WHERE purchase_order_id = 'PUR000007' AND item_id = 'ITM00010';
+
+SELECT 'Landed Cost for the specified item has been reset to 0.00.' AS status;
+
 SELECT 'Purchase Order has been reverted to Ordered and the incorrect journal entry has been deleted.' AS status;

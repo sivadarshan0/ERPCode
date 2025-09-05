@@ -803,6 +803,7 @@ function initPoEntry() {
             poDateInput.focus();
         }
 
+        // Replace this entire block in your initPoEntry function
         if (isEditMode && statusSelect) {
             const statusDateWrapper = document.getElementById('po_status_date_wrapper');
             const paymentModalEl = document.getElementById('paymentModal');
@@ -823,9 +824,13 @@ function initPoEntry() {
             if (paymentModalEl) {
                 const paymentModal = new bootstrap.Modal(paymentModalEl);
                 let originalStatusOnLoad = statusSelect.value;
+                let paymentSubmitted = false; // --- NEW FLAG ---
+
                 statusSelect.addEventListener('change', function() {
                     const newStatus = this.value;
                     if (newStatus === 'Paid' && originalStatusOnLoad !== 'Paid') {
+                        paymentSubmitted = false; // Reset flag every time modal is triggered
+                        
                         let totalSupplierPrice = 0;
                         document.querySelectorAll('#poItemRows tr').forEach(row => {
                             const priceText = row.cells[1]?.textContent.replace(/,/g, '') || '0';
@@ -834,13 +839,17 @@ function initPoEntry() {
                         });
                         document.getElementById('total_supplier_price').value = totalSupplierPrice.toFixed(2);
                         paymentModal.show();
-                        paymentModalEl.addEventListener('hidden.bs.modal', () => {
-                            statusSelect.value = originalStatusOnLoad;
-                        }, { once: true });
+                    }
+                });
+                
+                // This event now only runs when the modal starts to hide
+                paymentModalEl.addEventListener('hide.bs.modal', () => {
+                    // If the payment was NOT submitted, revert the status.
+                    if (!paymentSubmitted) {
+                        statusSelect.value = originalStatusOnLoad;
                     }
                 });
 
-                // --- THIS IS THE DEFINITIVE FIX FOR THE SUBMIT BUTTON ---
                 const submitPaymentBtn = document.getElementById('submitPaymentBtn');
                 if (submitPaymentBtn) {
                     submitPaymentBtn.addEventListener('click', function() {
@@ -850,17 +859,18 @@ function initPoEntry() {
                             alert('Please fill in all fields in the payment form.');
                             return;
                         }
-                        // 1. Copy data from the modal to the hidden fields on the main form.
+                        
+                        // --- SET THE FLAG ---
+                        paymentSubmitted = true;
+
                         const hiddenTotalCost = document.getElementById('hidden_total_goods_cost');
                         const hiddenPaidBy = document.getElementById('hidden_goods_paid_by_account_id');
                         if (hiddenTotalCost) hiddenTotalCost.value = totalGoodsCostValue;
                         if (hiddenPaidBy) hiddenPaidBy.value = paidByAccountIdValue;
-                        // 2. Close the modal.
+                        
                         paymentModal.hide();
-                        // The user will now click the main "Update Purchase Order" button to save.
                     });
                 }
-                // --- END FIX ---
             }
         }
 
