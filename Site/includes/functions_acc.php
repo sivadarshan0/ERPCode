@@ -281,7 +281,7 @@ function record_sales_transaction($order_id, $db) {
     $revenue_exists = $stmt_check_rev->get_result()->num_rows > 0;
     
     if (!$revenue_exists) {
-        $revenue_amount = (float)$order['total_amount'] + (float)$order['other_expenses'];
+        $revenue_amount = (float)$order['total_amount'];
         if ($revenue_amount > 0) {
             $debit_account_name = ($order['payment_method'] === 'COD') ? 'Cash in Hand' : 'Bank Account';
             
