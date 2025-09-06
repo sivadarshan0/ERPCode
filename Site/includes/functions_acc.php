@@ -357,7 +357,7 @@ function record_sales_transaction($order_id, $db) {
  * @return void
  * @throws Exception On failure.
  */
-function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logistic_paid_by_account_id, $db) {
+function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logistic_paid_by_account_id, $db, $event_date = null) {
     // Step 1: Save the logistic details to the main PO record
     $stmt_update_po = $db->prepare("UPDATE purchase_orders SET total_logistic_cost = ?, logistic_paid_by_account_id = ? WHERE purchase_order_id = ?");
     if (!$stmt_update_po) throw new Exception("DB prepare failed for updating PO logistic details.");
@@ -372,10 +372,7 @@ function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logisti
     
     $total_weight = array_sum(array_map(fn($item) => $item['weight_grams'] * $item['quantity'], $items));
 
-    if ($total_weight <= 0) {
-        // If there's no weight, we cannot distribute the cost. For now, we'll skip this step.
-        // A more advanced system might distribute by value or quantity.
-    } else {
+    if ($total_weight > 0 && $total_logistic_cost > 0) {
         // Step 3: Calculate cost per gram and update each item's final landed cost
         $cost_per_gram = $total_logistic_cost / $total_weight;
         $stmt_update_item = $db->prepare("UPDATE purchase_order_items SET cost_price = ? WHERE po_item_id = ?");
@@ -389,56 +386,33 @@ function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logisti
         }
     }
 
-    // --- Step 4: Create Accounting Journal Entries ---
-    $stmt_po_date = $db->prepare("SELECT po_date FROM purchase_orders WHERE purchase_order_id = ?");
-    $stmt_po_date->bind_param("s", $po_id);
-    $stmt_po_date->execute();
-    $po_date = $stmt_po_date->get_result()->fetch_assoc()['po_date'];
-
-    // Use the event_date from the "Status Date" input. Fall back to today's date if not provided.
-    $transaction_date_for_logistics = $event_date ? date('Y-m-d', strtotime($event_date)) : date('Y-m-d');
-
-    // Get necessary account IDs
-    $stmt_acc = $db->prepare("SELECT account_id, account_name FROM acc_chartofaccounts WHERE account_name IN ('Inventory', 'Accounts Payable')");
+    // --- Step 4: Create Accounting Journal Entry for Logistics ONLY ---
+    $stmt_acc = $db->prepare("SELECT account_id FROM acc_chartofaccounts WHERE account_name = 'Inventory'");
     $stmt_acc->execute();
-    $accounts = array_column($stmt_acc->get_result()->fetch_all(MYSQLI_ASSOC), 'account_id', 'account_name');
-    if (!isset($accounts['Inventory']) || !isset($accounts['Accounts Payable'])) {
-        throw new Exception("Critical Error: 'Inventory' or 'Accounts Payable' account not found.");
+    $inventory_account_id = $stmt_acc->get_result()->fetch_assoc()['account_id'];
+    if (!$inventory_account_id) {
+        throw new Exception("Critical Error: 'Inventory' account not found.");
     }
-    
+
+    $transaction_date = $event_date ? date('Y-m-d', strtotime($event_date)) : date('Y-m-d');
+
+    // Entry A: Record logistics cost if it exists.
     if ($total_logistic_cost > 0 && $logistic_paid_by_account_id) {
         $logistic_details = [
-            'transaction_date'  => $transaction_date_for_logistics, // USE THE CORRECT DATE
+            'transaction_date'  => $transaction_date,
             'description'       => 'Payment for logistics (Ref PO #' . $po_id . ')',
             'remarks'           => '',
-            'debit_account_id'  => $accounts['Inventory'],
+            'debit_account_id'  => $inventory_account_id, // Logistics cost adds to inventory value
             'credit_account_id' => $logistic_paid_by_account_id,
             'amount'            => $total_logistic_cost,
         ];
-    process_journal_entry($logistic_details, 'purchase_order', $po_id, $db);
-
-    // Entry B: Record the main inventory asset value (this is the cost of goods only)
-    $goods_cost_stmt = $db->prepare("SELECT total_goods_cost FROM purchase_orders WHERE purchase_order_id = ?");
-    $goods_cost_stmt->bind_param("s", $po_id);
-    $goods_cost_stmt->execute();
-    $total_goods_cost = $goods_cost_stmt->get_result()->fetch_assoc()['total_goods_cost'] ?? 0;
-    
-    if($total_goods_cost > 0) {
-        $inventory_asset_details = [
-            'transaction_date'  => $po_date,
-            'description'       => 'Inventory received from PO #' . $po_id,
-            'remarks'           => '',
-            'debit_account_id'  => $accounts['Inventory'],
-            'credit_account_id' => $accounts['Accounts Payable'],
-            'amount'            => $total_goods_cost,
-        ];
-        process_journal_entry($inventory_asset_details, 'purchase_order', $po_id, $db);
+        process_journal_entry($logistic_details, 'purchase_order', $po_id, $db);
     }
-
-    // Step 4: Create the GRN which adjusts the stock levels. This MUST happen.
+    
+    // Step 5: Create the GRN which adjusts the physical stock levels.
     $new_grn_id = auto_generate_grn_from_po($po_id, $db);
 
-    // Step 5: Fulfill any linked sales orders
+    // Step 6: Fulfill any linked sales orders
     $stmt_final_links = $db->prepare("SELECT sales_order_id FROM po_so_links WHERE purchase_order_id = ?");
     $stmt_final_links->bind_param("s", $po_id);
     $stmt_final_links->execute();
@@ -452,7 +426,6 @@ function process_po_receipt_and_logistics($po_id, $total_logistic_cost, $logisti
     }
 
     return $new_grn_id; // Return the GRN ID for the feedback message
-}
 }
 // ----------------End----------------------
 
