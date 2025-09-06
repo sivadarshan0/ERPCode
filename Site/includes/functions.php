@@ -523,8 +523,8 @@ function cancel_grn($grn_id) {
         if (!$grn) {
             throw new Exception("GRN #$grn_id not found.");
         }
-        if ($grn['status'] !== 'Posted' && $grn['status'] !== 'Completed') {
-            throw new Exception("This GRN cannot be canceled because its status is not 'Posted' or 'Completed'.");
+        if ($grn['status'] !== 'Posted') {
+            throw new Exception("This GRN cannot be canceled because its status is not 'Posted'.");
         }
 
         // Step 2: Reverse stock adjustments
