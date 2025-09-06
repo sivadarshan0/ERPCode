@@ -1,6 +1,6 @@
 <?php
 // File: /modules/purchase/entry_grn.php
-// FINAL version with Create and Manage/View modes, plus security and UI enhancements.
+// FINAL version with Create/View modes, CSRF protection, and UI enhancements.
 
 session_start();
 error_reporting(E_ALL);
@@ -11,31 +11,32 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
 // --- CSRF Token Generation for this page load ---
-// A new token is generated each time the page is loaded to ensure it's unique per request.
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrf_token = $_SESSION['csrf_token'];
 
-
-// --- AJAX Endpoints ---
+// --- AJAX Endpoints: This block MUST be at the top ---
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
     try {
         switch ($_GET['action']) {
             case 'item_lookup':
+                // This endpoint does not need login or CSRF check as it's for searching public item data
                 $name = trim($_GET['query'] ?? '');
                 echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
                 break;
 
             case 'cancel_grn':
+                // Cancellation is a sensitive action, so we start the session and check login/CSRF
+                if (!is_logged_in()) {
+                    throw new Exception('You must be logged in to perform this action.');
+                }
                 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     throw new Exception('Invalid request method.');
                 }
-                
-                // --- CSRF TOKEN VALIDATION ---
                 if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-                    throw new Exception('Invalid CSRF token. Please refresh the page and try again.');
+                    throw new Exception('Invalid security token. Please refresh the page and try again.');
                 }
                 
                 $grn_id = $_POST['grn_id'] ?? null;
@@ -55,6 +56,7 @@ if (isset($_GET['action'])) {
     exit;
 }
 
+// --- Standard Page Logic ---
 require_login();
 
 $message = '';
@@ -62,7 +64,7 @@ $message_type = '';
 $is_view_mode = false;
 $grn = null;
 
-// --- Check for View Mode ---
+// Check for View Mode
 if (isset($_GET['grn_id'])) {
     $grn_id_to_load = trim($_GET['grn_id']);
     $grn = get_grn_details($grn_id_to_load);
@@ -75,7 +77,7 @@ if (isset($_GET['grn_id'])) {
     }
 }
 
-// --- Handle Form Submission (Create Mode Only) ---
+// Handle Form Submission (Create Mode Only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_view_mode) {
     try {
         $grn_date = $_POST['grn_date'] ?? '';
@@ -117,7 +119,6 @@ if (isset($_SESSION['error_message'])) {
     unset($_SESSION['error_message']);
 }
 
-
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -142,7 +143,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">GRN Date *</label>
                                 <?php if ($is_view_mode): ?>
-                                    <p class="form-control-plaintext"><?= htmlspecialchars($grn['grn_date']) ?></p>
+                                    <p class="form-control-plaintext"><?= htmlspecialchars(date("d-m-Y", strtotime($grn['grn_date']))) ?></p>
                                 <?php else: ?>
                                     <input type="date" class="form-control" id="grn_date" name="grn_date" value="<?= date('Y-m-d') ?>" required>
                                 <?php endif; ?>
@@ -173,10 +174,10 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <tr>
                                         <th style="width: 40%;">Item</th>
                                         <th style="width: 15%;">UOM</th>
-                                        <th style="width: 15%;">Quantity</th>
-                                        <th style="width: 15%;">Cost</th>
-                                        <th style="width: 15%;">Weight (g)</th>
-                                        <?php if (!$is_view_mode): ?><th>Actions</th><?php endif; ?>
+                                        <th class="text-end" style="width: 15%;">Quantity</th>
+                                        <th class="text-end" style="width: 15%;">Cost</th>
+                                        <th class="text-end" style="width: 15%;">Weight (g)</th>
+                                        <?php if (!$is_view_mode): ?><th style="width: 5%;"></th><?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody id="grnItemRows">
@@ -185,9 +186,9 @@ require_once __DIR__ . '/../../includes/header.php';
                                             <tr>
                                                 <td><?= htmlspecialchars($item['item_name']) ?></td>
                                                 <td><?= htmlspecialchars($item['uom']) ?></td>
-                                                <td><?= htmlspecialchars(number_format($item['quantity'], 2)) ?></td>
-                                                <td><?= htmlspecialchars(number_format($item['cost'], 2)) ?></td>
-                                                <td><?= htmlspecialchars(number_format($item['weight'])) ?></td>
+                                                <td class="text-end"><?= htmlspecialchars(number_format($item['quantity'], 2)) ?></td>
+                                                <td class="text-end"><?= htmlspecialchars(number_format($item['cost'], 2)) ?></td>
+                                                <td class="text-end"><?= htmlspecialchars(number_format($item['weight'])) ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
@@ -206,14 +207,14 @@ require_once __DIR__ . '/../../includes/header.php';
                         <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
                     </div>
                     <div>
-                        <?php if ($is_view_mode && ($grn['status'] === 'Posted' || $grn['status'] === 'Completed')): ?>
+                        <?php if ($is_view_mode && $grn['status'] === 'Posted'): ?>
                             <button type="button" class="btn btn-danger" id="cancelGrnBtn" 
                                     data-grn-id="<?= htmlspecialchars($grn['grn_id']) ?>" 
                                     data-csrf-token="<?= htmlspecialchars($csrf_token) ?>">
                                 <i class="bi bi-x-circle"></i> Cancel GRN
                             </button>
                         <?php elseif ($is_view_mode): ?>
-                             <p class="mb-0 text-muted fw-bold">Status: <span class="badge bg-warning text-dark"><?= htmlspecialchars($grn['status']) ?></span></p>
+                            <p class="mb-0 text-muted fw-bold">Status: <span class="badge bg-warning text-dark"><?= htmlspecialchars($grn['status']) ?></span></p>
                         <?php endif; ?>
                     </div>
                 </div>

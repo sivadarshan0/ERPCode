@@ -254,44 +254,44 @@ function initStockAdjustmentEntry() {
     });
 }
 
-// ───── GRN Entry Handler ─────
-function initGrnEntry() {
+// -----------------------------------------
+// ----- NEW: Unified GRN Page Handler -----
+// -----------------------------------------
+
+function initGrnPage() {
     const form = document.getElementById('grnForm');
     if (!form) return;
-    
-    // --- CHANGE 1: START ---
-    // This is the new guard clause. It checks if the "Add Item" button exists.
-    // If it doesn't, we're in "View Mode", so we stop the function to prevent errors.
-    const addRowBtn = document.getElementById('addItemRow');
-    if (!addRowBtn) {
-        return; // We are in View Mode, so exit this function.
-    }
-    // --- CHANGE 1: END ---
 
-    const itemRowsContainer = document.getElementById('grnItemRows');
-    const template = document.getElementById('grnItemRowTemplate');
-    
-    const addRow = () => {
-        if (!template) return;
-        const newRow = template.content.cloneNode(true);
-        itemRowsContainer.appendChild(newRow);
-    };
-    addRow();
-    addRowBtn.addEventListener('click', addRow);
-    
-    if (itemRowsContainer) {
+    const addRowBtn = document.getElementById('addItemRow');
+    const cancelBtn = document.getElementById('cancelGrnBtn');
+
+    // --- LOGIC FOR "CREATE" MODE ---
+    if (addRowBtn) {
+        const itemRowsContainer = document.getElementById('grnItemRows');
+        const template = document.getElementById('grnItemRowTemplate');
+        
+        const addRow = () => {
+            if (!template) return;
+            const newRow = template.content.cloneNode(true);
+            itemRowsContainer.appendChild(newRow);
+        };
+        addRow(); // Add initial row
+        addRowBtn.addEventListener('click', addRow);
+        
         itemRowsContainer.addEventListener('click', function (e) {
             if (e.target.closest('.remove-item-row')) {
                 e.target.closest('.grn-item-row').remove();
             }
         });
+        
         itemRowsContainer.addEventListener('input', debounce((e) => {
             if (e.target.classList.contains('item-search-input')) {
                 const searchInput = e.target;
                 const resultsContainer = searchInput.nextElementSibling;
                 const name = searchInput.value.trim();
                 if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
-                fetch(`/modules/purchase/entry_grn.php?action=item_lookup&query=${encodeURIComponent(name)}`) // Changed GET param to 'query'
+
+                fetch(`/modules/purchase/entry_grn.php?action=item_lookup&query=${encodeURIComponent(name)}`)
                     .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                     .then(data => {
                         resultsContainer.innerHTML = '';
@@ -319,63 +319,51 @@ function initGrnEntry() {
             }
         }, 300));
     }
-}
 
-// -----------------------------------------
-// ----- GRN Cancellation Handler -----
-// -----------------------------------------
+    // --- LOGIC FOR "VIEW" MODE (CANCELLATION) ---
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            const grnId = this.dataset.grnId;
+            const csrfToken = this.dataset.csrfToken;
 
-function initGrnCancellation() {
-    const cancelBtn = document.getElementById('cancelGrnBtn');
-    if (!cancelBtn) return;
+            if (!confirm(`Are you sure you want to cancel GRN #${grnId}?\nThis action will reverse the stock adjustments and cannot be undone.`)) {
+                return;
+            }
 
-    cancelBtn.addEventListener('click', function() {
-        const grnId = this.dataset.grnId;
-        // --- CHANGE 2: START ---
-        // Read the new CSRF token from the button's data attribute.
-        const csrfToken = this.dataset.csrfToken;
-        // --- CHANGE 2: END ---
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Canceling...';
+            
+            const formData = new FormData();
+            formData.append('grn_id', grnId);
+            formData.append('csrf_token', csrfToken); // Add CSRF token
 
-        if (!confirm(`Are you sure you want to cancel GRN #${grnId}?\nThis action will reverse the stock adjustments and cannot be undone.`)) {
-            return;
-        }
-
-        this.disabled = true;
-        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Canceling...';
-        
-        const formData = new FormData();
-        formData.append('grn_id', grnId);
-        // --- CHANGE 2: START ---
-        // Add the CSRF token to the form data being sent to the server.
-        formData.append('csrf_token', csrfToken);
-        // --- CHANGE 2: END ---
-
-        fetch('/modules/purchase/entry_grn.php?action=cancel_grn', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showAlert(data.message, 'success');
-                this.remove();
-                const pageTitle = document.querySelector('h2');
-                if (pageTitle) {
-                    pageTitle.innerHTML += ' <span class="badge bg-danger">Canceled</span>';
+            fetch('/modules/purchase/entry_grn.php?action=cancel_grn', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert(data.message, 'success');
+                    this.remove();
+                    const pageTitle = document.querySelector('h2');
+                    if (pageTitle) {
+                        pageTitle.innerHTML += ' <span class="badge bg-danger">Canceled</span>';
+                    }
+                } else {
+                    showAlert(data.error, 'danger');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
                 }
-            } else {
-                showAlert(data.error, 'danger');
+            })
+            .catch(error => {
+                showAlert('A network error occurred or the response was not valid JSON. Please try again.', 'danger');
                 this.disabled = false;
                 this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
-            }
-        })
-        .catch(error => {
-            showAlert('A network error occurred. Please try again.', 'danger');
-            this.disabled = false;
-            this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
-            console.error('Cancellation Error:', error);
+                console.error('Cancellation Error:', error);
+            });
         });
-    });
+    }
 }
 
 // ───── Order Entry Handler ─────
@@ -1315,15 +1303,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('categoryForm')) { initCategoryEntry(); }
     if (document.getElementById('subCategoryForm')) { initSubCategoryEntry(); }
     if (document.getElementById('itemForm')) { initItemEntry(); }
-    if (document.getElementById('stockAdjustmentForm')) { initStockAdjustmentEntry(); }
-    if (document.getElementById('grnForm')) { initGrnEntry(); }
+    if (document.getElementById('stockAdjustmentForm')) { initStockAdjustmentEntry(); }    
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
     if (document.getElementById('poForm')) { initPoEntry(); }
     if (document.getElementById('grnSearchForm')) { initGrnList(); }
     if (document.getElementById('poSearchForm')) { initPurchaseOrderList(); }
     if (document.getElementById('stockSearchForm')) { initStockLevelList(); }
-    if (document.getElementById('cancelGrnBtn')) { initGrnCancellation(); }
+    if (document.getElementById('grnForm')) { initGrnPage(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
