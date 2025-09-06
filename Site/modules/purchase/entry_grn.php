@@ -10,8 +10,6 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-require_login();
-
 // --- CSRF Token Generation for this page load ---
 // A new token is generated each time the page is loaded to ensure it's unique per request.
 if (empty($_SESSION['csrf_token'])) {
@@ -56,6 +54,8 @@ if (isset($_GET['action'])) {
     }
     exit;
 }
+
+require_login();
 
 $message = '';
 $message_type = '';
