@@ -411,8 +411,18 @@ function search_stock_levels($filters = []) {
  * @throws Exception On failure.
  */
 function auto_generate_grn_from_po($purchase_order_id, $db) {
-    // Step 1: Fetch all items from the purchase order
-    $stmt_items = $db->prepare("SELECT poi.item_id, i.uom, poi.quantity, poi.cost_price FROM purchase_order_items poi JOIN items i ON poi.item_id = i.item_id WHERE poi.purchase_order_id = ?");
+    // Step 1: Fetch all items from the purchase order, NOW INCLUDING WEIGHT
+    $stmt_items = $db->prepare("
+        SELECT 
+            poi.item_id, 
+            i.uom, 
+            poi.quantity, 
+            poi.cost_price,
+            poi.weight_grams 
+        FROM purchase_order_items poi 
+        JOIN items i ON poi.item_id = i.item_id 
+        WHERE poi.purchase_order_id = ?
+    ");
     if (!$stmt_items) throw new Exception("Failed to prepare statement for fetching PO items.");
     $stmt_items->bind_param("s", $purchase_order_id);
     $stmt_items->execute();
@@ -424,14 +434,14 @@ function auto_generate_grn_from_po($purchase_order_id, $db) {
     }
 
     // Prepare items array in the format process_grn() expects
-    // Note: We are setting 'weight' to 0 as it's not in the PO.
+    // CORRECTED: 'weight' now correctly uses the 'weight_grams' value from the PO.
     $grn_items = array_map(function($item) {
         return [
             'item_id'  => $item['item_id'],
             'uom'      => $item['uom'],
             'quantity' => $item['quantity'],
             'cost'     => $item['cost_price'],
-            'weight'   => 0 
+            'weight'   => $item['weight_grams'] // This line is now correct
         ];
     }, $items_to_process);
 
@@ -440,8 +450,6 @@ function auto_generate_grn_from_po($purchase_order_id, $db) {
     $remarks = "Auto-generated from completed PO #" . $purchase_order_id;
     
     // Step 3: Call the existing process_grn function to create the GRN and update stock
-    // We pass the existing database connection ($db) to ensure it's part of the same transaction
-    // Pass the correctly formatted actor name to the process_grn function
     $actor_name = 'System for ' . ($_SESSION['username'] ?? 'Unknown');
     $new_grn_id = process_grn($grn_date, $grn_items, $remarks, $db, $actor_name);
     
