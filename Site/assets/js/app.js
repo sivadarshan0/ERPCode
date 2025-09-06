@@ -258,16 +258,26 @@ function initStockAdjustmentEntry() {
 function initGrnEntry() {
     const form = document.getElementById('grnForm');
     if (!form) return;
+    
+    // --- CHANGE 1: START ---
+    // This is the new guard clause. It checks if the "Add Item" button exists.
+    // If it doesn't, we're in "View Mode", so we stop the function to prevent errors.
+    const addRowBtn = document.getElementById('addItemRow');
+    if (!addRowBtn) {
+        return; // We are in View Mode, so exit this function.
+    }
+    // --- CHANGE 1: END ---
+
     const itemRowsContainer = document.getElementById('grnItemRows');
     const template = document.getElementById('grnItemRowTemplate');
-    const addRowBtn = document.getElementById('addItemRow');
+    
     const addRow = () => {
         if (!template) return;
         const newRow = template.content.cloneNode(true);
         itemRowsContainer.appendChild(newRow);
     };
     addRow();
-    if (addRowBtn) addRowBtn.addEventListener('click', addRow);
+    addRowBtn.addEventListener('click', addRow);
     
     if (itemRowsContainer) {
         itemRowsContainer.addEventListener('click', function (e) {
@@ -281,7 +291,7 @@ function initGrnEntry() {
                 const resultsContainer = searchInput.nextElementSibling;
                 const name = searchInput.value.trim();
                 if (name.length < 2) { resultsContainer.classList.add('d-none'); return; }
-                fetch(`/modules/purchase/entry_grn.php?item_lookup=${encodeURIComponent(name)}`)
+                fetch(`/modules/purchase/entry_grn.php?action=item_lookup&query=${encodeURIComponent(name)}`) // Changed GET param to 'query'
                     .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                     .then(data => {
                         resultsContainer.innerHTML = '';
@@ -320,22 +330,26 @@ function initGrnCancellation() {
     if (!cancelBtn) return;
 
     cancelBtn.addEventListener('click', function() {
-        const grnId = this.dataset.grnId; // Get the GRN ID from the button's data-attribute
+        const grnId = this.dataset.grnId;
+        // --- CHANGE 2: START ---
+        // Read the new CSRF token from the button's data attribute.
+        const csrfToken = this.dataset.csrfToken;
+        // --- CHANGE 2: END ---
 
-        // Use a simple confirmation dialog
         if (!confirm(`Are you sure you want to cancel GRN #${grnId}?\nThis action will reverse the stock adjustments and cannot be undone.`)) {
-            return; // Stop if the user clicks "Cancel"
+            return;
         }
 
-        // Disable the button and show a spinner
         this.disabled = true;
         this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Canceling...';
         
-        // Prepare the data to be sent
         const formData = new FormData();
         formData.append('grn_id', grnId);
+        // --- CHANGE 2: START ---
+        // Add the CSRF token to the form data being sent to the server.
+        formData.append('csrf_token', csrfToken);
+        // --- CHANGE 2: END ---
 
-        // Send the AJAX request to the endpoint we created
         fetch('/modules/purchase/entry_grn.php?action=cancel_grn', {
             method: 'POST',
             body: formData
@@ -343,25 +357,19 @@ function initGrnCancellation() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // On success, show a success alert
                 showAlert(data.message, 'success');
-                // Remove the cancel button from the page
                 this.remove();
-                // Optionally, you could add a "Canceled" badge to the page title here
                 const pageTitle = document.querySelector('h2');
                 if (pageTitle) {
                     pageTitle.innerHTML += ' <span class="badge bg-danger">Canceled</span>';
                 }
             } else {
-                // On failure, show an error alert
                 showAlert(data.error, 'danger');
-                // Re-enable the button so the user can try again if the error is temporary
                 this.disabled = false;
                 this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
             }
         })
         .catch(error => {
-            // Handle network errors
             showAlert('A network error occurred. Please try again.', 'danger');
             this.disabled = false;
             this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';

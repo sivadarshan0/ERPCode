@@ -452,7 +452,7 @@ function auto_generate_grn_from_po($purchase_order_id, $db) {
 // ----- GRN (Goods Received Note) Functions -----
 // -----------------------------------------
 
-function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_name = null) { // <-- Modified this line
+function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_name = null) {
     $db = $existing_db ?? db();
     if (!$db) throw new Exception("Database connection failed.");
     
@@ -464,37 +464,36 @@ function process_grn($grn_date, $items, $remarks, $existing_db = null, $actor_na
         if (!isset($item['cost']) || !is_numeric($item['cost']) || !isset($item['weight']) || !is_numeric($item['weight'])) { throw new Exception("Invalid data in item rows. Cost and Weight must be valid numbers."); }
     }
 
-    if (!$existing_db) {
+    $is_external_transaction = ($existing_db !== null);
+    if (!$is_external_transaction) {
         $db->begin_transaction();
     }
     
     try {
-        // --- CORRECTED USER LOGIC ---
         $user_id = $_SESSION['user_id'];
-        // If an actor_name is passed (from automation), use it. Otherwise, use the session username.
         $user_name = $actor_name ?? ($_SESSION['username'] ?? 'Unknown');
-        // --- END CORRECTION ---
         
         $grn_id = generate_sequence_id('grn_id', 'grn', 'grn_id');
         $stmt_grn = $db->prepare("INSERT INTO grn (grn_id, grn_date, remarks, created_by, created_by_name) VALUES (?, ?, ?, ?, ?)");
         $stmt_grn->bind_param("sssis", $grn_id, $grn_date, $remarks, $user_id, $user_name);
         $stmt_grn->execute();
 
+        // UPDATED: The INSERT query now includes the `cost` and `weight` columns.
         $stmt_items = $db->prepare("INSERT INTO grn_items (grn_id, item_id, uom, quantity, cost, weight) VALUES (?, ?, ?, ?, ?, ?)");
         foreach ($items as $item) {
+            // UPDATED: The bind_param now includes the types and variables for cost and weight.
             $stmt_items->bind_param("sssddd", $grn_id, $item['item_id'], $item['uom'], $item['quantity'], $item['cost'], $item['weight']);
             $stmt_items->execute();
             $stock_reason = "Received via GRN #" . $grn_id;
-            // Note: We don't need to change adjust_stock_level, as it correctly uses the logged-in user's name, which is what we want.
             adjust_stock_level($item['item_id'], 'IN', $item['quantity'], $stock_reason, 'Ex-Stock', $db);
         }
 
-        if (!$existing_db) {
+        if (!$is_external_transaction) {
             $db->commit();
         }
         return $grn_id;
     } catch (Exception $e) {
-        if (!$existing_db) {
+        if (!$is_external_transaction) {
             $db->rollback();
         }
         throw new Exception("Failed to process GRN: " . $e->getMessage());
@@ -603,6 +602,35 @@ function cancel_grn($grn_id) {
         $db->rollback();
         throw new Exception("Failed to cancel GRN: " . $e->getMessage());
     }
+}
+
+// NEW: This is the missing function for the "View GRN" page.
+function get_grn_details($grn_id) {
+    $db = db();
+    if (!$db) return false;
+
+    // 1. Get the main GRN details
+    $stmt_grn = $db->prepare("SELECT * FROM grn WHERE grn_id = ?");
+    $stmt_grn->bind_param("s", $grn_id);
+    $stmt_grn->execute();
+    $grn = $stmt_grn->get_result()->fetch_assoc();
+
+    if (!$grn) {
+        return false; // GRN not found
+    }
+
+    // 2. Get all line items for the GRN, joining with the items table to get the name
+    $stmt_items = $db->prepare("
+        SELECT gi.*, i.name as item_name 
+        FROM grn_items gi 
+        JOIN items i ON gi.item_id = i.item_id 
+        WHERE gi.grn_id = ?
+    ");
+    $stmt_items->bind_param("s", $grn_id);
+    $stmt_items->execute();
+    $grn['items'] = $stmt_items->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    return $grn;
 }
 
 /**

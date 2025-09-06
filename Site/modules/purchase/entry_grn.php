@@ -1,6 +1,6 @@
 <?php
 // File: /modules/purchase/entry_grn.php
-// FINAL version with Create and Manage/View modes.
+// FINAL version with Create and Manage/View modes, plus security and UI enhancements.
 
 session_start();
 error_reporting(E_ALL);
@@ -12,6 +12,14 @@ require_once __DIR__ . '/../../includes/functions.php';
 
 require_login();
 
+// --- CSRF Token Generation for this page load ---
+// A new token is generated each time the page is loaded to ensure it's unique per request.
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['csrf_token'];
+
+
 // --- AJAX Endpoints ---
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
@@ -22,27 +30,28 @@ if (isset($_GET['action'])) {
                 echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
                 break;
 
-            // --- NEW CASE FOR CANCELLATION ---
             case 'cancel_grn':
-                // Cancellation must be a POST request for security
                 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     throw new Exception('Invalid request method.');
                 }
+                
+                // --- CSRF TOKEN VALIDATION ---
+                if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+                    throw new Exception('Invalid CSRF token. Please refresh the page and try again.');
+                }
+                
                 $grn_id = $_POST['grn_id'] ?? null;
                 if (!$grn_id) {
                     throw new Exception('GRN ID is missing.');
                 }
                 
-                // Call the backend function
                 cancel_grn($grn_id);
                 
-                // If it succeeds, send back a success response
                 echo json_encode(['success' => true, 'message' => "GRN #$grn_id has been successfully canceled and stock reversed."]);
                 break;
-            // --- END NEW CASE ---
         }
     } catch (Exception $e) { 
-        http_response_code(400); // Use 400 for a client-side or data error
+        http_response_code(400);
         echo json_encode(['success' => false, 'error' => $e->getMessage()]); 
     }
     exit;
@@ -50,7 +59,7 @@ if (isset($_GET['action'])) {
 
 $message = '';
 $message_type = '';
-$is_view_mode = false; // Changed from is_edit to is_view_mode for clarity
+$is_view_mode = false;
 $grn = null;
 
 // --- Check for View Mode ---
@@ -60,7 +69,6 @@ if (isset($_GET['grn_id'])) {
     if ($grn) {
         $is_view_mode = true;
     } else {
-        // Redirect if GRN is not found
         $_SESSION['error_message'] = "GRN #$grn_id_to_load not found.";
         header("Location: /modules/purchase/list_grns.php");
         exit;
@@ -88,7 +96,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_view_mode) {
         $new_grn_id = process_grn($grn_date, $items_to_process, $remarks);
         
         $_SESSION['success_message'] = "✅ GRN #$new_grn_id successfully created and stock updated.";
-        // Redirect to the new view page for the GRN just created
         header("Location: entry_grn.php?grn_id=" . $new_grn_id);
         exit;
 
@@ -98,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_view_mode) {
     }
 }
 
-// Handle success message from session after redirect
+// Handle session messages after a redirect
 if (isset($_SESSION['success_message'])) {
     $message = $_SESSION['success_message'];
     $message_type = 'success';
@@ -133,12 +140,20 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label for="grn_date" class="form-label">GRN Date *</label>
-                                <input type="date" class="form-control" id="grn_date" name="grn_date" value="<?= $is_view_mode ? htmlspecialchars($grn['grn_date']) : date('Y-m-d') ?>" required readonly>
+                                <label class="form-label fw-bold">GRN Date *</label>
+                                <?php if ($is_view_mode): ?>
+                                    <p class="form-control-plaintext"><?= htmlspecialchars($grn['grn_date']) ?></p>
+                                <?php else: ?>
+                                    <input type="date" class="form-control" id="grn_date" name="grn_date" value="<?= date('Y-m-d') ?>" required>
+                                <?php endif; ?>
                             </div>
                             <div class="col-md-8">
-                                <label for="remarks" class="form-label">Remarks</label>
-                                <input type="text" class="form-control" id="remarks" name="remarks" value="<?= htmlspecialchars($grn['remarks'] ?? '') ?>" placeholder="e.g., Supplier invoice number..." readonly>
+                                <label class="form-label fw-bold">Remarks</label>
+                                <?php if ($is_view_mode): ?>
+                                     <p class="form-control-plaintext"><?= htmlspecialchars($grn['remarks'] ?: 'N/A') ?></p>
+                                <?php else: ?>
+                                    <input type="text" class="form-control" id="remarks" name="remarks" placeholder="e.g., Supplier invoice number...">
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -183,24 +198,25 @@ require_once __DIR__ . '/../../includes/header.php';
                 </div>
 
                 <div class="col-12 mt-4 d-flex justify-content-between align-items-center">
-                <div>
-                    <?php if (!$is_view_mode): ?>
-                        <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save GRN & Update Stock</button>
-                    <?php endif; ?>
-                    <a href="/modules/purchase/list_grns.php" class="btn btn-secondary">GRN List</a>
-                    <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
+                    <div>
+                        <?php if (!$is_view_mode): ?>
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save GRN & Update Stock</button>
+                        <?php endif; ?>
+                        <a href="/modules/purchase/list_grns.php" class="btn btn-secondary">GRN List</a>
+                        <a href="/index.php" class="btn btn-outline-secondary">Back to Dashboard</a>
+                    </div>
+                    <div>
+                        <?php if ($is_view_mode && ($grn['status'] === 'Posted' || $grn['status'] === 'Completed')): ?>
+                            <button type="button" class="btn btn-danger" id="cancelGrnBtn" 
+                                    data-grn-id="<?= htmlspecialchars($grn['grn_id']) ?>" 
+                                    data-csrf-token="<?= htmlspecialchars($csrf_token) ?>">
+                                <i class="bi bi-x-circle"></i> Cancel GRN
+                            </button>
+                        <?php elseif ($is_view_mode): ?>
+                             <p class="mb-0 text-muted fw-bold">Status: <span class="badge bg-warning text-dark"><?= htmlspecialchars($grn['status']) ?></span></p>
+                        <?php endif; ?>
+                    </div>
                 </div>
-
-                <!-- NEW "Cancel GRN" BUTTON BLOCK -->
-                <div>
-                    <?php if ($is_view_mode && $grn['status'] === 'Posted'): ?>
-                        <button type="button" class="btn btn-danger" id="cancelGrnBtn" data-grn-id="<?= htmlspecialchars($grn['grn_id']) ?>">
-                            <i class="bi bi-x-circle"></i> Cancel GRN
-                        </button>
-                    <?php endif; ?>
-                </div>
-                <!-- END NEW BLOCK -->
-            </div>
             </form>
         </main>
     </div>
