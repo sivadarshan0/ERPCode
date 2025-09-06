@@ -591,7 +591,8 @@ function cancel_grn($grn_id) {
             // Step 7: Log the PO status change
             $history_remark = "Status reverted to 'Ordered' due to cancellation of GRN #" . $grn_id;
             $stmt_po_history = $db->prepare("INSERT INTO purchase_order_status_history (purchase_order_id, status, created_by, created_by_name) VALUES (?, ?, ?, ?)");
-            $stmt_po_history->bind_param("ssis", $parent_po_id, $new_po_status, $_SESSION['user_id'], 'System for ' . $_SESSION['username']);
+            $created_by_name_history = 'System for ' . ($_SESSION['username'] ?? 'System');
+            $stmt_po_history->bind_param("ssis", $parent_po_id, $new_po_status, $_SESSION['user_id'], $created_by_name_history);
             $stmt_po_history->execute();
         }
 
