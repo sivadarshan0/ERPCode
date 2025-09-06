@@ -28,6 +28,7 @@ if (isset($_GET['action'])) {
                 break;
 
             case 'cancel_grn':
+                file_put_contents('/var/www/html/logs/grn_cancel_debug.log', "POST DATA: " . print_r($_POST, true) . "\nSESSION DATA: " . print_r($_SESSION, true), FILE_APPEND);
                 // Cancellation is a sensitive action, so we start the session and check login/CSRF
                 if (!is_logged_in()) {
                     throw new Exception('You must be logged in to perform this action.');
