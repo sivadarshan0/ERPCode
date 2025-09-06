@@ -10,8 +10,6 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-require_login();
-
 // --- AJAX Endpoint for Live Search ---
 if (isset($_GET['action']) && $_GET['action'] === 'search') {
     header('Content-Type: application/json');
@@ -30,6 +28,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'search') {
     }
     exit;
 }
+
+require_login();
 
 // Initial page load - get all recent GRNs
 $initial_grns = search_grns();
