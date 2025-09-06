@@ -1,13 +1,22 @@
-SET @group_id_to_delete = (SELECT transaction_group_id FROM acc_transactions WHERE source_type = 'purchase_order' AND source_id = 'PUR000007' LIMIT 1);
+-- This script will revert the status and delete the financial entries for ORD000009.
 
-DELETE FROM acc_transactions WHERE transaction_group_id = @group_id_to_delete;
+-- Start a transaction to ensure both steps happen together.
+START TRANSACTION;
 
-DELETE FROM purchase_order_status_history WHERE purchase_order_id = 'PUR000007' AND status = 'Paid';
+-- 1. Delete the incorrect accounting journal entries associated with this specific order.
+DELETE FROM acc_transactions 
+WHERE source_type = 'sales_order' AND source_id = 'ORD000009';
 
-UPDATE purchase_orders SET status = 'Ordered' WHERE purchase_order_id = 'PUR000007';
+-- 2. Update the main order record to reset its statuses.
+-- We are setting the main status to 'With Courier' and the payment status to 'Pending'.
+UPDATE orders
+SET 
+    status = 'With Courier',
+    payment_status = 'Pending'
+WHERE 
+    order_id = 'ORD000009';
 
-UPDATE purchase_order_items SET cost_price = 0.00 WHERE purchase_order_id = 'PUR000007' AND item_id = 'ITM00010';
+-- If both commands succeeded, commit the changes.
+COMMIT;
 
-SELECT 'Landed Cost for the specified item has been reset to 0.00.' AS status;
-
-SELECT 'Purchase Order has been reverted to Ordered and the incorrect journal entry has been deleted.' AS status;
+SELECT 'Order ORD000009 has been reverted to "With Courier" and "Pending" payment. Financial entries have been deleted. You may now re-test.' AS Status;
