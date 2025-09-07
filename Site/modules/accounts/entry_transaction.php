@@ -21,9 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $details = [
             'transaction_date'  => $_POST['transaction_date'] ?? '',
-            'financial_year'    => $_POST['financial_year'] ?? '', // Added financial year
+            'financial_year'    => $_POST['financial_year'] ?? '',
             'description'       => $_POST['description'] ?? '',
-            'remarks'           => $_POST['remarks'] ?? '', // Added remarks
+            'remarks'           => $_POST['remarks'] ?? '',
             'debit_account_id'  => $_POST['debit_account_id'] ?? '',
             'credit_account_id' => $_POST['credit_account_id'] ?? '',
             'amount'            => $_POST['amount'] ?? 0,
@@ -61,12 +61,20 @@ require_once __DIR__ . '/../../includes/header.php';
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h2>New Journal Entry</h2>
+                <h2 class="h2">New Journal Entry</h2>
+                <!-- THIS IS THE NEW BUTTON BLOCK -->
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="/modules/accounts/list_accounts.php" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-list-columns"></i>
+                        View Chart of Accounts
+                    </a>
+                </div>
+                <!-- END OF NEW BUTTON BLOCK -->
             </div>
 
             <?php if ($message): ?>
             <div class="alert alert-<?= $message_type ?> alert-dismissible fade show" role="alert">
-                <?= $message ?>
+                <?= htmlspecialchars($message) ?>
             </div>
             <?php endif; ?>
 
