@@ -25,6 +25,152 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/ `erpdb` /*!40100 DEFAULT CHARACTER SET 
 USE `erpdb`;
 
 --
+-- Table structure for table `acc_chartofaccounts`
+--
+
+DROP TABLE IF EXISTS `acc_chartofaccounts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `acc_chartofaccounts` (
+  `account_id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_name` varchar(255) NOT NULL,
+  `account_type` enum('Asset','Liability','Equity','Revenue','Expense') NOT NULL,
+  `normal_balance` enum('debit','credit') NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`account_id`),
+  UNIQUE KEY `uk_account_name` (`account_name`),
+  KEY `idx_account_type` (`account_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `acc_chartofaccounts`
+--
+
+LOCK TABLES `acc_chartofaccounts` WRITE;
+/*!40000 ALTER TABLE `acc_chartofaccounts` DISABLE KEYS */;
+INSERT INTO `acc_chartofaccounts` VALUES
+(1,'Cash in Hand','Asset','debit',NULL,1,'2025-08-29 20:53:02'),
+(2,'Bank Account','Asset','debit',NULL,1,'2025-08-29 20:53:02'),
+(3,'Accounts Receivable','Asset','debit',NULL,1,'2025-08-29 20:53:02'),
+(4,'Inventory','Asset','debit',NULL,1,'2025-08-29 20:53:02'),
+(5,'Prepaid Expenses','Asset','debit',NULL,1,'2025-08-29 20:53:02'),
+(6,'Office Equipment','Asset','debit',NULL,1,'2025-08-29 20:53:02'),
+(7,'Accounts Payable','Liability','credit',NULL,1,'2025-08-29 20:53:02'),
+(8,'Unearned Revenue','Liability','credit',NULL,1,'2025-08-29 20:53:02'),
+(9,'Loans Payable','Liability','credit',NULL,1,'2025-08-29 20:53:02'),
+(10,'Owner Equity - Principal 1','Equity','credit','',0,'2025-08-29 20:53:02'),
+(11,'Owner Equity - Principal 2','Equity','credit','',0,'2025-08-29 20:53:02'),
+(12,'Retained Earnings','Equity','credit',NULL,1,'2025-08-29 20:53:02'),
+(13,'Sales Revenue','Revenue','credit',NULL,1,'2025-08-29 20:53:02'),
+(14,'Service Revenue','Revenue','credit',NULL,1,'2025-08-29 20:53:02'),
+(15,'Cost of Goods Sold','Expense','debit',NULL,1,'2025-08-29 20:53:02'),
+(16,'Rent Expense','Expense','debit',NULL,1,'2025-08-29 20:53:02'),
+(17,'Salaries Expense','Expense','debit',NULL,1,'2025-08-29 20:53:02'),
+(18,'Utilities Expense','Expense','debit',NULL,1,'2025-08-29 20:53:02'),
+(19,'Bank Charges','Expense','debit',NULL,1,'2025-08-29 20:53:02'),
+(20,'Owner Equity - Siva','Equity','credit','Owner Equity',1,'2025-08-29 22:10:05'),
+(21,'Owner Equity - Thivya','Equity','credit','',1,'2025-08-29 22:18:51'),
+(22,'Loan Equity - Janu','Equity','credit','Payment has been by Janu. This needs to be repay',0,'2025-08-31 14:11:53'),
+(23,'Marketing Expense','Expense','debit','Gift / Marketing expense',1,'2025-08-31 14:15:08'),
+(24,'Loans Payable - Janu','Liability','credit','Loan Payable for Janu',1,'2025-08-31 17:52:44'),
+(25,'Courier Expense','Expense','debit','Local courier expense for customers',1,'2025-09-01 16:53:21');
+/*!40000 ALTER TABLE `acc_chartofaccounts` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `acc_transactions`
+--
+
+DROP TABLE IF EXISTS `acc_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `acc_transactions` (
+  `transaction_id` int(11) NOT NULL AUTO_INCREMENT,
+  `transaction_group_id` varchar(20) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `transaction_date` datetime NOT NULL,
+  `financial_year` varchar(10) NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `remarks` text DEFAULT NULL,
+  `debit_amount` decimal(10,2) DEFAULT NULL,
+  `credit_amount` decimal(10,2) DEFAULT NULL,
+  `status` enum('Posted','Canceled') NOT NULL DEFAULT 'Posted',
+  `source_type` enum('sales_order','purchase_order','manual_entry','opening_balance') DEFAULT NULL,
+  `source_id` varchar(20) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_by_name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`transaction_id`),
+  KEY `idx_account_id` (`account_id`),
+  KEY `idx_transaction_group_id` (`transaction_group_id`),
+  KEY `idx_transaction_date` (`transaction_date`),
+  KEY `idx_financial_year` (`financial_year`)
+) ENGINE=InnoDB AUTO_INCREMENT=145 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `acc_transactions`
+--
+
+LOCK TABLES `acc_transactions` WRITE;
+/*!40000 ALTER TABLE `acc_transactions` DISABLE KEYS */;
+INSERT INTO `acc_transactions` VALUES
+(1,'TRN000016',2,'2025-06-10 19:26:29','2025-2026','Sales revenue from Order #ORD000001','',3850.00,NULL,'Posted','sales_order','ORD000001','2025-08-30 19:26:29','SystemSync'),
+(2,'TRN000016',13,'2025-06-10 19:26:29','2025-2026','Sales revenue from Order #ORD000001','',NULL,3850.00,'Posted','sales_order','ORD000001','2025-08-30 19:26:29','SystemSync'),
+(3,'TRN000017',1,'2025-07-02 19:26:29','2025-2026','Sales revenue from Order #ORD000002','',4700.00,NULL,'Posted','sales_order','ORD000002','2025-08-30 19:26:29','SystemSync'),
+(4,'TRN000017',13,'2025-07-02 19:26:29','2025-2026','Sales revenue from Order #ORD000002','',NULL,4700.00,'Posted','sales_order','ORD000002','2025-08-30 19:26:29','SystemSync'),
+(5,'TRN000018',1,'2025-08-02 19:26:29','2025-2026','Sales revenue from Order #ORD000003','',4150.00,NULL,'Posted','sales_order','ORD000003','2025-08-30 19:26:29','SystemSync'),
+(6,'TRN000018',13,'2025-08-02 19:26:29','2025-2026','Sales revenue from Order #ORD000003','',NULL,4150.00,'Posted','sales_order','ORD000003','2025-08-30 19:26:29','SystemSync'),
+(23,'TRN000027',4,'2025-06-30 14:18:00','2025-2026','Payment for goods INR 4,829','Payment for goods INR 4,829',17191.24,NULL,'Posted','manual_entry',NULL,'2025-08-31 14:18:00','admin'),
+(24,'TRN000027',20,'2025-06-30 14:18:00','2025-2026','Payment for goods INR 4,829','Payment for goods INR 4,829',NULL,17191.24,'Posted','manual_entry',NULL,'2025-08-31 14:18:00','admin'),
+(25,'TRN000028',4,'2025-08-12 14:20:40','2025-2026','Payment for goods INR 850','Payment for goods INR 850',3026.00,NULL,'Posted','manual_entry',NULL,'2025-08-31 14:20:40','admin'),
+(26,'TRN000028',20,'2025-08-12 14:20:40','2025-2026','Payment for goods INR 850','Payment for goods INR 850',NULL,3026.00,'Posted','manual_entry',NULL,'2025-08-31 14:20:40','admin'),
+(27,'TRN000029',4,'2025-08-26 17:47:41','2025-2026','Payment for goods INR 2,010','Payment for goods INR 2,010',7236.00,NULL,'Posted','manual_entry',NULL,'2025-08-31 17:47:41','admin'),
+(28,'TRN000029',20,'2025-08-26 17:47:41','2025-2026','Payment for goods INR 2,010','Payment for goods INR 2,010',NULL,7236.00,'Posted','manual_entry',NULL,'2025-08-31 17:47:41','admin'),
+(29,'TRN000030',4,'2025-06-10 17:55:41','2025-2026','Payment for goods INR 2,800 by Janu','Loan from Janu for INR payment',10080.00,NULL,'Posted','manual_entry',NULL,'2025-08-31 17:55:41','admin'),
+(30,'TRN000030',24,'2025-06-10 17:55:41','2025-2026','Payment for goods INR 2,800 by Janu','Loan from Janu for INR payment',NULL,10080.00,'Posted','manual_entry',NULL,'2025-08-31 17:55:41','admin'),
+(31,'TRN000031',15,'2025-06-10 06:23:51','2025-2026','Cost of goods sold for Order #ORD000001','',3690.00,NULL,'Posted','sales_order','ORD000001','2025-09-01 06:23:51','SystemSync'),
+(32,'TRN000031',4,'2025-06-10 06:23:51','2025-2026','Cost of goods sold for Order #ORD000001','',NULL,3690.00,'Posted','sales_order','ORD000001','2025-09-01 06:23:51','SystemSync'),
+(33,'TRN000032',15,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',4466.00,NULL,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
+(34,'TRN000032',4,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',NULL,4466.00,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
+(35,'TRN000033',15,'2025-08-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000003','',3690.00,NULL,'Posted','sales_order','ORD000003','2025-09-01 06:23:51','SystemSync'),
+(36,'TRN000033',4,'2025-08-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000003','',NULL,3690.00,'Posted','sales_order','ORD000003','2025-09-01 06:23:51','SystemSync'),
+(37,'TRN000034',6,'2025-08-24 08:26:42','2025-2026','Test entry','Test entry',1000.00,NULL,'Canceled','manual_entry',NULL,'2025-09-01 08:26:42','admin'),
+(38,'TRN000034',2,'2025-08-24 08:26:42','2025-2026','Test entry','Test entry',NULL,1000.00,'Canceled','manual_entry',NULL,'2025-09-01 08:26:42','admin'),
+(39,'TRN000035',2,'2025-09-01 08:27:06','2025-2026','Reversal of transaction TRN000034','Automated reversal of manual entry.',1000.00,NULL,'Canceled','manual_entry','TRN000034','2025-09-01 08:27:06','admin'),
+(40,'TRN000035',6,'2025-09-01 08:27:06','2025-2026','Reversal of transaction TRN000034','Automated reversal of manual entry.',NULL,1000.00,'Canceled','manual_entry','TRN000034','2025-09-01 08:27:06','admin'),
+(41,'TRN000040',4,'2025-08-26 16:43:00','2025-2026','Payment for goods logistics','Payment for goods logistics 2kg',4400.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 16:43:00','admin'),
+(42,'TRN000040',20,'2025-08-26 16:43:00','2025-2026','Payment for goods logistics','Payment for goods logistics 2kg',NULL,4400.00,'Posted','manual_entry',NULL,'2025-09-01 16:43:00','admin'),
+(43,'TRN000041',4,'2025-07-06 16:46:47','2025-2026','Payment for goods logistics','Payment for goods logistics for 4kg',9600.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 16:46:47','admin'),
+(44,'TRN000041',21,'2025-07-06 16:46:47','2025-2026','Payment for goods logistics','Payment for goods logistics for 4kg',NULL,9600.00,'Posted','manual_entry',NULL,'2025-09-01 16:46:47','admin'),
+(45,'TRN000042',25,'2025-07-09 16:55:12','2025-2026','Local courier expense','Local courier expense by SL Post',360.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 16:55:12','admin'),
+(46,'TRN000042',21,'2025-07-09 16:55:12','2025-2026','Local courier expense','Local courier expense by SL Post',NULL,360.00,'Posted','manual_entry',NULL,'2025-09-01 16:55:12','admin'),
+(47,'TRN000043',23,'2025-07-09 16:56:56','2025-2026','Gift for customer','Encouraging gift for customer',250.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 16:56:56','admin'),
+(48,'TRN000043',21,'2025-07-09 16:56:56','2025-2026','Gift for customer','Encouraging gift for customer',NULL,250.00,'Posted','manual_entry',NULL,'2025-09-01 16:56:56','admin'),
+(49,'TRN000044',23,'2025-07-07 16:58:57','2025-2026','Gift for customer','Saree bag',100.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 16:58:57','admin'),
+(50,'TRN000044',21,'2025-07-07 16:58:57','2025-2026','Gift for customer','Saree bag',NULL,100.00,'Posted','manual_entry',NULL,'2025-09-01 16:58:57','admin'),
+(51,'TRN000045',25,'2025-08-26 17:06:58','2025-2026','Local courier expense','Local courier expense by SP Post',460.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 17:06:58','admin'),
+(52,'TRN000045',20,'2025-08-26 17:06:58','2025-2026','Local courier expense','Local courier expense by SP Post',NULL,460.00,'Posted','manual_entry',NULL,'2025-09-01 17:06:58','admin'),
+(53,'TRN000046',25,'2025-08-06 17:08:27','2025-2026','Local courier expense','Local courier expense by SL Post',360.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 17:08:27','admin'),
+(54,'TRN000046',21,'2025-08-06 17:08:27','2025-2026','Local courier expense','Local courier expense by SL Post',NULL,360.00,'Posted','manual_entry',NULL,'2025-09-01 17:08:27','admin'),
+(55,'TRN000047',23,'2025-08-06 17:09:53','2025-2026','Gift for customer','Encourage gift for customer',280.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 17:09:53','admin'),
+(56,'TRN000047',21,'2025-08-06 17:09:53','2025-2026','Gift for customer','Encourage gift for customer',NULL,280.00,'Posted','manual_entry',NULL,'2025-09-01 17:09:53','admin'),
+(57,'TRN000048',4,'2025-09-01 17:12:59','2025-2026','Payment for goods logistics','Payment for goods logistics for 1kg',2200.00,NULL,'Posted','manual_entry',NULL,'2025-09-01 17:12:59','admin'),
+(58,'TRN000048',20,'2025-09-01 17:12:59','2025-2026','Payment for goods logistics','Payment for goods logistics for 1kg',NULL,2200.00,'Posted','manual_entry',NULL,'2025-09-01 17:12:59','admin'),
+(137,'TRN000077',1,'2025-08-10 14:18:13','2025-2026','Sales revenue from Order #ORD000009','',5160.00,NULL,'Posted','sales_order','ORD000009','2025-09-06 14:18:13','admin'),
+(138,'TRN000077',13,'2025-08-10 14:18:13','2025-2026','Sales revenue from Order #ORD000009','',NULL,5160.00,'Posted','sales_order','ORD000009','2025-09-06 14:18:13','admin'),
+(139,'TRN000078',15,'2025-08-10 14:18:13','2025-2026','Cost of goods sold for Order #ORD000009','',4466.00,NULL,'Posted','sales_order','ORD000009','2025-09-06 14:18:13','admin'),
+(140,'TRN000078',4,'2025-08-10 14:18:13','2025-2026','Cost of goods sold for Order #ORD000009','',NULL,4466.00,'Posted','sales_order','ORD000009','2025-09-06 14:18:13','admin'),
+(141,'TRN000079',23,'2025-09-04 14:20:28','2025-2026','Bag for item','4 Bags each 100',400.00,NULL,'Posted','manual_entry',NULL,'2025-09-06 14:20:28','admin'),
+(142,'TRN000079',20,'2025-09-04 14:20:28','2025-2026','Bag for item','4 Bags each 100',NULL,400.00,'Posted','manual_entry',NULL,'2025-09-06 14:20:28','admin'),
+(143,'TRN000080',25,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',930.00,NULL,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin'),
+(144,'TRN000080',20,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',NULL,930.00,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin');
+/*!40000 ALTER TABLE `acc_transactions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `categories`
 --
 
@@ -53,9 +199,7 @@ CREATE TABLE `categories` (
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
 INSERT INTO `categories` VALUES
-('CAT00001','Saree','Saree category update 20250809 1331','2025-08-08 21:31:55',1,'admin','2025-08-09 08:02:25',1,'admin'),
-('CAT00002','Kurithi','Kuruthi category','2025-08-09 07:55:30',1,'admin',NULL,NULL,NULL),
-('CAT00003','Shalwar','Shalwar category','2025-08-09 08:04:27',1,'admin',NULL,NULL,NULL);
+('CAT00001','Saree','Saree category','2025-08-24 10:50:51',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -91,8 +235,9 @@ CREATE TABLE `categories_sub` (
 LOCK TABLES `categories_sub` WRITE;
 /*!40000 ALTER TABLE `categories_sub` DISABLE KEYS */;
 INSERT INTO `categories_sub` VALUES
-('SUB00001','CAT00001','Cotton Saree','Cotto Saree sub category 20250809 1438','2025-08-09 09:08:25',1,'admin','2025-08-09 09:18:35',1,'admin'),
-('SUB00002','CAT00002','Cotton Kurithi','Cotton Kurithi category','2025-08-09 09:19:17',1,'admin',NULL,NULL,NULL);
+('SUB00001','CAT00001','Cotton saree','Cotton saree sub category','2025-08-24 10:52:40',1,'admin',NULL,NULL,NULL),
+('SUB00002','CAT00001','Kanchi cotton saree','Kanchi cotton sarees are handwoven, elegant, and breathable traditional sarees from Kanchipuram, Tamil Nadu, celebrated for their unique craftsmanship, temple-inspired designs, and comfortable fabric, making them a popular choice for daily wear and special occasions alike.','2025-08-24 11:31:55',1,'admin',NULL,NULL,NULL),
+('SUB00003','CAT00001','Sungudi cotton saree','Sungudi cotton saree sub category','2025-08-24 17:33:45',1,'admin','2025-08-24 17:37:14',1,'admin');
 /*!40000 ALTER TABLE `categories_sub` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -138,20 +283,12 @@ CREATE TABLE `customers` (
 LOCK TABLES `customers` WRITE;
 /*!40000 ALTER TABLE `customers` DISABLE KEYS */;
 INSERT INTO `customers` VALUES
-('CUS00001','0771060853','Siva','Kotahena street, Colombo 13','Kotahena','Colombo','01300','Instagram','sivadarshan@gmail.com','2025-07-06','Test updated','Insta','2025-07-10 15:09:08',1,'admin','2025-07-19 10:09:56',1,'admin'),
-('CUS00002','0768406545','Thivya','Kotahena','Colombo 13','Colombo','01400','Instagram','thivya@abc.com','2025-07-08','Test 2','Insta','2025-07-10 15:10:45',1,'admin','2025-07-19 10:09:43',1,'admin'),
-('CUS00003','0773100853','Agarvin','Jaffna street','Jaffna','Colombo','02100','Instagram','agarvin@abc.com','2025-07-09','Update entry 20250720 1900','Insta','2025-07-13 01:36:13',1,'admin','2025-07-20 13:31:05',1,'admin'),
-('CUS00004','0772190853','Aathi','Chullipurm east','Chullipuram','Colombo','02110','Instagram','aathi@abc.com','2025-07-06','Update entry 20250810 0135','Instagram','2025-07-13 01:45:02',1,'admin','2025-08-09 20:06:32',1,'admin'),
-('CUS00005','0777123456','Latha','Main street, Kandy','Kandy','Colombo','08100','Instagram','latha@abc.com','2025-07-01','Test customer First update','Insta','2025-07-13 10:25:32',1,'admin','2025-07-20 10:59:40',1,'admin'),
-('CUS00006','0777654321','Anupriya','Main road','Rathota','Colombo','06012','Instagram','anupriya@abc.com','2025-07-02','Test record','Insta','2025-07-13 11:02:23',1,'admin','2025-07-19 10:08:50',1,'admin'),
-('CUS00007','1234567890','dsdfg','afvadf','dfvdvdf','dvdvadfva','1234','SearchEngine','abc@xyz.com','2025-07-14','vsdas','sgaerqg','2025-07-19 18:52:29',1,'admin',NULL,NULL,NULL),
-('CUS00008','0766123456','vjannjnj','ndjnsdkcvjn','jnkdnckn','Kandy','08111','SearchEngine','ABC@123','2025-07-18','SFQWFQWEF','sdfsvsdvqwe','2025-07-19 17:24:24',1,'admin',NULL,NULL,NULL),
-('CUS00009','0777771111','fgergwe','gerwter','adfgsd','sdfaerfa','09111','SearchEngine','abc@xyz.com','2025-07-14','dfgae Update 20250720 2325','New update 20250723 1955','2025-07-19 18:16:18',1,'admin','2025-07-22 14:26:07',1,'admin'),
-('CUS00010','0222222222','sdfgqr','svaedgaerb dafgeg','efgwe','dvedge','2222','Facebook','cnf@cbd.com','2025-07-14','adfwfeqwfqwf','sdfqwdfqw','2025-07-19 19:10:17',1,'admin',NULL,NULL,NULL),
-('CUS00011','0333333333','dfshs','aegehsh','fsdsdg','dfgsdgsd','04444','Friends','bda@ghg.com','2025-07-14','dfgdfgad','dgadgd','2025-07-20 04:09:34',1,'admin',NULL,NULL,NULL),
-('CUS00012','0444444444','dfgdfger','fadfgadfvge','fvadfva','dvdfv','88888','Other','abc@bnd.com','2025-07-08','wfqwfqwf','sdfaswfdqw','2025-07-20 11:02:12',1,'admin',NULL,NULL,NULL),
-('CUS00013','0987654321','bhvkjdfk','fbga;kdj;ak','Galle','Galle','09876','Friends','abc@dbc.com','2025-07-15','kg;LH;GOAHER 20250720 2327','ADJNGAKN','2025-07-20 17:57:20',1,'admin','2025-07-20 17:58:01',1,'admin'),
-('CUS00014','0776123456','SFasdasdfv','sdvsdvasdvasdv','Galle','Galle','02100','SearchEngine','AND@123.com','2025-08-04','asdADa Update 20250810 0129','asAasd','2025-08-10 01:25:50',1,'admin','2025-08-09 20:00:50',1,'admin');
+('CUS00001','0771060853','Siva','#38/2, Kotahena street,','Kotahena','Colombo','01300','Instagram','sivadarshan@gmail.com','2025-08-24','Primary customer','Primary note','2025-08-24 15:56:52',1,'admin',NULL,NULL,NULL),
+('CUS00002','0768406545','Thivya','#38/2, Kotahena street,','Kotahena','Colombo','01300','Instagram','athivya13@gmail.com','2025-08-24','Primary customer','Primary customer','2025-08-24 16:00:03',1,'admin',NULL,NULL,NULL),
+('CUS00003','0768405673','Anupriya','#4, Main street,','Rattota','Matale','21400','Instagram','','2025-06-27','First order','First order','2025-08-24 16:05:02',1,'admin','2025-08-24 10:45:41',1,'admin'),
+('CUS00004','0720393765','Evevjalin','Fitness First LK. #42 Maitland cres','Colombo 07','Colombo','00700','Instagram','','2025-07-07','','','2025-08-24 16:11:18',1,'admin',NULL,NULL,NULL),
+('CUS00005','0778229530','Devamalar. N','#66, Appalabedda,','Panwila','Kandy','20830','Instagram','','2025-08-06','','','2025-08-24 16:14:27',1,'admin','2025-08-24 10:45:25',1,'admin'),
+('CUS00006','0775885744','Kamalani Nair','#17, Kandy road','Baddegama','Galle','80200','Instagram','','2025-08-23','','','2025-08-24 23:14:03',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `customers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -165,7 +302,8 @@ DROP TABLE IF EXISTS `grn`;
 CREATE TABLE `grn` (
   `grn_id` varchar(10) NOT NULL,
   `grn_date` date NOT NULL,
-  `remarks` text DEFAULT NULL,
+  `status` enum('Posted','Canceled') NOT NULL DEFAULT 'Posted',
+  `remarks` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
   `created_by_name` varchar(50) DEFAULT NULL,
@@ -180,22 +318,12 @@ CREATE TABLE `grn` (
 LOCK TABLES `grn` WRITE;
 /*!40000 ALTER TABLE `grn` DISABLE KEYS */;
 INSERT INTO `grn` VALUES
-('GRN000001','2025-08-08','Initial order','2025-08-10 18:32:14',1,'admin'),
-('GRN000002','2025-08-05','Initial order','2025-08-10 19:07:14',1,'admin'),
-('GRN000003','2025-08-06','Test','2025-08-12 22:03:34',1,'admin'),
-('GRN000004','2025-08-10','Another Test','2025-08-12 22:07:56',1,'admin'),
-('GRN000005','2025-08-11','3rd test order','2025-08-12 22:10:01',1,'admin'),
-('GRN000006','2025-08-01','4th order ','2025-08-12 22:19:55',1,'admin'),
-('GRN000007','2025-08-12','fqerer','2025-08-12 22:20:43',1,'admin'),
-('GRN000008','2025-08-12','rfqefq','2025-08-12 22:21:21',1,'admin'),
-('GRN000009','2025-08-13','wfjljblkj','2025-08-13 20:41:11',1,'admin'),
-('GRN000010','2025-08-11','Test order','2025-08-13 20:43:24',1,'admin'),
-('GRN000011','2025-08-13','Another test','2025-08-13 20:44:05',1,'admin'),
-('GRN000012','2025-08-13','Test after Cost ','2025-08-13 21:18:33',1,'admin'),
-('GRN000013','2025-08-13','Test at 20250814 0253','2025-08-13 21:25:03',1,'admin'),
-('GRN000014','2025-08-14','Test GRn','2025-08-14 19:49:44',1,'admin'),
-('GRN000015','2025-08-14','Test GRN2','2025-08-14 19:58:11',1,'admin'),
-('GRN000016','2025-08-16','jkn;kjnk;j','2025-08-16 08:28:53',1,'admin');
+('GRN000001','2025-08-25','Posted','Auto-generated from completed PO #PUR000001','2025-08-25 08:09:30',1,'System for admin'),
+('GRN000002','2025-08-25','Posted','Auto-generated from completed PO #PUR000002','2025-08-25 08:10:43',1,'System for admin'),
+('GRN000003','2025-08-25','Canceled','Test GRn','2025-08-25 11:22:26',1,'admin'),
+('GRN000004','2025-08-26','Posted','Auto-generated from completed PO #PUR000003','2025-08-26 20:08:02',1,'System for admin'),
+('GRN000005','2025-08-26','Posted','Auto-generated from completed PO #PUR000004','2025-08-26 20:16:18',1,'System for admin'),
+('GRN000006','2025-09-01','Posted','Auto-generated from completed PO #PUR000005','2025-09-01 11:06:09',1,'System for admin');
 /*!40000 ALTER TABLE `grn` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -209,7 +337,7 @@ DROP TABLE IF EXISTS `grn_items`;
 CREATE TABLE `grn_items` (
   `grn_item_id` int(11) NOT NULL AUTO_INCREMENT,
   `grn_id` varchar(10) NOT NULL,
-  `item_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `uom` enum('No','Set','Pair') NOT NULL,
   `quantity` int(11) NOT NULL DEFAULT 0,
   `cost` decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -217,9 +345,8 @@ CREATE TABLE `grn_items` (
   PRIMARY KEY (`grn_item_id`),
   KEY `grn_id` (`grn_id`),
   KEY `item_id` (`item_id`),
-  CONSTRAINT `fk_grn_header` FOREIGN KEY (`grn_id`) REFERENCES `grn` (`grn_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_grn_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `fk_grn_header` FOREIGN KEY (`grn_id`) REFERENCES `grn` (`grn_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -229,28 +356,16 @@ CREATE TABLE `grn_items` (
 LOCK TABLES `grn_items` WRITE;
 /*!40000 ALTER TABLE `grn_items` DISABLE KEYS */;
 INSERT INTO `grn_items` VALUES
-(1,'GRN000001','ITM00001','No',3,0.00,0),
-(2,'GRN000002','ITM00001','No',5,0.00,0),
-(3,'GRN000003','ITM00001','No',3,0.00,0),
-(4,'GRN000004','ITM00001','No',5,0.00,0),
-(5,'GRN000005','ITM00002','No',5,0.00,0),
-(6,'GRN000006','ITM00002','No',2,0.00,0),
-(7,'GRN000007','ITM00001','No',1,0.00,0),
-(8,'GRN000008','ITM00002','No',5,0.00,0),
-(15,'GRN000009','ITM00001','No',5,0.00,0),
-(16,'GRN000010','ITM00001','No',4,0.00,0),
-(17,'GRN000010','ITM00002','No',6,0.00,0),
-(18,'GRN000011','ITM00002','No',2,0.00,0),
-(19,'GRN000011','ITM00001','No',2,0.00,0),
-(20,'GRN000011','ITM00002','No',2,0.00,0),
-(21,'GRN000012','ITM00002','No',5,3500.00,550),
-(22,'GRN000012','ITM00001','No',5,3000.00,560),
-(23,'GRN000013','ITM00002','No',4,3400.00,550),
-(24,'GRN000013','ITM00001','No',4,3000.00,500),
-(25,'GRN000014','ITM00003','No',4,4500.00,500),
-(26,'GRN000015','ITM00003','No',3,3000.00,500),
-(27,'GRN000015','ITM00001','No',4,4500.00,550),
-(28,'GRN000016','ITM00002','No',10,3750.00,500);
+(1,'GRN000001','ITM00003','No',1,4346.00,0),
+(2,'GRN000001','ITM00004','No',1,4520.00,0),
+(3,'GRN000001','ITM00001','No',1,4466.00,0),
+(4,'GRN000002','ITM00002','No',4,3690.00,0),
+(5,'GRN000003','ITM00007','No',1,4500.00,600),
+(6,'GRN000004','ITM00005','No',2,3990.00,0),
+(7,'GRN000004','ITM00006','No',1,3634.00,0),
+(8,'GRN000005','ITM00007','No',1,4466.00,0),
+(9,'GRN000006','ITM00008','No',1,4608.00,0),
+(10,'GRN000006','ITM00009','No',1,5499.00,0);
 /*!40000 ALTER TABLE `grn_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -262,7 +377,7 @@ DROP TABLE IF EXISTS `items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `items` (
-  `item_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `category_sub_id` varchar(10) NOT NULL,
   `name` varchar(150) NOT NULL,
   `uom` varchar(20) NOT NULL DEFAULT 'No',
@@ -287,9 +402,16 @@ CREATE TABLE `items` (
 LOCK TABLES `items` WRITE;
 /*!40000 ALTER TABLE `items` DISABLE KEYS */;
 INSERT INTO `items` VALUES
-('ITM00001','SUB00001','Maheshwari cotton saree','No','Maheshwari cotton saree Update 20250810 0026','2025-08-09 18:55:29',1,'admin','2025-08-09 18:57:00',1,'admin'),
-('ITM00002','SUB00001','Narayanapat cotton Saree','No','Narayanapat cotton Saree','2025-08-12 22:07:41',1,'admin',NULL,NULL,NULL),
-('ITM00003','SUB00001','Test cotton saree','No','Test cotton saree','2025-08-14 19:49:07',1,'admin',NULL,NULL,NULL);
+('ITM00001','SUB00001','Anuradha lining border saree','No','Anuradha lining border saree','2025-08-24 10:53:35',1,'admin',NULL,NULL,NULL),
+('ITM00002','SUB00001','Maheshwari cotton saree','No','Maheshwari cotton sarees are timeless handloom masterpieces from Maheshwar, Madhya Pradesh, renowned for their lightweight, reversible borders, and elegant fusion of cotton and silk woven with intricate traditional designs.','2025-08-24 10:55:14',1,'admin',NULL,NULL,NULL),
+('ITM00003','SUB00001','Narayanpet cotton saree - Silver border','No','Narayanpet cotton sarees are a cherished traditional handloom craft from Telangana, known for their lightweight durability, distinctive checked and contrast border designs, and deep cultural roots, while their silk counterparts blend Maharashtrian influence and local artistry to offer elegant affordability and versatility.','2025-08-24 11:00:02',1,'admin',NULL,NULL,NULL),
+('ITM00004','SUB00001','Narayanpet cotton saree - Thread work','No','Narayanpet cotton sarees are celebrated for their lightweight, durable handwoven fabric, intricate interlocked tread work, and culturally rich designs blending Telangana and Maratha influences.','2025-08-24 11:02:25',1,'admin',NULL,NULL,NULL),
+('ITM00005','SUB00001','Narayanpet cotton saree - Temple border','No','Narayanpet cotton sarees are renowned for their distinctive temple-style borders—often triangular, zigzagged, or geometric patterns inspired by South Indian temple architecture, symbolizing cultural heritage and spiritual symbolism.','2025-08-24 11:15:17',1,'admin',NULL,NULL,NULL),
+('ITM00006','SUB00001','Narayanpet cotton saree - Rainbow color','No','Narayanpet cotton sarees are renowned for their vibrant and striking colors, including beautiful multicolor and rainbow-inspired designs that highlight traditional craftsmanship with bold contrasts and unique patterns.','2025-08-24 11:18:04',1,'admin',NULL,NULL,NULL),
+('ITM00007','SUB00001','Narayanpet cotton saree - Multiline','No','Narayanpet cotton sarees are renowned for their distinctive multi-bordered designs, vibrant colors, and lightweight, breathable fabric, embodying timeless traditional craftsmanship from Telangana, India.','2025-08-24 11:25:29',1,'admin',NULL,NULL,NULL),
+('ITM00008','SUB00002','Kanji cotton saree - Silver and gold border 80 counts','No','Kanji cotton sarees with silver and gold borders are exquisite traditional handwoven fabrics from Kanchipuram, blending the softness of cotton with the elegance of silver and gold zari borders for a unique, luxurious yet comfortable attire suitable for festive and special occasions.','2025-08-24 11:36:22',1,'admin',NULL,NULL,NULL),
+('ITM00009','SUB00002','Kanji cotton saree - Body work 100 counts','No','100 count Kanji (or Kanchi) cotton sarees feature pure, handloom cotton fabric with a dense, durable weave often measuring 100 threads per inch, combined with intricate body work such as butta designs or zari borders, offering a rich yet breathable saree ideal for both casual and formal wear.','2025-08-24 11:38:51',1,'admin',NULL,NULL,NULL),
+('ITM00010','SUB00003','Sungudi cotton saree','No','Handcrafted in Madurai, this Sungudi cotton saree features traditional tie-dye patterns and a rich zari border. Lightweight and breathable, it\'s perfect for everyday elegance or festive charm.','2025-08-24 17:38:03',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -303,7 +425,7 @@ DROP TABLE IF EXISTS `order_items`;
 CREATE TABLE `order_items` (
   `order_item_id` int(11) NOT NULL AUTO_INCREMENT,
   `order_id` varchar(10) NOT NULL,
-  `item_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `item_id` varchar(10) NOT NULL,
   `quantity` decimal(10,2) NOT NULL,
   `price` decimal(10,2) NOT NULL,
   `cost_price` decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -311,9 +433,8 @@ CREATE TABLE `order_items` (
   PRIMARY KEY (`order_item_id`),
   KEY `order_id` (`order_id`),
   KEY `item_id` (`item_id`),
-  CONSTRAINT `fk_order_header` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_order_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `fk_order_header` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -323,17 +444,17 @@ CREATE TABLE `order_items` (
 LOCK TABLES `order_items` WRITE;
 /*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
 INSERT INTO `order_items` VALUES
-(3,'ORD000001','ITM00001',3.00,4950.00,4500.00,10.00),
-(4,'ORD000001','ITM00002',2.00,3740.00,3400.00,10.00),
-(5,'ORD000002','ITM00002',20.00,3400.00,3400.00,0.00),
-(6,'ORD000003','ITM00001',5.00,4950.00,4500.00,10.00),
-(7,'ORD000004','ITM00001',2.00,3300.00,3000.00,10.00),
-(8,'ORD000005','ITM00001',4.00,4950.00,4500.00,10.00),
-(9,'ORD000006','ITM00002',1.00,3300.00,3000.00,10.00),
-(10,'ORD000007','ITM00001',4.00,4950.00,4500.00,10.00),
-(11,'ORD000008','ITM00002',1.00,4125.00,3750.00,10.00),
-(12,'ORD000008','ITM00001',1.00,4950.00,4500.00,10.00),
-(13,'ORD000009','ITM00001',1.00,4950.00,4500.00,10.00);
+(1,'ORD000001','ITM00002',1.00,3850.00,3690.00,4.34),
+(2,'ORD000002','ITM00001',1.00,4700.00,4466.00,5.24),
+(3,'ORD000003','ITM00002',1.00,4150.00,3690.00,12.47),
+(4,'ORD000004','ITM00007',1.00,4950.00,0.00,0.00),
+(5,'ORD000005','ITM00008',1.00,5450.00,4608.00,18.27),
+(6,'ORD000006','ITM00010',1.00,4500.00,0.00,0.00),
+(7,'ORD000007','ITM00010',1.00,4500.00,0.00,0.00),
+(8,'ORD000008','ITM00009',1.00,6200.00,5499.00,12.75),
+(9,'ORD000009','ITM00007',1.00,5160.00,4466.00,15.54),
+(10,'ORD000010','ITM00008',1.00,5910.00,4608.00,28.26),
+(11,'ORD000011','ITM00009',1.00,6670.00,5499.00,21.29);
 /*!40000 ALTER TABLE `order_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -348,6 +469,7 @@ CREATE TABLE `order_status_history` (
   `order_status_history_id` int(11) NOT NULL AUTO_INCREMENT,
   `order_id` varchar(10) NOT NULL,
   `status` varchar(50) NOT NULL,
+  `event_date` datetime DEFAULT NULL COMMENT 'The actual date/time the status event occurred',
   `remarks` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
@@ -355,7 +477,7 @@ CREATE TABLE `order_status_history` (
   PRIMARY KEY (`order_status_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_order_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -365,9 +487,21 @@ CREATE TABLE `order_status_history` (
 LOCK TABLES `order_status_history` WRITE;
 /*!40000 ALTER TABLE `order_status_history` DISABLE KEYS */;
 INSERT INTO `order_status_history` VALUES
-(1,'ORD000001','Processing',NULL,'2025-08-17 16:25:53',1,'admin'),
-(2,'ORD000009','Processing',NULL,'2025-08-17 17:43:10',1,'admin'),
-(3,'ORD000009','With Courier',NULL,'2025-08-17 17:43:26',1,'admin');
+(1,'ORD000001','Processing','2025-06-25 20:14:00',NULL,'2025-08-25 08:57:00',1,'admin'),
+(2,'ORD000001','With Courier','2025-07-09 10:47:00',NULL,'2025-08-25 08:59:37',1,'admin'),
+(3,'ORD000001','Delivered','2025-07-11 10:14:00',NULL,'2025-08-25 09:00:30',1,'admin'),
+(4,'ORD000002','Delivered','2025-07-07 10:30:00',NULL,'2025-08-25 09:12:17',1,'admin'),
+(5,'ORD000003','With Courier','2025-08-06 12:30:00',NULL,'2025-08-25 09:14:59',1,'admin'),
+(6,'ORD000003','Delivered','2025-08-09 10:30:00',NULL,'2025-08-25 09:15:43',1,'admin'),
+(8,'ORD000009','Awaiting Stock','2025-08-11 22:30:00',NULL,'2025-08-26 20:21:47',1,'admin'),
+(9,'ORD000009','With Courier','2025-08-26 14:30:00',NULL,'2025-08-26 20:25:00',1,'admin'),
+(10,'ORD000004','Canceled',NULL,NULL,'2025-08-26 21:15:26',1,'admin'),
+(11,'ORD000005','Processing',NULL,'Stock fulfilled from PO #PUR000005','2025-09-01 11:06:09',1,'System for admin'),
+(12,'ORD000008','Processing',NULL,'Stock fulfilled from PO #PUR000005','2025-09-01 11:06:09',1,'System for admin'),
+(13,'ORD000005','Canceled','2025-09-04 19:01:00',NULL,'2025-09-06 13:33:28',1,'admin'),
+(14,'ORD000008','Canceled','2025-09-04 19:07:00',NULL,'2025-09-06 13:39:04',1,'admin'),
+(16,'ORD000009','Delivered','2025-09-03 10:30:00',NULL,'2025-09-06 13:59:40',1,'admin'),
+(17,'ORD000009','Delivered','2025-09-03 22:50:00',NULL,'2025-09-06 14:18:13',1,'admin');
 /*!40000 ALTER TABLE `order_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -388,7 +522,7 @@ CREATE TABLE `order_stock_type_history` (
   `created_by_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`history_id`),
   KEY `order_id_idx` (`order_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -397,6 +531,9 @@ CREATE TABLE `order_stock_type_history` (
 
 LOCK TABLES `order_stock_type_history` WRITE;
 /*!40000 ALTER TABLE `order_stock_type_history` DISABLE KEYS */;
+INSERT INTO `order_stock_type_history` VALUES
+(1,'ORD000005','Ex-Stock','Stock fulfilled from PO #PUR000005','2025-09-01 11:06:09',1,'System for admin'),
+(2,'ORD000008','Ex-Stock','Stock fulfilled from PO #PUR000005','2025-09-01 11:06:09',1,'System for admin');
 /*!40000 ALTER TABLE `order_stock_type_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -411,7 +548,7 @@ CREATE TABLE `orders` (
   `order_id` varchar(10) NOT NULL,
   `customer_id` varchar(10) NOT NULL,
   `order_date` date NOT NULL,
-  `status` enum('New','Processing','With Courier','Delivered','Canceled') NOT NULL DEFAULT 'New',
+  `status` enum('New','Processing','Awaiting Stock','With Courier','Delivered','Canceled') NOT NULL DEFAULT 'New',
   `stock_type` enum('Ex-Stock','Pre-Book') NOT NULL DEFAULT 'Ex-Stock',
   `total_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `other_expenses` decimal(10,2) NOT NULL DEFAULT 0.00,
@@ -434,15 +571,17 @@ CREATE TABLE `orders` (
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
 INSERT INTO `orders` VALUES
-('ORD000001','CUS00003','2025-08-15','Processing','Ex-Stock',22330.00,510.00,'COD','Pending','bkjvkjvkj','2025-08-15 19:33:57',1,'admin'),
-('ORD000002','CUS00014','2025-08-15','New','Pre-Book',68000.00,600.00,'COD','Pending','nbnblbk','2025-08-15 19:35:36',1,'admin'),
-('ORD000003','CUS00009','2025-08-15','New','Ex-Stock',24750.00,499.00,'COD','Pending','khgjhgj','2025-08-15 20:21:20',1,'admin'),
-('ORD000004','CUS00009','2025-08-15','New','Pre-Book',6600.00,456.00,'COD','Pending','hvkhvk','2025-08-15 21:30:25',1,'admin'),
-('ORD000005','CUS00006','2025-08-16','New','Ex-Stock',19800.00,123.00,'COD','Pending','njn;jn','2025-08-16 07:56:00',1,'admin'),
-('ORD000006','CUS00009','2025-08-16','New','Pre-Book',3300.00,234.00,'COD','Pending','jknlkjlk','2025-08-16 07:57:20',1,'admin'),
-('ORD000007','CUS00008','2025-08-16','New','Ex-Stock',19800.00,123.00,'COD','Pending','khgkjhgkjh','2025-08-16 08:27:52',1,'admin'),
-('ORD000008','CUS00009','2025-08-16','New','Ex-Stock',9075.00,345.00,'COD','Pending','klkjlkjpk','2025-08-16 08:30:21',1,'admin'),
-('ORD000009','CUS00004','2025-08-17','With Courier','Ex-Stock',4950.00,123.00,'COD','Received','hhlkjh','2025-08-17 15:46:19',1,'admin');
+('ORD000001','CUS00003','2025-06-10','Delivered','Ex-Stock',3850.00,610.00,'BT','Received','Bag 100 | Gift 150 | Courier 360 | BG024831041LK','2025-08-25 08:34:48',1,'admin'),
+('ORD000002','CUS00004','2025-07-02','Delivered','Ex-Stock',4700.00,100.00,'COD','Received','Bag 100','2025-08-25 08:36:35',1,'admin'),
+('ORD000003','CUS00005','2025-08-02','Delivered','Ex-Stock',4150.00,640.00,'COD','Received','Bag 100 | Gift 180 | Courier 360 - BD003703299LK SLPost','2025-08-25 08:38:45',1,'admin'),
+('ORD000004','CUS00005','2025-08-10','Canceled','Ex-Stock',4950.00,0.00,'COD','Pending','Wrong selling prince ','2025-08-25 08:40:08',1,'admin'),
+('ORD000005','CUS00005','2025-08-22','Canceled','Ex-Stock',5450.00,0.00,'COD','Pending','Ref ORD000010','2025-08-25 08:41:44',1,'admin'),
+('ORD000006','CUS00005','2025-08-22','New','Pre-Book',4500.00,0.00,'COD','Pending','','2025-08-25 08:42:43',1,'admin'),
+('ORD000007','CUS00006','2025-08-22','New','Pre-Book',4500.00,0.00,'COD','Pending','','2025-08-25 08:44:22',1,'admin'),
+('ORD000008','CUS00006','2025-08-22','Canceled','Ex-Stock',6200.00,0.00,'COD','Pending','Ref ORD000011','2025-08-25 08:45:05',1,'admin'),
+('ORD000009','CUS00005','2025-08-10','Delivered','Ex-Stock',5160.00,560.00,'COD','Received','Bag 100 | SLPOST 460 BD003703529LK','2025-08-26 20:20:36',1,'admin'),
+('ORD000010','CUS00005','2025-08-22','With Courier','Ex-Stock',5910.00,560.00,'COD','Pending','BAG 100 | SLPOST 460 BD003703604LK','2025-09-06 13:37:12',1,'admin'),
+('ORD000011','CUS00006','2025-08-22','With Courier','Ex-Stock',6670.00,570.00,'COD','Pending','Bag 100 | SLPOST 470 BD003703605LK','2025-09-06 13:41:18',1,'admin');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -457,6 +596,7 @@ CREATE TABLE `payment_status_history` (
   `payment_history_id` int(11) NOT NULL AUTO_INCREMENT,
   `order_id` varchar(10) NOT NULL,
   `payment_status` varchar(50) NOT NULL,
+  `event_date` datetime DEFAULT NULL COMMENT 'The actual date/time the payment event occurred',
   `remarks` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
@@ -464,7 +604,7 @@ CREATE TABLE `payment_status_history` (
   PRIMARY KEY (`payment_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_payment_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -474,8 +614,42 @@ CREATE TABLE `payment_status_history` (
 LOCK TABLES `payment_status_history` WRITE;
 /*!40000 ALTER TABLE `payment_status_history` DISABLE KEYS */;
 INSERT INTO `payment_status_history` VALUES
-(1,'ORD000009','Received',NULL,'2025-08-17 20:13:13',1,'admin');
+(1,'ORD000001','Received','2025-06-25 20:14:00',NULL,'2025-08-25 08:57:00',1,'admin'),
+(2,'ORD000002','Received','2025-07-07 10:30:00',NULL,'2025-08-25 09:12:17',1,'admin'),
+(3,'ORD000003','Received','2025-08-11 10:45:00',NULL,'2025-08-25 09:16:17',1,'admin'),
+(5,'ORD000009','Received','2025-09-04 13:45:00',NULL,'2025-09-06 13:59:40',1,'admin'),
+(6,'ORD000009','Received','2025-09-04 13:50:00',NULL,'2025-09-06 14:18:13',1,'admin');
 /*!40000 ALTER TABLE `payment_status_history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `po_so_links`
+--
+
+DROP TABLE IF EXISTS `po_so_links`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `po_so_links` (
+  `link_id` int(11) NOT NULL AUTO_INCREMENT,
+  `purchase_order_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sales_order_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`link_id`),
+  UNIQUE KEY `po_so_unique` (`purchase_order_id`,`sales_order_id`),
+  KEY `idx_sales_order` (`sales_order_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `po_so_links`
+--
+
+LOCK TABLES `po_so_links` WRITE;
+/*!40000 ALTER TABLE `po_so_links` DISABLE KEYS */;
+INSERT INTO `po_so_links` VALUES
+(1,'PUR000005','ORD000005','2025-08-28 10:40:28'),
+(2,'PUR000005','ORD000008','2025-08-28 10:40:28');
+/*!40000 ALTER TABLE `po_so_links` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -488,15 +662,16 @@ DROP TABLE IF EXISTS `purchase_order_items`;
 CREATE TABLE `purchase_order_items` (
   `po_item_id` int(11) NOT NULL AUTO_INCREMENT,
   `purchase_order_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `item_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_price` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Price from supplier in their currency, e.g., INR',
   `quantity` decimal(10,2) NOT NULL,
+  `weight_grams` decimal(10,2) NOT NULL DEFAULT 0.00,
   `cost_price` decimal(10,2) NOT NULL,
   PRIMARY KEY (`po_item_id`),
   KEY `purchase_order_id` (`purchase_order_id`),
   KEY `item_id` (`item_id`),
-  CONSTRAINT `fk_po_header` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`purchase_order_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_po_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  CONSTRAINT `fk_po_header` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`purchase_order_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -506,10 +681,15 @@ CREATE TABLE `purchase_order_items` (
 LOCK TABLES `purchase_order_items` WRITE;
 /*!40000 ALTER TABLE `purchase_order_items` DISABLE KEYS */;
 INSERT INTO `purchase_order_items` VALUES
-(1,'PUR000001','ITM00002',5.00,4500.00),
-(2,'PUR000002','ITM00003',10.00,3500.00),
-(3,'PUR000003','ITM00002',5.00,4500.00),
-(4,'PUR000004','ITM00001',5.00,3750.00);
+(1,'PUR000001','ITM00003',0.00,1.00,0.00,4346.00),
+(2,'PUR000001','ITM00004',0.00,1.00,0.00,4520.00),
+(3,'PUR000001','ITM00001',0.00,1.00,0.00,4466.00),
+(4,'PUR000002','ITM00002',0.00,4.00,0.00,3690.00),
+(5,'PUR000003','ITM00005',0.00,2.00,0.00,3990.00),
+(6,'PUR000003','ITM00006',0.00,1.00,0.00,3634.00),
+(7,'PUR000004','ITM00007',0.00,1.00,0.00,4466.00),
+(8,'PUR000005','ITM00008',0.00,1.00,0.00,4608.00),
+(9,'PUR000005','ITM00009',0.00,1.00,0.00,5499.00);
 /*!40000 ALTER TABLE `purchase_order_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -522,14 +702,15 @@ DROP TABLE IF EXISTS `purchase_order_status_history`;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `purchase_order_status_history` (
   `history_id` int(11) NOT NULL AUTO_INCREMENT,
-  `purchase_order_id` varchar(10) NOT NULL,
-  `status` enum('Draft','Ordered','Partially Received','Completed','Canceled') NOT NULL,
+  `purchase_order_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('Draft','Ordered','Paid','Delivered','With int courier','Received','Canceled') NOT NULL,
+  `event_date` datetime DEFAULT NULL COMMENT 'The actual date/time the status event occurred',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
   `created_by_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`history_id`),
   KEY `po_id_idx` (`purchase_order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -539,11 +720,30 @@ CREATE TABLE `purchase_order_status_history` (
 LOCK TABLES `purchase_order_status_history` WRITE;
 /*!40000 ALTER TABLE `purchase_order_status_history` DISABLE KEYS */;
 INSERT INTO `purchase_order_status_history` VALUES
-(1,'PUR000002','Draft','2025-08-20 21:38:40',1,'admin'),
-(2,'PUR000003','Draft','2025-08-20 21:45:45',1,'admin'),
-(3,'PUR000002','Ordered','2025-08-20 21:46:15',1,'admin'),
-(4,'PUR000002','Partially Received','2025-08-20 21:54:30',1,'admin'),
-(5,'PUR000004','Draft','2025-08-20 22:34:40',1,'admin');
+(1,'PUR000001','Draft',NULL,'2025-08-25 06:49:57',1,'admin'),
+(2,'PUR000002','Draft',NULL,'2025-08-25 06:51:20',1,'admin'),
+(3,'PUR000003','Draft',NULL,'2025-08-25 06:53:23',1,'admin'),
+(4,'PUR000001','Paid','2025-06-30 14:30:00','2025-08-25 06:56:07',1,'admin'),
+(5,'PUR000002','Paid','2025-06-30 14:30:00','2025-08-25 06:57:22',1,'admin'),
+(6,'PUR000003','Paid','2025-08-12 15:34:00','2025-08-25 06:58:08',1,'admin'),
+(7,'PUR000003','With int courier','2025-08-24 12:28:00','2025-08-25 07:00:19',1,'admin'),
+(8,'PUR000001','Received','2025-07-06 18:30:00','2025-08-25 07:03:07',1,'admin'),
+(9,'PUR000002','Received','2025-07-06 18:30:00','2025-08-25 07:03:31',1,'admin'),
+(10,'PUR000002','With int courier','2025-07-30 12:51:00','2025-08-25 07:23:16',1,'admin'),
+(11,'PUR000001','With int courier','2025-07-30 12:54:00','2025-08-25 07:25:21',1,'admin'),
+(13,'PUR000001','Received','2025-07-30 18:30:00','2025-08-25 08:09:30',1,'admin'),
+(14,'PUR000002','Received','2025-07-30 18:30:00','2025-08-25 08:10:43',1,'admin'),
+(15,'PUR000004','Draft',NULL,'2025-08-25 08:46:50',1,'admin'),
+(16,'PUR000005','Draft',NULL,'2025-08-25 08:48:24',1,'admin'),
+(18,'PUR000003','Received','2025-08-26 10:30:00','2025-08-26 20:08:02',1,'admin'),
+(19,'PUR000004','Paid','2025-08-12 03:34:00','2025-08-26 20:13:27',1,'admin'),
+(20,'PUR000004','With int courier','2025-08-24 11:50:00','2025-08-26 20:15:49',1,'admin'),
+(21,'PUR000004','Received','2025-08-26 10:30:00','2025-08-26 20:16:18',1,'admin'),
+(22,'PUR000005','Ordered','2025-08-25 16:09:00','2025-08-28 10:40:28',1,'admin'),
+(23,'PUR000005','Paid','2025-08-26 18:22:00','2025-09-01 11:04:16',1,'admin'),
+(24,'PUR000005','Delivered','2025-08-29 17:00:00','2025-09-01 11:05:16',1,'admin'),
+(25,'PUR000005','With int courier','2025-08-30 16:34:00','2025-09-01 11:05:47',1,'admin'),
+(26,'PUR000005','Received','2025-09-01 11:34:00','2025-09-01 11:06:09',1,'admin');
 /*!40000 ALTER TABLE `purchase_order_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -558,14 +758,18 @@ CREATE TABLE `purchase_orders` (
   `purchase_order_id` varchar(10) NOT NULL,
   `po_date` date NOT NULL,
   `supplier_name` varchar(255) DEFAULT NULL,
-  `linked_sales_order_id` varchar(10) DEFAULT NULL,
-  `status` enum('Draft','Ordered','Partially Received','Completed','Canceled') NOT NULL DEFAULT 'Draft',
+  `total_goods_cost` decimal(10,2) DEFAULT NULL,
+  `goods_paid_by_account_id` int(11) DEFAULT NULL,
+  `total_logistic_cost` decimal(10,2) DEFAULT NULL,
+  `logistic_paid_by_account_id` int(11) DEFAULT NULL,
+  `status` enum('Draft','Ordered','Paid','Delivered','With int courier','Received','Canceled') NOT NULL DEFAULT 'Draft',
   `remarks` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
   `created_by_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`purchase_order_id`),
-  KEY `idx_linked_sales_order` (`linked_sales_order_id`)
+  KEY `idx_goods_paid_by` (`goods_paid_by_account_id`),
+  KEY `idx_logistic_paid_by` (`logistic_paid_by_account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -576,10 +780,11 @@ CREATE TABLE `purchase_orders` (
 LOCK TABLES `purchase_orders` WRITE;
 /*!40000 ALTER TABLE `purchase_orders` DISABLE KEYS */;
 INSERT INTO `purchase_orders` VALUES
-('PUR000001','2025-08-19','gkjhgkjh',NULL,'Draft','jdshwshlaw','2025-08-19 11:03:15',1,'admin'),
-('PUR000002','2025-08-20','dsSVSV',NULL,'Partially Received','M SVA /SM V/AS ','2025-08-20 21:38:40',1,'admin'),
-('PUR000003','2025-08-20','savfsvasd',NULL,'Draft','hlbhbvhlv','2025-08-20 21:45:45',1,'admin'),
-('PUR000004','2025-08-20','swfqwefq','ORD000002','Draft','swsqwfqwf','2025-08-20 22:34:40',1,'admin');
+('PUR000001','2025-07-06','Sri Krishna - Karnataka',NULL,NULL,NULL,NULL,'Received','Sri Krishna - Karnataka','2025-08-25 06:49:57',1,'admin'),
+('PUR000002','2025-07-06','A2Ve Enterprises - Jalakandapuram',NULL,NULL,NULL,NULL,'Received','A2Ve Enterprises - Jalakandapuram - Tamilnadu','2025-08-25 06:51:20',1,'admin'),
+('PUR000003','2025-07-06','Sri Krishna - Karnataka',NULL,NULL,NULL,NULL,'Received','Sri Krishna - Karnataka','2025-08-25 06:53:23',1,'admin'),
+('PUR000004','2025-08-12','Sri Krishna - Karnataka',NULL,NULL,NULL,NULL,'Received','Sri Krishna - Karnataka','2025-08-25 08:46:50',1,'admin'),
+('PUR000005','2025-08-22','Murugan Tex',NULL,NULL,NULL,NULL,'Received','Murugan Tex - Tamilnadu','2025-08-25 08:48:24',1,'admin');
 /*!40000 ALTER TABLE `purchase_orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -591,11 +796,10 @@ DROP TABLE IF EXISTS `stock_levels`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stock_levels` (
-  `item_id` varchar(10) NOT NULL,
+  `item_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `quantity` decimal(10,2) NOT NULL DEFAULT 0.00,
   `last_updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`item_id`),
-  CONSTRAINT `fk_stock_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  PRIMARY KEY (`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -606,9 +810,16 @@ CREATE TABLE `stock_levels` (
 LOCK TABLES `stock_levels` WRITE;
 /*!40000 ALTER TABLE `stock_levels` DISABLE KEYS */;
 INSERT INTO `stock_levels` VALUES
-('ITM00001',6.00,'2025-08-17 15:46:19'),
-('ITM00002',6.00,'2025-08-16 08:30:21'),
-('ITM00003',7.00,'2025-08-14 19:58:11');
+('ITM00001',0.00,'2025-08-25 08:36:36'),
+('ITM00002',2.00,'2025-08-25 08:38:45'),
+('ITM00003',1.00,'2025-08-25 08:09:30'),
+('ITM00004',1.00,'2025-08-25 08:09:30'),
+('ITM00005',2.00,'2025-08-26 20:08:02'),
+('ITM00006',1.00,'2025-08-26 20:08:02'),
+('ITM00007',0.00,'2025-08-26 21:55:49'),
+('ITM00008',0.00,'2025-09-06 13:37:12'),
+('ITM00009',0.00,'2025-09-06 13:41:19'),
+('ITM00010',-2.00,'2025-09-06 13:28:06');
 /*!40000 ALTER TABLE `stock_levels` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -620,8 +831,8 @@ DROP TABLE IF EXISTS `stock_transactions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stock_transactions` (
-  `transaction_id` varchar(10) NOT NULL,
-  `item_id` varchar(10) NOT NULL,
+  `transaction_id` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `transaction_type` enum('IN','OUT') NOT NULL,
   `quantity_change` decimal(10,2) NOT NULL,
   `reason` varchar(255) DEFAULT NULL,
@@ -629,8 +840,7 @@ CREATE TABLE `stock_transactions` (
   `created_by` int(11) DEFAULT NULL,
   `created_by_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`transaction_id`),
-  KEY `item_id` (`item_id`),
-  CONSTRAINT `fk_transaction_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `item_id` (`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -641,29 +851,32 @@ CREATE TABLE `stock_transactions` (
 LOCK TABLES `stock_transactions` WRITE;
 /*!40000 ALTER TABLE `stock_transactions` DISABLE KEYS */;
 INSERT INTO `stock_transactions` VALUES
-('TRN000001','ITM00001','IN',5.00,'Received via GRN #GRN000009','2025-08-13 20:41:11',1,'admin'),
-('TRN000002','ITM00001','IN',4.00,'Received via GRN #GRN000010','2025-08-13 20:43:24',1,'admin'),
-('TRN000003','ITM00002','IN',6.00,'Received via GRN #GRN000010','2025-08-13 20:43:25',1,'admin'),
-('TRN000004','ITM00002','IN',2.00,'Received via GRN #GRN000011','2025-08-13 20:44:05',1,'admin'),
-('TRN000005','ITM00001','IN',2.00,'Received via GRN #GRN000011','2025-08-13 20:44:05',1,'admin'),
-('TRN000006','ITM00002','IN',2.00,'Received via GRN #GRN000011','2025-08-13 20:44:05',1,'admin'),
-('TRN000007','ITM00002','IN',5.00,'Received via GRN #GRN000012','2025-08-13 21:18:33',1,'admin'),
-('TRN000008','ITM00001','IN',5.00,'Received via GRN #GRN000012','2025-08-13 21:18:33',1,'admin'),
-('TRN000009','ITM00002','IN',4.00,'Received via GRN #GRN000013','2025-08-13 21:25:03',1,'admin'),
-('TRN000010','ITM00001','IN',4.00,'Received via GRN #GRN000013','2025-08-13 21:25:03',1,'admin'),
-('TRN000011','ITM00003','IN',4.00,'Received via GRN #GRN000014','2025-08-14 19:49:44',1,'admin'),
-('TRN000012','ITM00003','IN',3.00,'Received via GRN #GRN000015','2025-08-14 19:58:11',1,'admin'),
-('TRN000013','ITM00001','IN',4.00,'Received via GRN #GRN000015','2025-08-14 19:58:11',1,'admin'),
-('TRN000014','ITM00001','OUT',3.00,'Sold via Order #ORD000001','2025-08-15 19:33:57',1,'admin'),
-('TRN000015','ITM00002','OUT',2.00,'Sold via Order #ORD000001','2025-08-15 19:33:57',1,'admin'),
-('TRN000016','ITM00002','OUT',20.00,'Sold via Order #ORD000002','2025-08-15 19:35:36',1,'admin'),
-('TRN000017','ITM00001','OUT',5.00,'Sold via Order #ORD000003','2025-08-15 20:21:20',1,'admin'),
-('TRN000018','ITM00001','OUT',4.00,'Sold via Order #ORD000005','2025-08-16 07:56:00',1,'admin'),
-('TRN000019','ITM00001','OUT',4.00,'Sold via Order #ORD000007','2025-08-16 08:27:52',1,'admin'),
-('TRN000020','ITM00002','IN',10.00,'Received via GRN #GRN000016','2025-08-16 08:28:53',1,'admin'),
-('TRN000021','ITM00002','OUT',1.00,'Sold via Order #ORD000008','2025-08-16 08:30:21',1,'admin'),
-('TRN000022','ITM00001','OUT',1.00,'Sold via Order #ORD000008','2025-08-16 08:30:21',1,'admin'),
-('TRN000023','ITM00001','OUT',1.00,'Sold via Order #ORD000009','2025-08-17 15:46:19',1,'admin');
+('TRN000001','ITM00003','IN',1.00,'Received via GRN #GRN000001','2025-08-25 08:09:30',1,'admin'),
+('TRN000002','ITM00004','IN',1.00,'Received via GRN #GRN000001','2025-08-25 08:09:30',1,'admin'),
+('TRN000003','ITM00001','IN',1.00,'Received via GRN #GRN000001','2025-08-25 08:09:30',1,'admin'),
+('TRN000004','ITM00002','IN',4.00,'Received via GRN #GRN000002','2025-08-25 08:10:44',1,'admin'),
+('TRN000005','ITM00002','OUT',1.00,'Sold via Order #ORD000001','2025-08-25 08:34:48',1,'admin'),
+('TRN000006','ITM00001','OUT',1.00,'Sold via Order #ORD000002','2025-08-25 08:36:36',1,'admin'),
+('TRN000007','ITM00002','OUT',1.00,'Sold via Order #ORD000003','2025-08-25 08:38:45',1,'admin'),
+('TRN000008','ITM00007','IN',1.00,'Received via GRN #GRN000003','2025-08-25 11:22:26',1,'admin'),
+('TRN000009','ITM00005','IN',2.00,'Received via GRN #GRN000004','2025-08-26 20:08:02',1,'admin'),
+('TRN000010','ITM00006','IN',1.00,'Received via GRN #GRN000004','2025-08-26 20:08:02',1,'admin'),
+('TRN000011','ITM00007','IN',1.00,'Received via GRN #GRN000005','2025-08-26 20:16:18',1,'admin'),
+('TRN000012','ITM00007','OUT',1.00,'Manually fulfilled from Pre-Book for Order #ORD000004','2025-08-26 20:18:14',1,'admin'),
+('TRN000013','ITM00007','OUT',1.00,'Manually fulfilled from Pre-Book for Order #ORD000009','2025-08-26 20:25:00',1,'admin'),
+('TRN000014','ITM00007','IN',1.00,'Stock returned from canceled Order #ORD000004','2025-08-26 21:15:26',1,'admin'),
+('TRN000015','ITM00007','OUT',1.00,'Stock reversed from canceled GRN #GRN000003','2025-08-26 21:55:49',1,'admin'),
+('TRN000036','ITM00008','IN',1.00,'Received via GRN #GRN000006','2025-09-01 11:06:09',1,'admin'),
+('TRN000037','ITM00009','IN',1.00,'Received via GRN #GRN000006','2025-09-01 11:06:09',1,'admin'),
+('TRN000038','ITM00008','OUT',1.00,'Fulfilled from stock received via PO #PUR000005','2025-09-01 11:06:09',1,'admin'),
+('TRN000039','ITM00009','OUT',1.00,'Fulfilled from stock received via PO #PUR000005','2025-09-01 11:06:09',1,'admin'),
+('TRN000063','ITM00009','OUT',1.00,'Stock reversed from canceled GRN #GRN000008','2025-09-05 15:32:13',1,'admin'),
+('TRN000069','ITM00009','OUT',2.00,'Stock reversed from canceled GRN #GRN000009','2025-09-06 11:03:04',1,'admin'),
+('TRN000070','ITM00008','OUT',4.00,'Stock reversed from canceled GRN #GRN000009','2025-09-06 11:03:04',1,'admin'),
+('TRN000071','ITM00008','IN',1.00,'Stock returned from canceled Order #ORD000005','2025-09-06 13:33:28',1,'admin'),
+('TRN000072','ITM00008','OUT',1.00,'Sold via Order #ORD000010','2025-09-06 13:37:12',1,'admin'),
+('TRN000073','ITM00009','IN',1.00,'Stock returned from canceled Order #ORD000008','2025-09-06 13:39:04',1,'admin'),
+('TRN000074','ITM00009','OUT',1.00,'Sold via Order #ORD000011','2025-09-06 13:41:19',1,'admin');
 /*!40000 ALTER TABLE `stock_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -693,14 +906,14 @@ CREATE TABLE `system_sequences` (
 LOCK TABLES `system_sequences` WRITE;
 /*!40000 ALTER TABLE `system_sequences` DISABLE KEYS */;
 INSERT INTO `system_sequences` VALUES
-('category_id','CAT',4,5,'Category IDs','2025-08-09 08:04:27','1'),
-('category_sub_id','SUB',3,5,'Sub-Category IDs','2025-08-09 09:19:17','1'),
-('customer_id','CUS',15,5,'Customer IDs','2025-08-09 19:55:50','1'),
-('grn_id','GRN',17,6,'Goods Received Note IDs','2025-08-16 08:28:53','1'),
-('item_id','ITM',4,5,'Item IDs','2025-08-14 19:49:07','1'),
-('order_id','ORD',10,6,'Sales Order IDs','2025-08-17 15:46:19','1'),
-('purchase_order_id','PUR',5,6,'Purchase Order IDs','2025-08-20 22:34:40','1'),
-('transaction_id','TRN',24,6,'Stock Transaction IDs','2025-08-17 15:46:19','1');
+('category_id','CAT',1,5,'Category IDs','2025-08-24 10:50:51','1'),
+('category_sub_id','SUB',1,5,'Sub-Category IDs','2025-08-24 17:33:45','1'),
+('customer_id','CUS',1,5,'Customer IDs','2025-08-24 17:44:03','1'),
+('grn_id','GRN',7,6,'Goods Received Note IDs','2025-09-06 13:24:34','1'),
+('item_id','ITM',1,5,'Item IDs','2025-08-24 17:38:03','1'),
+('order_id','ORD',12,6,'Sales Order IDs','2025-09-06 13:41:18','1'),
+('purchase_order_id','PUR',6,6,'Purchase Order IDs','2025-09-06 13:22:07','1'),
+('transaction_id','TRN',81,6,'Stock Transaction IDs','2025-09-06 14:23:16','1');
 /*!40000 ALTER TABLE `system_sequences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -720,7 +933,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=186 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -730,191 +943,126 @@ CREATE TABLE `user_login_audit` (
 LOCK TABLES `user_login_audit` WRITE;
 /*!40000 ALTER TABLE `user_login_audit` DISABLE KEYS */;
 INSERT INTO `user_login_audit` VALUES
-(1,1,'2025-07-10 02:39:34','10.0.7.122',0),
-(2,1,'2025-07-10 02:39:42','10.0.7.122',1),
-(3,1,'2025-07-10 02:41:54','10.0.7.122',0),
-(4,1,'2025-07-10 02:42:04','10.0.7.122',1),
-(5,1,'2025-07-10 16:58:40','10.0.6.100',1),
-(6,1,'2025-07-10 17:11:19','10.0.6.100',0),
-(7,1,'2025-07-10 17:11:27','10.0.6.100',1),
-(8,1,'2025-07-10 17:12:32','10.0.6.102',1),
-(9,1,'2025-07-10 18:43:57','10.0.6.100',1),
-(10,1,'2025-07-10 19:21:12','10.0.6.100',1),
-(11,1,'2025-07-10 19:22:33','10.0.6.100',1),
-(12,1,'2025-07-10 19:29:41','10.0.6.100',1),
-(13,1,'2025-07-10 19:32:29','10.0.6.100',1),
-(14,1,'2025-07-10 19:42:23','10.0.6.100',1),
-(15,1,'2025-07-10 20:13:10','10.0.6.100',1),
-(16,1,'2025-07-12 19:06:45','10.0.7.133',1),
-(17,1,'2025-07-12 19:41:42','10.0.7.123',1),
-(18,1,'2025-07-12 21:22:09','10.0.7.123',1),
-(19,1,'2025-07-12 22:53:30','10.0.7.123',1),
-(20,1,'2025-07-12 23:08:17','10.0.7.123',1),
-(21,1,'2025-07-12 23:08:21','10.0.7.123',1),
-(22,1,'2025-07-13 06:35:44','10.0.7.133',1),
-(23,1,'2025-07-13 06:44:25','10.0.7.133',1),
-(24,1,'2025-07-13 07:03:30','10.0.7.122',1),
-(25,1,'2025-07-13 07:04:53','10.0.7.122',1),
-(26,1,'2025-07-13 07:13:19','10.0.7.122',1),
-(27,1,'2025-07-13 08:12:22','10.0.7.122',1),
-(28,1,'2025-07-13 08:20:15','10.0.7.122',1),
-(29,1,'2025-07-13 08:29:40','10.0.7.122',1),
-(30,1,'2025-07-13 15:52:55','10.0.7.133',1),
-(31,1,'2025-07-13 16:14:37','10.0.7.122',1),
-(32,1,'2025-07-13 16:30:52','10.0.7.122',1),
-(33,1,'2025-07-14 20:20:08','10.0.7.133',1),
-(34,1,'2025-07-14 20:25:24','10.0.7.133',1),
-(35,1,'2025-07-14 21:53:36','10.0.7.124',1),
-(36,1,'2025-07-14 22:07:59','10.0.7.124',1),
-(37,1,'2025-07-14 22:09:11','10.0.7.124',1),
-(38,1,'2025-07-14 22:53:15','10.0.7.124',1),
-(39,1,'2025-07-14 23:04:13','10.0.7.124',1),
-(40,1,'2025-07-14 23:13:47','10.0.7.124',1),
-(41,1,'2025-07-14 23:23:44','10.0.7.124',1),
-(42,1,'2025-07-14 23:36:46','10.0.7.133',1),
-(43,1,'2025-07-14 23:59:09','10.0.7.133',1),
-(44,1,'2025-07-16 21:38:26','10.0.7.125',1),
-(45,1,'2025-07-16 21:39:31','10.0.7.125',1),
-(46,1,'2025-07-16 21:54:31','10.0.7.125',0),
-(47,1,'2025-07-16 21:54:40','10.0.7.125',1),
-(48,1,'2025-07-16 22:06:52','10.0.7.125',1),
-(49,1,'2025-07-16 22:09:30','10.0.7.125',1),
-(50,1,'2025-07-19 20:49:10','10.0.7.124',1),
-(51,1,'2025-07-19 20:50:10','10.0.7.124',1),
-(52,1,'2025-07-19 21:17:43','10.0.7.124',1),
-(53,1,'2025-07-19 21:22:28','10.0.7.124',1),
-(54,1,'2025-07-19 21:53:36','10.0.7.124',1),
-(55,1,'2025-07-19 21:56:25','10.0.7.124',1),
-(56,1,'2025-07-19 22:04:32','10.0.7.124',1),
-(57,1,'2025-07-19 22:42:58','10.0.7.124',1),
-(58,1,'2025-07-19 23:43:38','10.0.7.124',1),
-(59,1,'2025-07-20 00:21:25','10.0.7.124',1),
-(60,1,'2025-07-20 00:38:56','10.0.7.124',1),
-(61,1,'2025-07-20 01:22:46','10.0.7.124',1),
-(62,1,'2025-07-20 01:24:35','10.0.7.124',1),
-(63,1,'2025-07-20 09:32:22','10.0.7.133',1),
-(64,1,'2025-07-20 09:34:16','10.0.7.133',1),
-(65,1,'2025-07-20 09:37:29','10.0.7.133',1),
-(66,1,'2025-07-20 16:28:58','10.0.7.124',1),
-(67,1,'2025-07-20 17:04:11','10.0.7.124',1),
-(68,1,'2025-07-20 17:18:45','10.0.7.124',1),
-(69,1,'2025-07-20 17:32:37','10.0.7.124',1),
-(70,1,'2025-07-20 18:19:21','10.0.7.124',1),
-(71,1,'2025-07-20 18:33:07','10.0.7.124',1),
-(72,1,'2025-07-20 18:36:50','10.0.7.124',1),
-(73,1,'2025-07-20 18:41:24','10.0.7.124',1),
-(74,1,'2025-07-20 19:33:41','10.0.7.124',1),
-(75,1,'2025-07-20 23:17:54','10.0.7.125',1),
-(76,1,'2025-07-20 23:25:18','10.0.7.125',1),
-(77,1,'2025-07-22 19:55:14','10.0.6.102',1),
-(78,1,'2025-07-29 19:54:36','172.20.10.4',1),
-(79,1,'2025-08-06 02:12:19','172.20.10.4',1),
-(80,1,'2025-08-06 02:32:42','172.20.10.4',1),
-(81,1,'2025-08-06 02:38:12','172.20.10.4',1),
-(82,1,'2025-08-06 02:48:50','172.20.10.4',1),
-(83,1,'2025-08-06 02:50:59','172.20.10.4',1),
-(84,1,'2025-08-06 03:01:59','172.20.10.4',0),
-(85,1,'2025-08-06 03:02:04','172.20.10.4',1),
-(86,1,'2025-08-06 03:06:26','172.20.10.4',1),
-(87,1,'2025-08-06 03:14:45','172.20.10.4',1),
-(88,1,'2025-08-06 03:19:06','172.20.10.4',1),
-(89,1,'2025-08-08 23:08:01','172.20.10.5',0),
-(90,1,'2025-08-08 23:08:24','172.20.10.5',0),
-(91,1,'2025-08-08 23:08:30','172.20.10.5',1),
-(92,1,'2025-08-09 01:24:06','172.20.10.5',1),
-(93,1,'2025-08-09 02:55:11','172.20.10.5',1),
-(94,1,'2025-08-09 12:59:07','10.0.7.133',1),
-(95,1,'2025-08-09 14:34:10','10.0.7.129',1),
-(96,1,'2025-08-10 00:21:56','10.0.7.120',1),
-(97,1,'2025-08-10 00:23:45','10.0.7.120',1),
-(98,1,'2025-08-10 00:28:53','10.0.7.120',1),
-(99,1,'2025-08-10 00:34:55','10.0.7.120',1),
-(100,1,'2025-08-10 00:40:28','10.0.7.120',1),
-(101,1,'2025-08-10 01:11:43','10.0.7.120',1),
-(102,1,'2025-08-10 01:35:46','10.0.7.120',1),
-(103,1,'2025-08-10 16:01:04','10.0.7.120',1),
-(104,1,'2025-08-10 23:27:12','10.0.7.120',1),
-(105,1,'2025-08-10 23:55:42','10.0.7.120',1),
-(106,1,'2025-08-10 23:55:42','10.0.7.120',1),
-(107,1,'2025-08-11 00:36:08','10.0.7.120',1),
-(108,1,'2025-08-11 16:31:23','10.0.7.120',1),
-(109,1,'2025-08-13 00:45:31','172.20.10.3',1),
-(110,1,'2025-08-13 00:54:40','172.20.10.3',1),
-(111,1,'2025-08-13 03:32:30','172.20.10.3',1),
-(112,1,'2025-08-13 03:39:06','172.20.10.5',1),
-(113,1,'2025-08-13 03:49:16','172.20.10.5',1),
-(114,1,'2025-08-14 01:25:14','10.0.7.121',1),
-(115,1,'2025-08-14 01:47:37','10.0.7.121',1),
-(116,1,'2025-08-14 15:19:59','10.0.7.133',1),
-(117,1,'2025-08-15 01:18:22','172.20.10.5',1),
-(118,1,'2025-08-15 01:27:03','172.20.10.5',1),
-(119,1,'2025-08-15 03:36:53','172.20.10.5',1),
-(120,1,'2025-08-15 03:50:56','172.20.10.5',1),
-(121,1,'2025-08-15 22:56:08','172.20.10.5',1),
-(122,1,'2025-08-15 23:46:49','172.20.10.5',1),
-(123,1,'2025-08-16 00:40:13','172.20.10.5',1),
-(124,1,'2025-08-16 00:49:14','172.20.10.5',1),
-(125,1,'2025-08-16 00:56:32','172.20.10.5',1),
-(126,1,'2025-08-16 01:49:14','172.20.10.5',1),
-(127,1,'2025-08-16 03:55:33','172.20.10.5',1),
-(128,1,'2025-08-16 04:27:19','172.20.10.5',1),
-(129,1,'2025-08-16 04:28:20','172.20.10.5',1),
-(130,1,'2025-08-16 04:29:27','172.20.10.5',1),
-(131,1,'2025-08-16 04:52:40','172.20.10.5',1),
-(132,1,'2025-08-16 04:56:31','172.20.10.5',1),
-(133,1,'2025-08-16 07:35:03','172.20.10.5',1),
-(134,1,'2025-08-16 07:40:05','172.20.10.5',1),
-(135,1,'2025-08-16 07:48:19','172.20.10.5',1),
-(136,1,'2025-08-16 08:02:53','172.20.10.5',1),
-(137,1,'2025-08-16 08:07:00','172.20.10.5',1),
-(138,1,'2025-08-16 12:31:14','10.0.7.133',1),
-(139,1,'2025-08-16 12:36:07','10.0.7.133',1),
-(140,1,'2025-08-16 12:50:55','10.0.7.133',1),
-(141,1,'2025-08-16 13:11:57','10.0.7.129',1),
-(142,1,'2025-08-16 13:25:11','10.0.7.129',1),
-(143,1,'2025-08-17 00:42:02','172.20.10.5',1),
-(144,1,'2025-08-17 01:09:49','172.20.10.5',1),
-(145,1,'2025-08-17 01:45:45','172.20.10.5',1),
-(146,1,'2025-08-17 02:19:53','172.20.10.5',1),
-(147,1,'2025-08-17 03:11:10','172.20.10.5',1),
-(148,1,'2025-08-17 20:44:24','10.0.7.133',1),
-(149,1,'2025-08-17 20:54:19','10.0.7.129',1),
-(150,1,'2025-08-17 21:15:21','10.0.7.129',1),
-(151,1,'2025-08-17 21:55:35','10.0.7.129',1),
-(152,1,'2025-08-17 22:49:55','10.0.7.129',1),
-(153,1,'2025-08-17 23:01:17','10.0.7.129',1),
-(154,1,'2025-08-17 23:02:02','10.0.7.129',1),
-(155,1,'2025-08-17 23:09:36','10.0.7.129',1),
-(156,1,'2025-08-17 23:57:01','10.0.7.129',1),
-(157,1,'2025-08-18 00:00:22','10.0.7.129',1),
-(158,1,'2025-08-18 00:34:53','10.0.7.129',1),
-(159,1,'2025-08-18 01:02:13','10.0.7.129',1),
-(160,1,'2025-08-18 01:18:16','10.0.7.129',1),
-(161,1,'2025-08-18 01:33:56','10.0.7.129',1),
-(162,1,'2025-08-18 01:42:55','10.0.7.129',1),
-(163,1,'2025-08-18 23:32:23','10.0.7.133',1),
-(164,1,'2025-08-18 23:38:23','10.0.7.133',1),
-(165,1,'2025-08-18 23:45:34','10.0.7.133',1),
-(166,1,'2025-08-19 00:04:23','10.0.7.129',1),
-(167,1,'2025-08-19 00:06:18','10.0.7.129',1),
-(168,1,'2025-08-19 00:07:03','10.0.7.129',1),
-(169,1,'2025-08-19 00:09:09','10.0.7.129',1),
-(170,1,'2025-08-19 00:11:01','10.0.7.129',1),
-(171,1,'2025-08-19 11:59:32','10.0.7.133',1),
-(172,1,'2025-08-19 12:22:43','10.0.7.129',1),
-(173,1,'2025-08-19 12:52:56','10.0.7.129',1),
-(174,1,'2025-08-19 13:37:36','10.0.7.129',1),
-(175,1,'2025-08-19 14:44:25','10.0.7.129',1),
-(176,1,'2025-08-19 15:19:40','10.0.7.129',1),
-(177,1,'2025-08-19 16:08:20','10.0.7.129',1),
-(178,1,'2025-08-20 02:31:46','172.20.10.5',1),
-(179,1,'2025-08-20 02:31:49','172.20.10.5',1),
-(180,1,'2025-08-20 02:47:25','172.20.10.5',1),
-(181,1,'2025-08-21 01:30:24','172.20.10.5',1),
-(182,1,'2025-08-21 02:21:47','172.20.10.5',1),
-(183,1,'2025-08-22 02:14:52','172.20.10.5',1),
-(184,1,'2025-08-23 13:22:12','10.0.7.133',1),
-(185,1,'2025-08-23 14:03:02','10.0.7.121',1);
+(1,1,'2025-08-25 12:17:30','10.0.7.121',1),
+(2,1,'2025-08-25 13:32:13','10.0.7.121',1),
+(3,1,'2025-08-25 13:38:58','10.0.7.121',1),
+(4,1,'2025-08-25 15:36:06','10.0.7.121',1),
+(5,1,'2025-08-25 16:51:02','10.0.7.121',1),
+(6,1,'2025-08-25 17:48:49','10.0.7.121',1),
+(7,1,'2025-08-25 18:34:40','10.0.7.121',1),
+(8,1,'2025-08-25 18:35:40','10.0.7.121',1),
+(9,1,'2025-08-25 18:43:34','10.0.7.121',1),
+(10,1,'2025-08-25 18:44:11','10.0.7.121',1),
+(11,1,'2025-08-25 19:08:52','10.0.7.121',1),
+(12,1,'2025-08-25 22:56:49','10.0.7.121',1),
+(13,1,'2025-08-25 23:27:25','10.0.7.121',1),
+(14,1,'2025-08-25 23:35:39','10.0.7.121',1),
+(15,1,'2025-08-25 23:49:18','10.0.7.121',1),
+(16,1,'2025-08-26 00:06:04','10.0.7.121',1),
+(17,1,'2025-08-26 00:14:34','10.0.7.121',1),
+(18,1,'2025-08-26 00:22:12','10.0.7.121',1),
+(19,1,'2025-08-27 01:36:42','172.20.10.5',1),
+(20,1,'2025-08-27 01:36:44','172.20.10.5',1),
+(21,1,'2025-08-27 02:44:42','172.20.10.5',1),
+(22,1,'2025-08-27 03:10:09','172.20.10.5',1),
+(23,1,'2025-08-27 03:25:31','172.20.10.5',1),
+(24,1,'2025-08-27 03:51:07','172.20.10.5',1),
+(25,1,'2025-08-27 04:26:15','172.20.10.5',1),
+(26,1,'2025-08-27 04:30:34','172.20.10.5',1),
+(27,1,'2025-08-27 04:41:02','172.20.10.5',1),
+(28,1,'2025-08-28 00:41:21','172.20.10.5',0),
+(29,1,'2025-08-28 00:41:25','172.20.10.5',1),
+(30,1,'2025-08-28 01:17:25','172.20.10.5',1),
+(31,1,'2025-08-28 01:22:38','172.20.10.5',1),
+(32,1,'2025-08-28 03:43:17','172.20.10.5',1),
+(33,1,'2025-08-28 04:08:29','172.20.10.5',1),
+(34,1,'2025-08-28 13:08:31','10.0.7.133',1),
+(35,1,'2025-08-28 13:30:45','10.0.7.121',1),
+(36,1,'2025-08-28 13:43:05','10.0.7.121',1),
+(37,1,'2025-08-28 15:33:40','10.0.7.133',1),
+(38,1,'2025-08-28 15:42:58','10.0.7.133',1),
+(39,1,'2025-08-28 15:45:09','10.0.7.133',1),
+(40,1,'2025-08-28 16:08:14','10.0.7.121',1),
+(41,1,'2025-08-28 23:43:32','172.20.10.5',1),
+(42,1,'2025-08-28 23:54:07','172.20.10.5',1),
+(43,1,'2025-08-29 01:22:26','172.20.10.5',1),
+(44,1,'2025-08-29 01:32:24','172.20.10.5',1),
+(45,1,'2025-08-29 07:11:54','172.20.10.5',1),
+(46,1,'2025-08-30 02:48:19','172.20.10.5',1),
+(47,1,'2025-08-30 03:07:32','172.20.10.5',1),
+(48,1,'2025-08-30 03:29:22','172.20.10.5',1),
+(49,1,'2025-08-30 03:47:44','172.20.10.5',1),
+(50,1,'2025-08-30 04:21:56','172.20.10.5',1),
+(51,1,'2025-08-30 04:22:29','172.20.10.5',1),
+(52,1,'2025-08-30 04:29:40','172.20.10.5',1),
+(53,1,'2025-08-30 12:50:50','10.0.7.133',1),
+(54,1,'2025-08-30 15:43:45','10.0.7.133',1),
+(55,1,'2025-08-30 22:45:03','172.20.10.5',1),
+(56,1,'2025-08-30 23:23:12','172.20.10.5',1),
+(57,1,'2025-08-31 00:21:37','172.20.10.5',1),
+(58,1,'2025-08-31 02:46:00','172.20.10.5',1),
+(59,1,'2025-08-31 03:34:40','172.20.10.5',1),
+(60,1,'2025-08-31 12:43:32','10.0.7.130',1),
+(61,1,'2025-08-31 14:54:06','10.0.7.130',1),
+(62,1,'2025-08-31 19:34:13','10.0.7.130',1),
+(63,1,'2025-08-31 21:06:09','10.0.7.133',1),
+(64,1,'2025-08-31 22:45:03','10.0.7.130',1),
+(65,1,'2025-09-01 11:54:15','10.0.7.130',1),
+(66,1,'2025-09-01 13:54:57','10.0.7.133',1),
+(67,1,'2025-09-01 14:29:21','10.0.7.130',1),
+(68,1,'2025-09-01 15:58:27','10.0.7.130',1),
+(69,1,'2025-09-01 16:32:06','10.0.7.130',1),
+(70,1,'2025-09-01 21:44:01','10.0.7.133',1),
+(71,1,'2025-09-02 16:31:06','172.20.10.5',1),
+(72,1,'2025-09-02 19:45:18','172.20.10.5',1),
+(73,1,'2025-09-02 20:02:53','172.20.10.5',1),
+(74,1,'2025-09-02 21:41:07','172.20.10.5',1),
+(75,1,'2025-09-02 21:52:44','172.20.10.5',1),
+(76,1,'2025-09-02 22:06:34','172.20.10.5',1),
+(77,1,'2025-09-03 11:12:32','10.0.7.130',1),
+(78,1,'2025-09-03 11:23:12','10.0.7.133',1),
+(79,1,'2025-09-03 11:26:39','10.0.7.133',1),
+(80,1,'2025-09-03 11:31:42','10.0.7.133',1),
+(81,1,'2025-09-04 12:54:16','10.0.7.129',1),
+(82,1,'2025-09-04 23:01:26','10.0.7.130',1),
+(83,1,'2025-09-04 23:08:57','10.0.7.130',1),
+(84,1,'2025-09-04 23:21:40','10.0.7.130',1),
+(85,1,'2025-09-04 23:23:24','10.0.7.130',1),
+(86,1,'2025-09-04 23:34:35','10.0.7.130',1),
+(87,1,'2025-09-04 23:39:47','10.0.7.130',1),
+(88,1,'2025-09-04 23:49:49','10.0.7.130',1),
+(89,1,'2025-09-04 23:59:48','10.0.7.130',1),
+(90,1,'2025-09-05 00:11:03','10.0.7.130',1),
+(91,1,'2025-09-05 00:17:10','10.0.7.130',1),
+(92,1,'2025-09-05 00:25:23','10.0.7.130',1),
+(93,1,'2025-09-05 00:43:47','10.0.7.130',1),
+(94,1,'2025-09-05 00:50:35','10.0.7.130',1),
+(95,1,'2025-09-05 00:55:32','10.0.7.130',1),
+(96,1,'2025-09-05 01:00:23','10.0.7.130',1),
+(97,1,'2025-09-05 01:08:16','10.0.7.130',1),
+(98,1,'2025-09-05 01:19:46','10.0.7.130',1),
+(99,1,'2025-09-05 01:28:58','10.0.7.130',1),
+(100,1,'2025-09-05 02:01:37','10.0.7.130',1),
+(101,1,'2025-09-05 02:05:47','10.0.7.130',1),
+(102,1,'2025-09-05 14:00:31','172.20.10.5',1),
+(103,1,'2025-09-05 14:25:25','172.20.10.5',1),
+(104,1,'2025-09-05 15:46:01','172.20.10.5',1),
+(105,1,'2025-09-05 16:28:59','172.20.10.5',1),
+(106,1,'2025-09-05 19:00:10','172.20.10.5',1),
+(107,1,'2025-09-05 19:30:09','172.20.10.5',1),
+(108,1,'2025-09-05 19:54:02','172.20.10.5',1),
+(109,1,'2025-09-05 20:24:09','172.20.10.5',1),
+(110,1,'2025-09-05 20:59:44','172.20.10.5',1),
+(111,1,'2025-09-05 22:06:57','172.20.10.5',1),
+(112,1,'2025-09-06 08:29:06','10.0.7.133',1),
+(113,1,'2025-09-06 09:54:08','10.0.7.121',1),
+(114,1,'2025-09-06 10:25:19','10.0.7.121',1),
+(115,1,'2025-09-06 10:29:12','10.0.7.121',1),
+(116,1,'2025-09-06 14:35:16','172.20.10.5',1),
+(117,1,'2025-09-06 15:09:35','172.20.10.5',1),
+(118,1,'2025-09-06 16:02:56','172.20.10.5',1),
+(119,1,'2025-09-06 16:12:37','172.20.10.5',1),
+(120,1,'2025-09-06 16:32:48','172.20.10.5',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -979,7 +1127,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-08-23 14:03:02','2025-08-23 08:33:02',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-09-06 16:32:48','2025-09-06 11:02:48',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -3138,4 +3286,4 @@ USE `mysql`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-08-23 23:53:02
+-- Dump completed on 2025-09-07  6:51:43

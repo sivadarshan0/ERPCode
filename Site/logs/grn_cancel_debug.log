@@ -1,0 +1,64 @@
+POST DATA: Array
+(
+    [grn_id] => GRN000009
+    [csrf_token] => db4966534ee0686de110e06491927ffbb40c9cb9dd7b3d67cbeae06940795fb4
+)
+
+SESSION DATA: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [login_time] => 1757154776
+    [last_activity] => 1757154785
+    [ip_address] => 172.20.10.5
+    [user_agent] => Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0
+    [csrf_token] => db4966534ee0686de110e06491927ffbb40c9cb9dd7b3d67cbeae06940795fb4
+)
+POST DATA: Array
+(
+    [grn_id] => GRN000009
+    [csrf_token] => db4966534ee0686de110e06491927ffbb40c9cb9dd7b3d67cbeae06940795fb4
+)
+
+SESSION DATA: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [login_time] => 1757154776
+    [last_activity] => 1757154785
+    [ip_address] => 172.20.10.5
+    [user_agent] => Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0
+    [csrf_token] => db4966534ee0686de110e06491927ffbb40c9cb9dd7b3d67cbeae06940795fb4
+)
+POST DATA: Array
+(
+    [grn_id] => GRN000009
+    [csrf_token] => acbb5eabbbf1614be2a0acfa33cf71ee1c7c00635371e9fcc5142b3b906a1095
+)
+
+SESSION DATA: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [login_time] => 1757155357
+    [last_activity] => 1757155369
+    [ip_address] => 172.20.10.5
+    [user_agent] => Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0
+    [csrf_token] => acbb5eabbbf1614be2a0acfa33cf71ee1c7c00635371e9fcc5142b3b906a1095
+)
+POST DATA: Array
+(
+    [grn_id] => GRN000009
+    [csrf_token] => 944879d34f48b27b74f404f232551f1b501dbc71607fd0259f9d837f18f35271
+)
+
+SESSION DATA: Array
+(
+    [user_id] => 1
+    [username] => admin
+    [login_time] => 1757156568
+    [last_activity] => 1757156579
+    [ip_address] => 172.20.10.5
+    [user_agent] => Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0
+    [csrf_token] => 944879d34f48b27b74f404f232551f1b501dbc71607fd0259f9d837f18f35271
+)
