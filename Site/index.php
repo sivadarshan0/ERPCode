@@ -140,8 +140,8 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-body">
                             <h5 class="card-title">Financial Management</h5>
                             <div class="d-grid gap-2">
-                                <a href="/modules/accounts/list_accounts.php" class="btn btn-success">
-                                    <i class="bi bi-journal-text"></i> Chart of Accounts
+                                <a href="/modules/accounts/report_trial_balance.php" class="btn btn-success">
+                                    <i class="bi bi-journal-text"></i> Trail Balance
                                 </a>
                                 <a href="/modules/accounts/entry_transaction.php" class="btn btn-primary">
                                     <i class="bi bi-pencil-square"></i> Journal Entry
