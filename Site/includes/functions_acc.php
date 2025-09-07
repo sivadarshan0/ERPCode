@@ -774,3 +774,89 @@ function get_trial_balance($end_date) {
     ];
 }
 // ----------------------------------End-----------------------------------------
+
+/**
+ * Retrieves a detailed transaction ledger for a specific account within a date range.
+ * It calculates an opening balance and a running balance for each transaction.
+ *
+ * @param int $account_id The ID of the account to fetch the ledger for.
+ * @param string $start_date The start of the date range (Y-m-d).
+ * @param string $end_date The end of the date range (Y-m-d).
+ * @return array An array containing the opening balance, a list of transactions with running balances, and the closing balance.
+ * @throws Exception On database or validation errors.
+ */
+function get_account_ledger($account_id, $start_date, $end_date) {
+    $db = db();
+    if (!$db) {
+        throw new Exception("Database connection failed.");
+    }
+    if (empty($account_id) || empty($start_date) || empty($end_date)) {
+        throw new Exception("Account ID, start date, and end date are required.");
+    }
+
+    // --- Step 1: Get the account's normal balance type ---
+    $stmt_account = $db->prepare("SELECT normal_balance FROM acc_chartofaccounts WHERE account_id = ?");
+    if (!$stmt_account) throw new Exception("DB prepare failed: " . $db->error);
+    $stmt_account->bind_param("i", $account_id);
+    $stmt_account->execute();
+    $account_info = $stmt_account->get_result()->fetch_assoc();
+    if (!$account_info) {
+        throw new Exception("Account not found.");
+    }
+    $normal_balance_type = $account_info['normal_balance'];
+
+    // --- Step 2: Calculate the Opening Balance (balance before the start_date) ---
+    $stmt_opening = $db->prepare("
+        SELECT 
+            COALESCE(SUM(debit_amount), 0) as total_debits,
+            COALESCE(SUM(credit_amount), 0) as total_credits
+        FROM acc_transactions 
+        WHERE account_id = ? 
+          AND status = 'Posted' 
+          AND transaction_date < ?
+    ");
+    if (!$stmt_opening) throw new Exception("DB prepare failed: " . $db->error);
+    
+    $start_date_for_query = $start_date . ' 00:00:00';
+    $stmt_opening->bind_param("is", $account_id, $start_date_for_query);
+    $stmt_opening->execute();
+    $opening_totals = $stmt_opening->get_result()->fetch_assoc();
+    
+    $opening_balance = ($normal_balance_type === 'debit') 
+        ? $opening_totals['total_debits'] - $opening_totals['total_credits'] 
+        : $opening_totals['total_credits'] - $opening_totals['total_debits'];
+
+    // --- Step 3: Fetch all transactions within the specified date range ---
+    $stmt_transactions = $db->prepare("
+        SELECT transaction_date, description, source_type, source_id, debit_amount, credit_amount
+        FROM acc_transactions
+        WHERE account_id = ?
+          AND status = 'Posted'
+          AND transaction_date BETWEEN ? AND ?
+        ORDER BY transaction_date ASC, transaction_id ASC
+    ");
+    if (!$stmt_transactions) throw new Exception("DB prepare failed: " . $db->error);
+
+    $end_date_for_query = $end_date . ' 23:59:59';
+    $stmt_transactions->bind_param("iss", $account_id, $start_date_for_query, $end_date_for_query);
+    $stmt_transactions->execute();
+    $transactions = $stmt_transactions->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    // --- Step 4: Calculate the running balance for each transaction in PHP ---
+    $running_balance = $opening_balance;
+    foreach ($transactions as $key => $transaction) {
+        if ($normal_balance_type === 'debit') {
+            $running_balance += ($transaction['debit_amount'] ?? 0) - ($transaction['credit_amount'] ?? 0);
+        } else { // credit
+            $running_balance += ($transaction['credit_amount'] ?? 0) - ($transaction['debit_amount'] ?? 0);
+        }
+        $transactions[$key]['running_balance'] = $running_balance;
+    }
+    
+    return [
+        'opening_balance' => $opening_balance,
+        'transactions' => $transactions,
+        'closing_balance' => $running_balance // The final running balance is the closing balance
+    ];
+}
+// ----------------------------------End-----------------------------------------

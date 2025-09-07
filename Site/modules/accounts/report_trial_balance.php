@@ -1,5 +1,6 @@
 <?php
 // File: /modules/accounts/report_trial_balance.php
+// FINAL version with links to the Account Ledger report.
 
 session_start();
 error_reporting(E_ALL);
@@ -81,7 +82,7 @@ require_once __DIR__ . '/../../includes/header.php';
                 <div class="row">
                     <!-- Debit Column -->
                     <div class="col-md-6">
-                        <table class="table table-sm">
+                        <table class="table table-sm table-hover">
                             <thead>
                                 <tr>
                                     <th>Account</th>
@@ -91,7 +92,12 @@ require_once __DIR__ . '/../../includes/header.php';
                             <tbody>
                                 <?php foreach ($debit_accounts as $account): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($account['account_name']) ?></td>
+                                    <td>
+                                        <!-- THIS IS THE NEW LINK -->
+                                        <a href="report_account_ledger.php?account_id=<?= $account['account_id'] ?>&end_date=<?= htmlspecialchars($end_date) ?>">
+                                            <?= htmlspecialchars($account['account_name']) ?>
+                                        </a>
+                                    </td>
                                     <td class="text-end"><?= number_format($account['balance'], 2) ?></td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -101,7 +107,7 @@ require_once __DIR__ . '/../../includes/header.php';
 
                     <!-- Credit Column -->
                     <div class="col-md-6">
-                        <table class="table table-sm">
+                        <table class="table table-sm table-hover">
                              <thead>
                                 <tr>
                                     <th>Account</th>
@@ -111,7 +117,12 @@ require_once __DIR__ . '/../../includes/header.php';
                             <tbody>
                                 <?php foreach ($credit_accounts as $account): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($account['account_name']) ?></td>
+                                    <td>
+                                        <!-- THIS IS THE NEW LINK -->
+                                        <a href="report_account_ledger.php?account_id=<?= $account['account_id'] ?>&end_date=<?= htmlspecialchars($end_date) ?>">
+                                            <?= htmlspecialchars($account['account_name']) ?>
+                                        </a>
+                                    </td>
                                     <td class="text-end"><?= number_format($account['balance'], 2) ?></td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -138,7 +149,6 @@ require_once __DIR__ . '/../../includes/header.php';
                 <!-- Balance Check -->
                 <div class="text-center mt-3">
                     <?php
-                    // Use a small tolerance for float comparison
                     $is_balanced = abs($data['total_debits'] - $data['total_credits']) < 0.001;
                     ?>
                     <span class="badge fs-6 <?= $is_balanced ? 'bg-success' : 'bg-danger' ?>">
