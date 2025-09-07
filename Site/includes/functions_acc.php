@@ -686,3 +686,91 @@ function process_po_payment_and_costs($po_id, $total_paid_lkr, $paid_by_account_
     }
 }
 // ----------------------------------End-----------------------------------------
+
+/**
+ * Calculates the trial balance for all active accounts as of a specific date.
+ *
+ * @param string $end_date The date (Y-m-d) to calculate the balance up to.
+ * @return array An array containing the list of accounts with their balances, and the total debits and credits.
+ */
+function get_trial_balance($end_date) {
+    $db = db();
+    if (!$db) {
+        throw new Exception("Database connection failed.");
+    }
+
+    // This single, powerful query calculates everything we need.
+    $sql = "
+        SELECT 
+            ca.account_id,
+            ca.account_name,
+            ca.account_type,
+            ca.normal_balance,
+            COALESCE(SUM(t.debit_amount), 0) AS total_debits,
+            COALESCE(SUM(t.credit_amount), 0) AS total_credits
+        FROM 
+            acc_chartofaccounts ca
+        LEFT JOIN 
+            acc_transactions t ON ca.account_id = t.account_id 
+                               AND t.status = 'Posted' 
+                               AND t.transaction_date <= ?
+        WHERE 
+            ca.is_active = 1
+        GROUP BY 
+            ca.account_id, ca.account_name, ca.account_type, ca.normal_balance
+        ORDER BY 
+            ca.account_type, ca.account_name
+    ";
+
+    $stmt = $db->prepare($sql);
+    if (!$stmt) {
+        throw new Exception("Database prepare failed: " . $db->error);
+    }
+
+    // Append the time to the end_date to include all transactions on that day.
+    $end_date_with_time = $end_date . ' 23:59:59';
+    $stmt->bind_param("s", $end_date_with_time);
+    $stmt->execute();
+    
+    $result = $stmt->get_result();
+    $accounts_data = $result->fetch_all(MYSQLI_ASSOC);
+
+    $trial_balance = [];
+    $total_debit_balance = 0;
+    $total_credit_balance = 0;
+
+    foreach ($accounts_data as $account) {
+        $balance = 0;
+        if ($account['normal_balance'] === 'debit') {
+            $balance = $account['total_debits'] - $account['total_credits'];
+            if ($balance > 0) {
+                $total_debit_balance += $balance;
+            } else {
+                // If a debit account has a credit balance, it's unusual but possible.
+                // We will still add it to the credit side for balancing purposes.
+                $total_credit_balance += abs($balance);
+            }
+        } else { // normal_balance is 'credit'
+            $balance = $account['total_credits'] - $account['total_debits'];
+            if ($balance > 0) {
+                $total_credit_balance += $balance;
+            } else {
+                // If a credit account has a debit balance.
+                $total_debit_balance += abs($balance);
+            }
+        }
+
+        // Only include accounts with activity or a non-zero balance
+        if ($account['total_debits'] > 0 || $account['total_credits'] > 0) {
+            $account['balance'] = $balance;
+            $trial_balance[] = $account;
+        }
+    }
+
+    return [
+        'accounts' => $trial_balance,
+        'total_debits' => $total_debit_balance,
+        'total_credits' => $total_credit_balance
+    ];
+}
+// ----------------------------------End-----------------------------------------
