@@ -297,11 +297,55 @@ function initAccountLedger() {
 }
 // ──────────────────────────────────────── End ─────────────────────────────────────────
 
+// -----------------------------------------
+// ----- Journal Entry Page Handler -----
+// -----------------------------------------
+
+function initJournalEntry() {
+    const form = document.getElementById('journalEntryForm');
+    if (!form) return;
+
+    const transactionDateInput = document.getElementById('transaction_date');
+    const financialYearInput = document.getElementById('financial_year');
+
+    const updateFinancialYear = () => {
+        const dateValue = transactionDateInput.value;
+        if (!dateValue) return;
+
+        const date = new Date(dateValue);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1; // getMonth() is 0-indexed, so add 1
+
+        let financialYear;
+        if (month >= 4) {
+            // Financial year starts in the current year (e.g., April 2025 is in FY 2025-26)
+            const nextYear = String(year + 1).slice(-2); // Get last two digits of next year
+            financialYear = `${year}-${nextYear}`;
+        } else {
+            // Financial year started in the previous year (e.g., Feb 2026 is in FY 2025-26)
+            const prevYear = year - 1;
+            const currentYearShort = String(year).slice(-2);
+            financialYear = `${prevYear}-${currentYearShort}`;
+        }
+        
+        financialYearInput.value = financialYear;
+    };
+
+    // Add event listener to update the FY whenever the date is changed
+    transactionDateInput.addEventListener('change', updateFinancialYear);
+
+    // Run it once on page load to set the initial value
+    updateFinancialYear();
+}
+// ──────────────────────────────────────── End ─────────────────────────────────────────
+
 // ──────────────────── DOM Ready ───────────────────────
 document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('journalEntryForm')) { initJournalEntry(); } // Call the journal entry page handler
     if (document.getElementById('accountSearchForm')) { initAccountList(); } // Call the list page handler
     if (document.getElementById('accountForm')) { initAccountEntry(); } // Call the entry page handler
     if (document.getElementById('transactionSearchForm')) { initTransactionList(); initTransactionCancel(); } // Transection handler
     if (document.getElementById('ledgerReportForm')) { initAccountLedger(); } // Financial year heandler
+
 });
 // ───────────────────────── End ──────────────────────────

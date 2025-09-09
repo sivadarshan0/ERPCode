@@ -1,6 +1,6 @@
 <?php
 // File: /modules/accounts/entry_transaction.php
-// FINAL version with all fields and buttons.
+// FINAL version with automated Financial Year.
 
 session_start();
 $custom_js = 'app_acc';
@@ -47,7 +47,7 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-// Fetch all active accounts and sort them alphabetically for the dropdowns
+// Fetch all active accounts for the dropdowns
 $db = db();
 $all_accounts_query = $db->query("SELECT * FROM acc_chartofaccounts WHERE is_active = 1 ORDER BY account_name ASC");
 $all_accounts = $all_accounts_query->fetch_all(MYSQLI_ASSOC);
@@ -62,14 +62,12 @@ require_once __DIR__ . '/../../includes/header.php';
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h2 class="h2">New Journal Entry</h2>
-                <!-- THIS IS THE NEW BUTTON BLOCK -->
                 <div class="btn-toolbar mb-2 mb-md-0">
                     <a href="/modules/accounts/list_accounts.php" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-list-columns"></i>
                         View Chart of Accounts
                     </a>
                 </div>
-                <!-- END OF NEW BUTTON BLOCK -->
             </div>
 
             <?php if ($message): ?>
@@ -89,6 +87,7 @@ require_once __DIR__ . '/../../includes/header.php';
                             </div>
                             <div class="col-md-3">
                                 <label for="financial_year" class="form-label">Financial Year *</label>
+                                <!-- The value is now set automatically by app.js -->
                                 <input type="text" class="form-control" id="financial_year" name="financial_year" placeholder="e.g., 2024-2025" required>
                             </div>
                             <div class="col-md-6">
