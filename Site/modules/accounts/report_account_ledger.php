@@ -1,5 +1,6 @@
 <?php
 // File: /modules/accounts/report_account_ledger.php
+// FINAL version with clickable links in the Source column.
 
 session_start();
 error_reporting(E_ALL);
@@ -18,9 +19,7 @@ $all_accounts_query = $db->query("SELECT account_id, account_name FROM acc_chart
 $all_accounts = $all_accounts_query->fetch_all(MYSQLI_ASSOC);
 
 // --- Determine Filter Values ---
-// Default to the first account if none is selected
 $account_id = $_GET['account_id'] ?? ($all_accounts[0]['account_id'] ?? 0); 
-// Default to the last 30 days
 $start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
@@ -31,7 +30,6 @@ $error_message = '';
 if ($account_id) {
     try {
         $ledger_data = get_account_ledger($account_id, $start_date, $end_date);
-        // Get the name of the selected account for the header
         foreach($all_accounts as $acc) {
             if ($acc['account_id'] == $account_id) {
                 $account_name = $acc['account_name'];
@@ -96,7 +94,7 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-sm table-striped">
+                    <table class="table table-sm table-striped table-hover">
                         <thead class="table-light">
                             <tr>
                                 <th>Date</th>
@@ -125,10 +123,16 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <td><?= htmlspecialchars(date("d-m-Y", strtotime($txn['transaction_date']))) ?></td>
                                     <td><?= htmlspecialchars($txn['description']) ?></td>
                                     <td>
-                                        <?php if ($txn['source_type'] !== 'manual_entry' && $txn['source_id']): ?>
-                                            <a href="#"><?= htmlspecialchars($txn['source_id']) ?></a>
+                                        <?php 
+                                        // THIS IS THE NEW LOGIC BLOCK
+                                        $url = get_source_document_url($txn['source_type'], $txn['source_id']);
+                                        if ($url): 
+                                        ?>
+                                            <a href="<?= htmlspecialchars($url) ?>" target="_blank">
+                                                <?= htmlspecialchars($txn['source_id']) ?>
+                                            </a>
                                         <?php else: ?>
-                                            Manual
+                                            Manual Entry
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-end text-success"><?= $txn['debit_amount'] ? number_format($txn['debit_amount'], 2) : '' ?></td>

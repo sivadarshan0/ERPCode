@@ -860,3 +860,50 @@ function get_account_ledger($account_id, $start_date, $end_date) {
     ];
 }
 // ----------------------------------End-----------------------------------------
+
+/**
+ * Generates a URL to the source document page based on its type and ID.
+ * This is a helper function to create clickable links in reports.
+ *
+ * @param string $source_type The type of the source document (e.g., 'sales_order', 'purchase_order').
+ * @param string $source_id The unique ID of the source document.
+ * @return string|null The URL to the document, or null if the type is not linkable.
+ */
+function get_source_document_url($source_type, $source_id) {
+    if (empty($source_id) || empty($source_type)) {
+        return null;
+    }
+
+    $url = null;
+
+    switch ($source_type) {
+        case 'sales_order':
+            // Assuming your sales order view page is entry_order.php in the sales module
+            $url = "/modules/sales/entry_order.php?order_id=" . urlencode($source_id);
+            break;
+
+        case 'purchase_order':
+            // Assuming your purchase order view page is entry_purchase_order.php in the purchase module
+            $url = "/modules/purchase/entry_purchase_order.php?purchase_order_id=" . urlencode($source_id);
+            break;
+        
+        case 'grn':
+             // Assuming your GRN view page is entry_grn.php in the purchase module
+            $url = "/modules/purchase/entry_grn.php?grn_id=" . urlencode($source_id);
+            break;
+
+        // Add other cases here for future document types, e.g., 'expense_claim', 'invoice', etc.
+
+        case 'manual_entry':
+        default:
+            // For manual entries or unknown types, we don't provide a link.
+            $url = null;
+            break;
+    }
+
+    return $url;
+}
+// ----------------------------------End-----------------------------------------
+
+
+// ----------------------------------End-----------------------------------------
