@@ -1,6 +1,6 @@
 <?php
 // File: /modules/accounts/report_account_ledger.php
-// FINAL version with dynamic Financial Year dropdown and editable date range.
+// FINAL version with corrected filter logic for Financial Year priority.
 
 session_start();
 error_reporting(E_ALL);
@@ -18,7 +18,6 @@ $db = db();
 $all_accounts_query = $db->query("SELECT account_id, account_name FROM acc_chartofaccounts WHERE is_active = 1 ORDER BY account_name ASC");
 $all_accounts = $all_accounts_query->fetch_all(MYSQLI_ASSOC);
 
-// Fetch all unique financial years that have transactions
 $fy_query = $db->query("SELECT DISTINCT financial_year FROM acc_transactions ORDER BY financial_year DESC");
 $financial_years = $fy_query->fetch_all(MYSQLI_ASSOC);
 
@@ -26,20 +25,20 @@ $financial_years = $fy_query->fetch_all(MYSQLI_ASSOC);
 $account_id = $_GET['account_id'] ?? ($all_accounts[0]['account_id'] ?? 0); 
 $selected_fy = $_GET['financial_year'] ?? '';
 
-// Smart Date Logic
-if (!empty($_GET['start_date']) && !empty($_GET['end_date'])) {
-    // Priority 1: Use custom dates if provided
-    $start_date = $_GET['start_date'];
-    $end_date = $_GET['end_date'];
-    $selected_fy = 'custom'; // Set dropdown to 'Custom'
-} elseif (!empty($selected_fy) && $selected_fy !== 'custom') {
-    // Priority 2: Calculate dates from selected financial year
+// --- CORRECTED: Smart Date Logic with Financial Year as Priority ---
+if (!empty($selected_fy) && $selected_fy !== 'custom') {
+    // Priority 1: A specific financial year was chosen. Calculate the dates.
     $startYear = substr($selected_fy, 0, 4);
-    $endYear = substr($selected_fy, 0, 2) . substr($selected_fy, 5, 2);
+    $endYear = intval($startYear) + 1;
     $start_date = $startYear . '-04-01';
     $end_date = $endYear . '-03-31';
+} elseif (!empty($_GET['start_date']) && !empty($_GET['end_date'])) {
+    // Priority 2: Custom dates were explicitly provided.
+    $start_date = $_GET['start_date'];
+    $end_date = $_GET['end_date'];
+    $selected_fy = 'custom'; // Ensure dropdown shows 'Custom Range'
 } else {
-    // Priority 3: Default to the current financial year
+    // Priority 3: Default to the current financial year on first load.
     $current_month = date('n');
     $current_year = date('Y');
     if ($current_month >= 4) {
@@ -52,6 +51,7 @@ if (!empty($_GET['start_date']) && !empty($_GET['end_date'])) {
         $selected_fy = ($current_year - 1) . '-' . substr($current_year, 2, 2);
     }
 }
+
 
 $ledger_data = [];
 $account_name = 'N/A';
@@ -80,7 +80,6 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Account Ledger</h2>
         <div class="btn-toolbar">
-            <!-- NEW: Trial Balance Shortcut Button -->
             <a href="/modules/accounts/report_trial_balance.php" class="btn btn-outline-secondary me-2">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Trial Balance
             </a>
@@ -105,7 +104,6 @@ require_once __DIR__ . '/../../includes/header.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <!-- NEW: Financial Year Dropdown -->
                 <div class="col-md-3">
                     <label for="financial_year" class="form-label">Financial Year:</label>
                     <select class="form-select" id="financial_year" name="financial_year">
