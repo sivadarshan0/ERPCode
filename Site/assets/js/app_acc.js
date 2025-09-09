@@ -319,7 +319,7 @@ function initJournalEntry() {
         let financialYear;
         if (month >= 4) {
             // Financial year starts in the current year (e.g., April 2025 is in FY 2025-26)
-            const nextYear = String(year + 1).slice(-2); // Get last two digits of next year
+            const nextYear = year + 1;
             financialYear = `${year}-${nextYear}`;
         } else {
             // Financial year started in the previous year (e.g., Feb 2026 is in FY 2025-26)
