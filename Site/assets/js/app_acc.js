@@ -206,7 +206,6 @@ function initTransactionList() {
     // Initial load
     doTransactionSearch();
 }
-
 // ──────────────────────────────────────── End ─────────────────────────────────────────
 
 // -----------------------------------------
@@ -266,11 +265,43 @@ function initTransactionCancel() {
 }
 // ──────────────────────────────────────── End ─────────────────────────────────────────
 
+// -----------------------------------------
+// ----- Account Ledger Report Handler -----
+// -----------------------------------------
+
+function initAccountLedger() {
+    const reportForm = document.getElementById('ledgerReportForm');
+    if (!reportForm) return;
+
+    const financialYearSelect = document.getElementById('financial_year');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+
+    financialYearSelect.addEventListener('change', function() {
+        const selectedYear = this.value;
+        if (selectedYear && selectedYear !== 'custom') {
+            // The value is in the format "2025-2026"
+            const startYear = selectedYear.split('-')[0];
+            const endYear = startYear.slice(0, 2) + selectedYear.split('-')[1];
+
+            // Financial year starts on April 1st
+            const startDate = `${startYear}-04-01`;
+            // And ends on March 31st of the next year
+            const endDate = `${endYear}-03-31`;
+
+            // Automatically update the date input fields
+            startDateInput.value = startDate;
+            endDateInput.value = endDate;
+        }
+    });
+}
+// ──────────────────────────────────────── End ─────────────────────────────────────────
+
 // ──────────────────── DOM Ready ───────────────────────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('accountSearchForm')) { initAccountList(); } // Call the list page handler
     if (document.getElementById('accountForm')) { initAccountEntry(); } // Call the entry page handler
-    if (document.getElementById('transactionSearchForm')) { initTransactionList(); initTransactionCancel(); } // <-- ADD THIS LINE
-    
+    if (document.getElementById('transactionSearchForm')) { initTransactionList(); initTransactionCancel(); } // Transection handler
+    if (document.getElementById('ledgerReportForm')) { initAccountLedger(); } // Financial year heandler
 });
 // ───────────────────────── End ──────────────────────────

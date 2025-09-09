@@ -1,6 +1,6 @@
 <?php
 // File: /modules/accounts/report_account_ledger.php
-// FINAL version with clickable links in the Source column.
+// FINAL version with dynamic Financial Year dropdown and editable date range.
 
 session_start();
 error_reporting(E_ALL);
@@ -18,10 +18,40 @@ $db = db();
 $all_accounts_query = $db->query("SELECT account_id, account_name FROM acc_chartofaccounts WHERE is_active = 1 ORDER BY account_name ASC");
 $all_accounts = $all_accounts_query->fetch_all(MYSQLI_ASSOC);
 
+// Fetch all unique financial years that have transactions
+$fy_query = $db->query("SELECT DISTINCT financial_year FROM acc_transactions ORDER BY financial_year DESC");
+$financial_years = $fy_query->fetch_all(MYSQLI_ASSOC);
+
 // --- Determine Filter Values ---
 $account_id = $_GET['account_id'] ?? ($all_accounts[0]['account_id'] ?? 0); 
-$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
-$end_date = $_GET['end_date'] ?? date('Y-m-d');
+$selected_fy = $_GET['financial_year'] ?? '';
+
+// Smart Date Logic
+if (!empty($_GET['start_date']) && !empty($_GET['end_date'])) {
+    // Priority 1: Use custom dates if provided
+    $start_date = $_GET['start_date'];
+    $end_date = $_GET['end_date'];
+    $selected_fy = 'custom'; // Set dropdown to 'Custom'
+} elseif (!empty($selected_fy) && $selected_fy !== 'custom') {
+    // Priority 2: Calculate dates from selected financial year
+    $startYear = substr($selected_fy, 0, 4);
+    $endYear = substr($selected_fy, 0, 2) . substr($selected_fy, 5, 2);
+    $start_date = $startYear . '-04-01';
+    $end_date = $endYear . '-03-31';
+} else {
+    // Priority 3: Default to the current financial year
+    $current_month = date('n');
+    $current_year = date('Y');
+    if ($current_month >= 4) {
+        $start_date = $current_year . '-04-01';
+        $end_date = ($current_year + 1) . '-03-31';
+        $selected_fy = $current_year . '-' . substr($current_year + 1, 2, 2);
+    } else {
+        $start_date = ($current_year - 1) . '-04-01';
+        $end_date = $current_year . '-03-31';
+        $selected_fy = ($current_year - 1) . '-' . substr($current_year, 2, 2);
+    }
+}
 
 $ledger_data = [];
 $account_name = 'N/A';
@@ -49,17 +79,23 @@ require_once __DIR__ . '/../../includes/header.php';
 <main class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Account Ledger</h2>
-        <a href="/index.php" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
-        </a>
+        <div class="btn-toolbar">
+            <!-- NEW: Trial Balance Shortcut Button -->
+            <a href="/modules/accounts/report_trial_balance.php" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Trial Balance
+            </a>
+            <a href="/index.php" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left-circle"></i> Back to Dashboard
+            </a>
+        </div>
     </div>
 
     <!-- Filter Form -->
     <div class="card mb-4">
         <div class="card-header"><i class="bi bi-filter"></i> Report Options</div>
         <div class="card-body">
-            <form method="GET" class="row g-3 align-items-center">
-                <div class="col-md-4">
+            <form method="GET" class="row g-3 align-items-center" id="ledgerReportForm">
+                <div class="col-md-3">
                     <label for="account_id" class="form-label">Account:</label>
                     <select class="form-select" id="account_id" name="account_id">
                         <?php foreach ($all_accounts as $account): ?>
@@ -69,11 +105,23 @@ require_once __DIR__ . '/../../includes/header.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <!-- NEW: Financial Year Dropdown -->
                 <div class="col-md-3">
+                    <label for="financial_year" class="form-label">Financial Year:</label>
+                    <select class="form-select" id="financial_year" name="financial_year">
+                        <option value="custom" <?= $selected_fy === 'custom' ? 'selected' : '' ?>>Custom Range</option>
+                        <?php foreach ($financial_years as $fy): ?>
+                            <option value="<?= htmlspecialchars($fy['financial_year']) ?>" <?= ($fy['financial_year'] == $selected_fy) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($fy['financial_year']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label for="start_date" class="form-label">From Date:</label>
                     <input type="date" class="form-control" id="start_date" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="end_date" class="form-label">To Date:</label>
                     <input type="date" class="form-control" id="end_date" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
                 </div>
@@ -106,13 +154,11 @@ require_once __DIR__ . '/../../includes/header.php';
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Opening Balance Row -->
                             <tr class="fw-bold">
                                 <td colspan="5">Opening Balance as of <?= htmlspecialchars(date("d-m-Y", strtotime($start_date))) ?></td>
                                 <td class="text-end"><?= number_format($ledger_data['opening_balance'], 2) ?></td>
                             </tr>
 
-                            <!-- Transaction Rows -->
                             <?php if (empty($ledger_data['transactions'])): ?>
                                 <tr>
                                     <td colspan="6" class="text-center text-muted">No transactions found in this period.</td>
@@ -124,7 +170,6 @@ require_once __DIR__ . '/../../includes/header.php';
                                     <td><?= htmlspecialchars($txn['description']) ?></td>
                                     <td>
                                         <?php 
-                                        // THIS IS THE NEW LOGIC BLOCK
                                         $url = get_source_document_url($txn['source_type'], $txn['source_id']);
                                         if ($url): 
                                         ?>
@@ -142,7 +187,6 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <?php endforeach; ?>
                             <?php endif; ?>
 
-                            <!-- Closing Balance Row -->
                             <tr class="fw-bold table-light">
                                 <td colspan="5">Closing Balance as of <?= htmlspecialchars(date("d-m-Y", strtotime($end_date))) ?></td>
                                 <td class="text-end"><?= number_format($ledger_data['closing_balance'], 2) ?></td>
