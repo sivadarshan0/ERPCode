@@ -128,7 +128,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                         <td><?= htmlspecialchars(date("d-m-Y", strtotime($history['order_date']))) ?></td>
                                         <td><?= htmlspecialchars($history['customer_name']) ?></td>
                                         <td class="text-end"><?= number_format($history['cost_price'], 2) ?></td>
-                                        <td class="text-end fw-bold"><?= number_format($history['sell_price'], 2) ?></td>
+                                        <td class="text-end fw-bold"><?= number_format($history['price'], 2) ?></td>
                                         <td>
                                             <a href="/modules/sales/entry_order.php?order_id=<?= htmlspecialchars($history['order_id']) ?>" target="_blank">
                                                 <?= htmlspecialchars($history['order_id']) ?>
