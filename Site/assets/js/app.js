@@ -1266,6 +1266,11 @@ function initStockLevelList() {
                         <td>${escapeHtml(item.category_name)}</td>
                         <td>${escapeHtml(item.sub_category_name)}</td>
                         <td class="text-end fw-bold">${parseFloat(item.quantity).toFixed(2)}</td>
+                        <td class="text-center">
+                            <a href="/modules/inventory/view_item.php?item_id=${escapeHtml(item.item_id)}" class="btn btn-sm btn-outline-primary" title="View Item Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
                     `;
                     tableBody.appendChild(tr);
                 });
