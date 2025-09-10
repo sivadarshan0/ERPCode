@@ -339,7 +339,7 @@ function get_item_details($item_id) {
         SELECT 
             o.order_date,
             o.order_id,
-            oi.sell_price,
+            oi.price,
             oi.cost_price,
             c.name as customer_name
         FROM order_items oi
