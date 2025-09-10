@@ -16,6 +16,8 @@ $db = db();
 if (!$db) die("Database connection failed");
 
 $item_id_from_get = $_GET['item_id'] ?? null;
+$message = '';
+$message_type = '';
 
 // --- Handle Image Management Actions (Delete, Set Main) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
