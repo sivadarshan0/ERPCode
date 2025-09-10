@@ -36,7 +36,7 @@ require_once __DIR__ . '/../../includes/header.php';
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>View Item <span class="badge bg-secondary"><?= htmlspecialchars($item['item_id']) ?></span></h2>
         <div>
-            <a href="/modules/inventory/list_stock.php" class="btn btn-outline-secondary">
+            <a href="/modules/inventory/list_stock_levels.php" class="btn btn-outline-secondary">
                 <i class="bi bi-card-list"></i> Back to Stock List
             </a>
             <a href="/modules/inventory/entry_item.php?item_id=<?= htmlspecialchars($item['item_id']) ?>" class="btn btn-primary">
