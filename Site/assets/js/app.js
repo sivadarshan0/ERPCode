@@ -1138,7 +1138,10 @@ function initPurchaseOrderList() {
 
     // Load initial data
     doPoSearch();
+
+// ──────────────────────────────────────── End ─────────────────────────────────────────
 }
+// ──────────────────────────────────────── End ─────────────────────────────────────────
 
 // -----------------------------------------
 // ----- Purchase Order List Handler -----
@@ -1224,6 +1227,7 @@ function initPurchaseOrderList() {
     // This correctly loads the initial data.
     doPoSearch();
 }
+// ──────────────────────────────────────── End ─────────────────────────────────────────
 
 // -----------------------------------------
 // ----- Stock Level List Handler -----
@@ -1296,8 +1300,35 @@ function initStockLevelList() {
     subCategoryIdInput.addEventListener('change', doStockSearch);
     stockStatusInput.addEventListener('change', doStockSearch);
 }
+// ──────────────────────────────────────── End ─────────────────────────────────────────
 
-// ───── DOM Ready ─────
+// -----------------------------------------
+// ----- Item View Page Gallery Handler -----
+// -----------------------------------------
+
+function initItemViewPage() {
+    const mainImageView = document.getElementById('mainImageView');
+    const thumbnails = document.querySelectorAll('.item-thumbnail');
+
+    // If there's no gallery on the page, exit the function
+    if (!mainImageView || thumbnails.length === 0) {
+        return;
+    }
+
+    thumbnails.forEach(thumb => {
+        thumb.addEventListener('click', function() {
+            // When a thumbnail is clicked, set its 'src' as the 'src' of the main image view
+            mainImageView.src = this.src;
+
+            // Optional: Add an 'active' class to the clicked thumbnail for styling
+            thumbnails.forEach(t => t.classList.remove('border-primary', 'border-3'));
+            this.classList.add('border-primary', 'border-3');
+        });
+    });
+}
+// ──────────────────────────────────────── End ─────────────────────────────────────────
+
+// ───────────────────────────────────── DOM Ready ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
     if (document.getElementById('categoryForm')) { initCategoryEntry(); }
@@ -1311,6 +1342,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('poSearchForm')) { initPurchaseOrderList(); }
     if (document.getElementById('stockSearchForm')) { initStockLevelList(); }
     if (document.getElementById('grnForm')) { initGrnPage(); }
+    if (document.getElementById('mainImageView')) { initItemViewPage(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
@@ -1359,3 +1391,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     });
 });
+// ──────────────────────────────────────── End ─────────────────────────────────────────

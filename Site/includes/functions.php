@@ -135,7 +135,6 @@ function generate_sequence_id($sequence_name, $table, $column) {
     }
 }
 
-
 // -----------------------------------------
 // ----- Customer-related functions -----
 // -----------------------------------------
@@ -287,6 +286,76 @@ function get_item_stock_details($item_id) {
     $stmt->execute();
     $result = $stmt->get_result();
     return $result ? $result->fetch_assoc() : null;
+}
+
+/**
+ * Retrieves a complete, detailed profile for a single item.
+ * Gathers data from the items table, filesystem for images, and order history for prices.
+ *
+ * @param string $item_id The ID of the item to fetch.
+ * @return array|false The complete item data array, or false if not found.
+ */
+function get_item_details($item_id) {
+    $db = db();
+    if (!$db) return false;
+
+    // --- Task 1: Fetch Core Item Data from Database ---
+    $stmt = $db->prepare("
+        SELECT 
+            i.*, 
+            c.name as category_name, 
+            cs.name as sub_category_name
+        FROM items i
+        JOIN categories_sub cs ON i.category_sub_id = cs.category_sub_id
+        JOIN categories c ON cs.category_id = c.category_id
+        WHERE i.item_id = ?
+    ");
+    if (!$stmt) return false;
+
+    $stmt->bind_param("s", $item_id);
+    $stmt->execute();
+    $item_details = $stmt->get_result()->fetch_assoc();
+
+    if (!$item_details) {
+        return false; // Item not found
+    }
+
+    // --- Task 2: Find All Associated Images from the Filesystem ---
+    $image_dir = __DIR__ . '/../Images/'; // Physical path to the Images directory
+    $image_pattern = $image_dir . $item_id . '-*.jpg';
+    $image_paths = glob($image_pattern);
+    
+    $image_urls = [];
+    if ($image_paths) {
+        foreach ($image_paths as $path) {
+            // Convert the full server path to a web-accessible URL
+            $image_urls[] = '/Images/' . basename($path);
+        }
+    }
+    $item_details['images'] = $image_urls;
+
+    // --- Task 3: Fetch Price History from Orders ---
+    $stmt_price = $db->prepare("
+        SELECT 
+            o.order_date,
+            o.order_id,
+            oi.sell_price,
+            oi.cost_price,
+            c.name as customer_name
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.order_id
+        JOIN customers c on o.customer_id = c.customer_id
+        WHERE oi.item_id = ?
+          AND o.status != 'Canceled'
+        ORDER BY o.order_date DESC
+    ");
+    if (!$stmt_price) return false;
+    
+    $stmt_price->bind_param("s", $item_id);
+    $stmt_price->execute();
+    $item_details['price_history'] = $stmt_price->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    return $item_details;
 }
 
 // -----------------------------------------
