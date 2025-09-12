@@ -1700,3 +1700,70 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
         throw new Exception("Failed to update Purchase Order: " . $e->getMessage());
     }
 }
+//______________________________________________ End _____________________________________________________
+
+// -----------------------------------------
+// ----- Courier Charge Calculation -----
+// -----------------------------------------
+
+/**
+ * Calculates courier charges based on weight and item value according to the SL POST rate card.
+ *
+ * @param float $weight_grams The total weight of the parcel in grams.
+ * @param float $item_value The total value of the items in the parcel.
+ * @return array An array containing the breakdown of charges and the total.
+ */
+function calculate_courier_charge($weight_grams, $item_value) {
+    $weight_grams = (float) $weight_grams;
+    $item_value = (float) $item_value;
+    $weight_charge = 0;
+    $value_charge = 0;
+
+    // --- Part 1: Calculate Weight-Based Charge ---
+    if ($weight_grams > 0 && $weight_grams <= 250) { $weight_charge = 200.00; }
+    elseif ($weight_grams > 250 && $weight_grams <= 500) { $weight_charge = 250.00; }
+    elseif ($weight_grams > 500 && $weight_grams <= 1000) { $weight_charge = 350.00; }
+    elseif ($weight_grams > 1000 && $weight_grams <= 2000) { $weight_charge = 400.00; }
+    elseif ($weight_grams > 2000 && $weight_grams <= 3000) { $weight_charge = 450.00; }
+    elseif ($weight_grams > 3000 && $weight_grams <= 4000) { $weight_charge = 500.00; }
+    elseif ($weight_grams > 4000 && $weight_grams <= 5000) { $weight_charge = 550.00; }
+    elseif ($weight_grams > 5000 && $weight_grams <= 6000) { $weight_charge = 600.00; }
+    elseif ($weight_grams > 6000 && $weight_grams <= 7000) { $weight_charge = 650.00; }
+    elseif ($weight_grams > 7000 && $weight_grams <= 8000) { $weight_charge = 700.00; }
+    elseif ($weight_grams > 8000 && $weight_grams <= 9000) { $weight_charge = 750.00; }
+    elseif ($weight_grams > 9000 && $weight_grams <= 10000) { $weight_charge = 800.00; }
+    elseif ($weight_grams > 10000 && $weight_grams <= 15000) { $weight_charge = 850.00; }
+    elseif ($weight_grams > 15000 && $weight_grams <= 20000) { $weight_charge = 1100.00; }
+    elseif ($weight_grams > 20000 && $weight_grams <= 25000) { $weight_charge = 1600.00; }
+    elseif ($weight_grams > 25000 && $weight_grams <= 30000) { $weight_charge = 2100.00; }
+    elseif ($weight_grams > 30000 && $weight_grams <= 35000) { $weight_charge = 2600.00; }
+    elseif ($weight_grams > 35000 && $weight_grams <= 40000) { $weight_charge = 3100.00; }
+
+    // --- Part 2: Calculate Value-Based Charge ---
+    if ($item_value > 0 && $item_value <= 2000) {
+        $value_charge = ceil($item_value / 100) * 2.00;
+    } elseif ($item_value > 2000 && $item_value <= 10000) {
+        $base_charge = 40.00; // Rs. 2.00 for every Rs. 100 up to 2000
+        $remaining_value = $item_value - 2000;
+        $additional_charge = ceil($remaining_value / 2000) * 10.00;
+        $value_charge = $base_charge + $additional_charge;
+    } elseif ($item_value > 10000 && $item_value <= 50000) {
+        $base_charge = 80.00; // Charge for first 10k (40 for first 2k + 4*10 for next 8k)
+        $remaining_value = $item_value - 10000;
+        $additional_charge = ceil($remaining_value / 40000) * 50.00; // Note: The rule is unusual (every 40k)
+        $value_charge = $base_charge + $additional_charge;
+    } elseif ($item_value > 50000 && $item_value <= 100000) {
+        $base_charge = 130.00; // Charge for first 50k (80 for first 10k + 50 for next 40k)
+        $remaining_value = $item_value - 50000;
+        $additional_charge = ceil($remaining_value / 50000) * 100.00;
+        $value_charge = $base_charge + $additional_charge;
+    }
+
+    // --- Part 3: Return the final calculation ---
+    return [
+        'weight_charge' => $weight_charge,
+        'value_charge'  => $value_charge,
+        'total_charge'  => $weight_charge + $value_charge
+    ];
+}
+//______________________________________________ End _____________________________________________________

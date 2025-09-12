@@ -1333,6 +1333,70 @@ function initItemViewPage() {
 }
 // ──────────────────────────────────────── End ─────────────────────────────────────────
 
+// -----------------------------------------
+// ----- Courier Charge Calculator Handler -----
+// -----------------------------------------
+
+function initCourierCalculator() {
+    const form = document.getElementById('courierCalcForm');
+    if (!form) return;
+
+    const resultsCard = document.getElementById('resultsCard');
+    const weightChargeEl = document.getElementById('weightCharge');
+    const valueChargeEl = document.getElementById('valueCharge');
+    const totalChargeEl = document.getElementById('totalCharge');
+    const weightInput = document.getElementById('weight');
+    const valueInput = document.getElementById('value');
+
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the page from reloading
+
+        const weight = weightInput.value;
+        const value = valueInput.value;
+        const submitBtn = this.querySelector('button[type="submit"]');
+
+        if (!weight || !value) {
+            alert('Please enter both weight and value.');
+            return;
+        }
+
+        // Show processing state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Calculating...';
+
+        // Perform the AJAX fetch request
+        fetch(`/modules/price/calculate_price.php?action=calculate&weight=${weight}&value=${value}`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errData => Promise.reject(errData));
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Update the results display
+                    weightChargeEl.textContent = `Rs. ${data.data.weight_charge.toFixed(2)}`;
+                    valueChargeEl.textContent = `Rs. ${data.data.value_charge.toFixed(2)}`;
+                    totalChargeEl.textContent = `Rs. ${data.data.total_charge.toFixed(2)}`;
+                    resultsCard.classList.remove('d-none'); // Show the results card
+                } else {
+                    throw new Error(data.error || 'Calculation failed.');
+                }
+            })
+            .catch(error => {
+                const errorMessage = error.error || error.message || 'An unknown error occurred.';
+                showAlert(errorMessage, 'danger');
+                resultsCard.classList.add('d-none'); // Hide results card on error
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-calculator"></i> Calculate Charge';
+            });
+    });
+}
+// ──────────────────────────────────────── End ─────────────────────────────────────────
+
 // ───────────────────────────────────── DOM Ready ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
@@ -1348,6 +1412,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('stockSearchForm')) { initStockLevelList(); }
     if (document.getElementById('grnForm')) { initGrnPage(); }
     if (document.getElementById('mainImageView')) { initItemViewPage(); }
+    if (document.getElementById('courierCalcForm')) { initCourierCalculator(); }
 
     setupFormSubmitSpinner(document.getElementById('customerForm'));
     setupFormSubmitSpinner(document.getElementById('categoryForm'));
