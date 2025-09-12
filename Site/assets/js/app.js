@@ -1344,12 +1344,13 @@ function initCourierCalculator() {
     const resultsCard = document.getElementById('resultsCard');
     const weightChargeEl = document.getElementById('weightCharge');
     const valueChargeEl = document.getElementById('valueCharge');
+    const fixedChargeEl = document.getElementById('fixedCharge'); // <-- NEW: Get the fixed charge element
     const totalChargeEl = document.getElementById('totalCharge');
     const weightInput = document.getElementById('weight');
     const valueInput = document.getElementById('value');
 
     form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the page from reloading
+        event.preventDefault();
 
         const weight = weightInput.value;
         const value = valueInput.value;
@@ -1360,11 +1361,10 @@ function initCourierCalculator() {
             return;
         }
 
-        // Show processing state
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Calculating...';
 
-        // Perform the AJAX fetch request
+        // NOTE: Make sure this URL is correct for your new file structure
         fetch(`/modules/price/calculate_courier_charge.php?action=calculate&weight=${weight}&value=${value}`)
             .then(response => {
                 if (!response.ok) {
@@ -1377,8 +1377,9 @@ function initCourierCalculator() {
                     // Update the results display
                     weightChargeEl.textContent = `Rs. ${data.data.weight_charge.toFixed(2)}`;
                     valueChargeEl.textContent = `Rs. ${data.data.value_charge.toFixed(2)}`;
+                    fixedChargeEl.textContent = `Rs. ${data.data.fixed_charge.toFixed(2)}`; // <-- NEW: Populate the fixed charge
                     totalChargeEl.textContent = `Rs. ${data.data.total_charge.toFixed(2)}`;
-                    resultsCard.classList.remove('d-none'); // Show the results card
+                    resultsCard.classList.remove('d-none');
                 } else {
                     throw new Error(data.error || 'Calculation failed.');
                 }
@@ -1386,10 +1387,9 @@ function initCourierCalculator() {
             .catch(error => {
                 const errorMessage = error.error || error.message || 'An unknown error occurred.';
                 showAlert(errorMessage, 'danger');
-                resultsCard.classList.add('d-none'); // Hide results card on error
+                resultsCard.classList.add('d-none');
             })
             .finally(() => {
-                // Restore button state
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="bi bi-calculator"></i> Calculate Charge';
             });

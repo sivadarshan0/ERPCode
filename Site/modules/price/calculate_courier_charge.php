@@ -1,22 +1,19 @@
 <?php
 // File: /modules/price/calculate_courier_charge.php
-// A dedicated page for calculating SL Post courier charges.
+// FINAL version with "Fixed Charge" display row.
 
 session_start();
 define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// --- AJAX ENDPOINT: This must be at the top ---
+// --- AJAX ENDPOINT ---
 if (isset($_GET['action']) && $_GET['action'] === 'calculate') {
     header('Content-Type: application/json');
     try {
         $weight = $_GET['weight'] ?? 0;
         $value = $_GET['value'] ?? 0;
-        
-        // Call the backend function that contains the business logic
         $result = calculate_courier_charge($weight, $value);
-        
         echo json_encode(['success' => true, 'data' => $result]);
     } catch (Exception $e) {
         http_response_code(400);
@@ -25,9 +22,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'calculate') {
     exit;
 }
 
-// --- Standard Page Logic ---
 require_login();
-
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -79,6 +74,12 @@ require_once __DIR__ . '/../../includes/header.php';
                             Value-Based Charge:
                             <span class="badge bg-secondary rounded-pill fs-6" id="valueCharge">Rs. 0.00</span>
                         </li>
+                        <!-- THIS IS THE NEW ROW FOR THE FIXED CHARGE -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Fixed Charge:
+                            <span class="badge bg-secondary rounded-pill fs-6" id="fixedCharge">Rs. 0.00</span>
+                        </li>
+                        <!-- END OF NEW ROW -->
                         <li class="list-group-item d-flex justify-content-between align-items-center fw-bold fs-5">
                             Total Courier Charge:
                             <span class="badge bg-primary rounded-pill fs-5" id="totalCharge">Rs. 0.00</span>
