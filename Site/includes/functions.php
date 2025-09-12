@@ -1714,6 +1714,9 @@ function update_purchase_order_details($purchase_order_id, $details, $post_data)
  * @return array An array containing the breakdown of charges and the total.
  */
 function calculate_courier_charge($weight_grams, $item_value) {
+    // --- Define the fixed charge here for easy future updates ---
+    define('COURIER_FIXED_CHARGE', 50.00);
+
     $weight_grams = (float) $weight_grams;
     $item_value = (float) $item_value;
     $weight_charge = 0;
@@ -1750,7 +1753,7 @@ function calculate_courier_charge($weight_grams, $item_value) {
     } elseif ($item_value > 10000 && $item_value <= 50000) {
         $base_charge = 80.00; // Charge for first 10k (40 for first 2k + 4*10 for next 8k)
         $remaining_value = $item_value - 10000;
-        $additional_charge = ceil($remaining_value / 40000) * 50.00; // Note: The rule is unusual (every 40k)
+        $additional_charge = ceil($remaining_value / 40000) * 50.00;
         $value_charge = $base_charge + $additional_charge;
     } elseif ($item_value > 50000 && $item_value <= 100000) {
         $base_charge = 130.00; // Charge for first 50k (80 for first 10k + 50 for next 40k)
@@ -1759,11 +1762,12 @@ function calculate_courier_charge($weight_grams, $item_value) {
         $value_charge = $base_charge + $additional_charge;
     }
 
-    // --- Part 3: Return the final calculation ---
+    // --- Part 3: Return the final calculation with the fixed charge included ---
     return [
         'weight_charge' => $weight_charge,
         'value_charge'  => $value_charge,
-        'total_charge'  => $weight_charge + $value_charge
+        'fixed_charge'  => COURIER_FIXED_CHARGE, // Add the fixed charge to the response
+        'total_charge'  => $weight_charge + $value_charge + COURIER_FIXED_CHARGE // Add it to the total
     ];
 }
 //______________________________________________ End _____________________________________________________
