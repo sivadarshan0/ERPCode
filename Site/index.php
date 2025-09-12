@@ -123,7 +123,7 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="card-body">
                             <h5 class="card-title">Pricing Tools</h5>
                             <div class="d-grid gap-2 mt-3">
-                                <a href="/modules/price/calculate_price.php" class="btn btn-primary">
+                                <a href="/modules/price/calculate_price.php" class="btn btn-success">
                                     <i class="bi bi-play-circle"></i> Cost Calculator
                                 </a>
                                 <!-- THIS IS THE NEW BUTTON -->
