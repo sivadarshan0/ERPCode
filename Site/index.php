@@ -114,17 +114,21 @@ require_once __DIR__ . '/includes/header.php';
                     </div>
                 </div>
                 
-                <!-- Card 5: Price Calculator (NEW) -->
-                <div class="col-lg-4 col-md-6 mb-4">
+                <!-- Card for Price Calculator -->
+                <div class="col-md-4 mb-4">
                     <div class="card h-100">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-primary text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
                         </div>
                         <div class="card-body">
                             <h5 class="card-title">Pricing Tools</h5>
                             <div class="d-grid gap-2 mt-3">
                                 <a href="/modules/price/calculate_price.php" class="btn btn-primary">
-                                    <i class="bi bi-play-circle"></i> Open Calculator
+                                    <i class="bi bi-play-circle"></i> Cost Calculator
+                                </a>
+                                <!-- THIS IS THE NEW BUTTON -->
+                                <a href="/modules/price/calculate_courier_charge.php" class="btn btn-primary">
+                                    <i class="bi bi-truck"></i> Courier Calculator
                                 </a>
                             </div>
                         </div>
