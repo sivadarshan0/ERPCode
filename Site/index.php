@@ -117,7 +117,7 @@ require_once __DIR__ . '/includes/header.php';
                 <!-- Card for Price Calculator -->
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header bg-success text-white">
                             <i class="bi bi-calculator-fill"></i> Price Calculator
                         </div>
                         <div class="card-body">
