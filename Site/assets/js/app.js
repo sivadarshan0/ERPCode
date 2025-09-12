@@ -1365,7 +1365,7 @@ function initCourierCalculator() {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Calculating...';
 
         // Perform the AJAX fetch request
-        fetch(`/modules/price/calculate_price.php?action=calculate&weight=${weight}&value=${value}`)
+        fetch(`/modules/price/calculate_courier_charge.php?action=calculate&weight=${weight}&value=${value}`)
             .then(response => {
                 if (!response.ok) {
                     return response.json().then(errData => Promise.reject(errData));
