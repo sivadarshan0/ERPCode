@@ -44,13 +44,38 @@ to
 bind-address = 0.0.0.0
 sudo systemctl restart mariadb
 
-#Create user in MariaDB with remote access 
+#Create DB and user in MariaDB with remote access 
 sudo mariadb
 
-CREATE USER 'webuser'@'%' IDENTIFIED BY 'StrongPass123!';
+CREATE DATABASE erpdb;
+
+CREATE USER 'webuser'@'%' IDENTIFIED BY 'webuser';
 GRANT ALL PRIVILEGES ON *.* TO 'webuser'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EXIT;
+
+---------------------------------------------------
+
+# Configure GIT
+
+sudo apt update
+sudo apt install git -y
+git --version
+git config --global user.name "SivaRP4"
+git config --global user.email "siva@rp4.com"
+
+cd /home/admin/ERPCode
+
+git config --global credential.helper store
+
+rm -rf /home/admin/ERPCode
+git clone https://github.com/sivadarshan0/ERPCode.git /home/admin/ERPCode
+
+git pull
+
+fhdfd
+
+git clone git@github.com/sivadarshan0/ERPCode /home/admin/ERPCode
 
 ---------------------------------------------------
 
@@ -64,6 +89,8 @@ sudo nmcli connection modify "preconfigured" connection.autoconnect-priority 10
 sudo nmcli connection modify "netplan-wlan0-ABCCorp#" connection.autoconnect-priority 10
 
 ssh-keygen -R 10.0.7.108
+
+sudo tar -czvf /home/admin/ERPCode/Site/DBBkp/wifi_profiles_backup.tar.gz "/etc/NetworkManager/system-connections/iPhone.nmconnection" "/etc/NetworkManager/system-connections/TP-LINK_EC3E.nmconnection"
 
 --------------------------------------------------
 
@@ -79,4 +106,28 @@ sudo chown www-data:www-data /var/www/html/price_cal.php
 
 #Set secure read/write permissions
 sudo chmod 644 /var/www/html/price_cal.php
+
+
+---------------------------------------------------------
+
+--Install docker commands 
+
+sudo apt update && sudo apt upgrade -y
+
+sudo apt install -y ca-certificates curl gnupg lsb-release
+
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+sudo docker run hello-world
+
 
