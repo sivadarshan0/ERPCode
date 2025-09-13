@@ -1,9 +1,9 @@
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19  Distrib 10.11.11-MariaDB, for debian-linux-gnu (aarch64)
+-- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (aarch64)
 --
 -- Host: localhost    Database: 
 -- ------------------------------------------------------
--- Server version	10.11.11-MariaDB-0+deb12u1
+-- Server version	10.11.14-MariaDB-0+deb12u2
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -20,7 +20,7 @@
 -- Current Database: `erpdb`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `erpdb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `erpdb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
 
 USE `erpdb`;
 
@@ -107,7 +107,7 @@ CREATE TABLE `acc_transactions` (
   KEY `idx_transaction_group_id` (`transaction_group_id`),
   KEY `idx_transaction_date` (`transaction_date`),
   KEY `idx_financial_year` (`financial_year`)
-) ENGINE=InnoDB AUTO_INCREMENT=149 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=169 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -133,8 +133,8 @@ INSERT INTO `acc_transactions` VALUES
 (30,'TRN000030',24,'2025-06-10 17:55:41','2025-2026','Payment for goods INR 2,800 by Janu','Loan from Janu for INR payment',NULL,10080.00,'Posted','manual_entry',NULL,'2025-08-31 17:55:41','admin'),
 (31,'TRN000031',15,'2025-06-10 06:23:51','2025-2026','Cost of goods sold for Order #ORD000001','',3690.00,NULL,'Posted','sales_order','ORD000001','2025-09-01 06:23:51','SystemSync'),
 (32,'TRN000031',4,'2025-06-10 06:23:51','2025-2026','Cost of goods sold for Order #ORD000001','',NULL,3690.00,'Posted','sales_order','ORD000001','2025-09-01 06:23:51','SystemSync'),
-(33,'TRN000032',15,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',4466.00,NULL,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
-(34,'TRN000032',4,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',NULL,4466.00,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
+(33,'TRN000032',15,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',4346.00,NULL,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
+(34,'TRN000032',4,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',NULL,4346.00,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
 (35,'TRN000033',15,'2025-08-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000003','',3690.00,NULL,'Posted','sales_order','ORD000003','2025-09-01 06:23:51','SystemSync'),
 (36,'TRN000033',4,'2025-08-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000003','',NULL,3690.00,'Posted','sales_order','ORD000003','2025-09-01 06:23:51','SystemSync'),
 (37,'TRN000034',6,'2025-08-24 08:26:42','2025-2026','Test entry','Test entry',1000.00,NULL,'Canceled','manual_entry',NULL,'2025-09-01 08:26:42','admin'),
@@ -166,7 +166,27 @@ INSERT INTO `acc_transactions` VALUES
 (141,'TRN000079',23,'2025-09-04 14:20:28','2025-2026','Bag for item','4 Bags each 100',400.00,NULL,'Posted','manual_entry',NULL,'2025-09-06 14:20:28','admin'),
 (142,'TRN000079',20,'2025-09-04 14:20:28','2025-2026','Bag for item','4 Bags each 100',NULL,400.00,'Posted','manual_entry',NULL,'2025-09-06 14:20:28','admin'),
 (143,'TRN000080',25,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',930.00,NULL,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin'),
-(144,'TRN000080',20,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',NULL,930.00,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin');
+(144,'TRN000080',20,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',NULL,930.00,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin'),
+(149,'TRN000075',24,'2025-09-07 04:30:16','2025-2026','Loan settlement','Loan settlement for Janu by old transections',10080.00,NULL,'Posted','manual_entry',NULL,'2025-09-07 04:30:16','admin'),
+(150,'TRN000075',21,'2025-09-07 04:30:16','2025-2026','Loan settlement','Loan settlement for Janu by old transections',NULL,10080.00,'Posted','manual_entry',NULL,'2025-09-07 04:30:16','admin'),
+(151,'TRN000076',1,'2025-08-22 11:53:10','2025-2026','Sales revenue from Order #ORD000010','',5910.00,NULL,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(152,'TRN000076',13,'2025-08-22 11:53:10','2025-2026','Sales revenue from Order #ORD000010','',NULL,5910.00,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(153,'TRN000081',15,'2025-08-22 11:53:10','2025-2026','Cost of goods sold for Order #ORD000010','',4608.00,NULL,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(154,'TRN000081',4,'2025-08-22 11:53:10','2025-2026','Cost of goods sold for Order #ORD000010','',NULL,4608.00,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(155,'TRN000082',1,'2025-08-22 11:55:10','2025-2026','Sales revenue from Order #ORD000011','',6670.00,NULL,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(156,'TRN000082',13,'2025-08-22 11:55:10','2025-2026','Sales revenue from Order #ORD000011','',NULL,6670.00,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(157,'TRN000083',15,'2025-08-22 11:55:10','2025-2026','Cost of goods sold for Order #ORD000011','',5499.00,NULL,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(158,'TRN000083',4,'2025-08-22 11:55:10','2025-2026','Cost of goods sold for Order #ORD000011','',NULL,5499.00,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(159,'TRN000084',2,'2025-07-07 12:01:01','2025-2026','Cash deposit to bank #ORD000002','Cash deposit to bank #ORD000002',4700.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:01:01','admin'),
+(160,'TRN000084',1,'2025-07-07 12:01:01','2025-2026','Cash deposit to bank #ORD000002','Cash deposit to bank #ORD000002',NULL,4700.00,'Posted','manual_entry',NULL,'2025-09-09 12:01:02','admin'),
+(161,'TRN000085',2,'2025-08-11 12:01:01','2025-2026','Cash deposit to bank #ORD000003','Cash deposit to bank #ORD000003',4150.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:02:53','admin'),
+(162,'TRN000085',1,'2025-08-11 12:01:01','2025-2026','Cash deposit to bank #ORD000003','Cash deposit to bank #ORD000003',NULL,4150.00,'Posted','manual_entry',NULL,'2025-09-09 12:02:53','admin'),
+(163,'TRN000086',2,'2025-09-04 12:10:28','2025-2026','Cash deposit to bank #ORD000009','Cash deposit to bank #ORD000009',5160.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:10:28','admin'),
+(164,'TRN000086',1,'2025-09-04 12:10:28','2025-2026','Cash deposit to bank #ORD000009','Cash deposit to bank #ORD000009',NULL,5160.00,'Posted','manual_entry',NULL,'2025-09-09 12:10:28','admin'),
+(165,'TRN000087',2,'2025-09-09 12:11:31','2025-2026','Cash deposit to bank #ORD000010','Cash deposit to bank #ORD000010',5910.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:11:31','admin'),
+(166,'TRN000087',1,'2025-09-09 12:11:31','2025-2026','Cash deposit to bank #ORD000010','Cash deposit to bank #ORD000010',NULL,5910.00,'Posted','manual_entry',NULL,'2025-09-09 12:11:31','admin'),
+(167,'TRN000088',2,'2025-09-09 12:12:59','2025-2026','Cash deposit to bank #ORD000011','Cash deposit to bank #ORD000011',6670.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:12:59','admin'),
+(168,'TRN000088',1,'2025-09-09 12:12:59','2025-2026','Cash deposit to bank #ORD000011','Cash deposit to bank #ORD000011',NULL,6670.00,'Posted','manual_entry',NULL,'2025-09-09 12:12:59','admin');
 /*!40000 ALTER TABLE `acc_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -356,16 +376,16 @@ CREATE TABLE `grn_items` (
 LOCK TABLES `grn_items` WRITE;
 /*!40000 ALTER TABLE `grn_items` DISABLE KEYS */;
 INSERT INTO `grn_items` VALUES
-(1,'GRN000001','ITM00003','No',1,4346.00,0),
-(2,'GRN000001','ITM00004','No',1,4520.00,0),
-(3,'GRN000001','ITM00001','No',1,4466.00,0),
-(4,'GRN000002','ITM00002','No',4,3690.00,0),
+(1,'GRN000001','ITM00003','No',1,4346.00,550),
+(2,'GRN000001','ITM00004','No',1,4520.00,550),
+(3,'GRN000001','ITM00001','No',1,4466.00,600),
+(4,'GRN000002','ITM00002','No',4,3690.00,500),
 (5,'GRN000003','ITM00007','No',1,4500.00,600),
-(6,'GRN000004','ITM00005','No',2,3990.00,0),
-(7,'GRN000004','ITM00006','No',1,3634.00,0),
-(8,'GRN000005','ITM00007','No',1,4466.00,0),
-(9,'GRN000006','ITM00008','No',1,4608.00,0),
-(10,'GRN000006','ITM00009','No',1,5499.00,0);
+(6,'GRN000004','ITM00005','No',2,3990.00,550),
+(7,'GRN000004','ITM00006','No',1,3634.00,450),
+(8,'GRN000005','ITM00007','No',1,4466.00,500),
+(9,'GRN000006','ITM00008','No',1,4608.00,500),
+(10,'GRN000006','ITM00009','No',1,5499.00,500);
 /*!40000 ALTER TABLE `grn_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -382,6 +402,7 @@ CREATE TABLE `items` (
   `name` varchar(150) NOT NULL,
   `uom` varchar(20) NOT NULL DEFAULT 'No',
   `description` text DEFAULT NULL,
+  `main_image_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
   `created_by_name` varchar(50) DEFAULT NULL,
@@ -402,16 +423,16 @@ CREATE TABLE `items` (
 LOCK TABLES `items` WRITE;
 /*!40000 ALTER TABLE `items` DISABLE KEYS */;
 INSERT INTO `items` VALUES
-('ITM00001','SUB00001','Anuradha lining border saree','No','Anuradha lining border saree','2025-08-24 10:53:35',1,'admin',NULL,NULL,NULL),
-('ITM00002','SUB00001','Maheshwari cotton saree','No','Maheshwari cotton sarees are timeless handloom masterpieces from Maheshwar, Madhya Pradesh, renowned for their lightweight, reversible borders, and elegant fusion of cotton and silk woven with intricate traditional designs.','2025-08-24 10:55:14',1,'admin',NULL,NULL,NULL),
-('ITM00003','SUB00001','Narayanpet cotton saree - Silver border','No','Narayanpet cotton sarees are a cherished traditional handloom craft from Telangana, known for their lightweight durability, distinctive checked and contrast border designs, and deep cultural roots, while their silk counterparts blend Maharashtrian influence and local artistry to offer elegant affordability and versatility.','2025-08-24 11:00:02',1,'admin',NULL,NULL,NULL),
-('ITM00004','SUB00001','Narayanpet cotton saree - Thread work','No','Narayanpet cotton sarees are celebrated for their lightweight, durable handwoven fabric, intricate interlocked tread work, and culturally rich designs blending Telangana and Maratha influences.','2025-08-24 11:02:25',1,'admin',NULL,NULL,NULL),
-('ITM00005','SUB00001','Narayanpet cotton saree - Temple border','No','Narayanpet cotton sarees are renowned for their distinctive temple-style borders—often triangular, zigzagged, or geometric patterns inspired by South Indian temple architecture, symbolizing cultural heritage and spiritual symbolism.','2025-08-24 11:15:17',1,'admin',NULL,NULL,NULL),
-('ITM00006','SUB00001','Narayanpet cotton saree - Rainbow color','No','Narayanpet cotton sarees are renowned for their vibrant and striking colors, including beautiful multicolor and rainbow-inspired designs that highlight traditional craftsmanship with bold contrasts and unique patterns.','2025-08-24 11:18:04',1,'admin',NULL,NULL,NULL),
-('ITM00007','SUB00001','Narayanpet cotton saree - Multiline','No','Narayanpet cotton sarees are renowned for their distinctive multi-bordered designs, vibrant colors, and lightweight, breathable fabric, embodying timeless traditional craftsmanship from Telangana, India.','2025-08-24 11:25:29',1,'admin',NULL,NULL,NULL),
-('ITM00008','SUB00002','Kanji cotton saree - Silver and gold border 80 counts','No','Kanji cotton sarees with silver and gold borders are exquisite traditional handwoven fabrics from Kanchipuram, blending the softness of cotton with the elegance of silver and gold zari borders for a unique, luxurious yet comfortable attire suitable for festive and special occasions.','2025-08-24 11:36:22',1,'admin',NULL,NULL,NULL),
-('ITM00009','SUB00002','Kanji cotton saree - Body work 100 counts','No','100 count Kanji (or Kanchi) cotton sarees feature pure, handloom cotton fabric with a dense, durable weave often measuring 100 threads per inch, combined with intricate body work such as butta designs or zari borders, offering a rich yet breathable saree ideal for both casual and formal wear.','2025-08-24 11:38:51',1,'admin',NULL,NULL,NULL),
-('ITM00010','SUB00003','Sungudi cotton saree','No','Handcrafted in Madurai, this Sungudi cotton saree features traditional tie-dye patterns and a rich zari border. Lightweight and breathable, it\'s perfect for everyday elegance or festive charm.','2025-08-24 17:38:03',1,'admin',NULL,NULL,NULL);
+('ITM00001','SUB00001','Anuradha lining border saree','No','Anuradha lining border saree',NULL,'2025-08-24 10:53:35',1,'admin',NULL,NULL,NULL),
+('ITM00002','SUB00001','Maheshwari cotton saree','No','Maheshwari cotton sarees are timeless handloom masterpieces from Maheshwar, Madhya Pradesh, renowned for their lightweight, reversible borders, and elegant fusion of cotton and silk woven with intricate traditional designs.',NULL,'2025-08-24 10:55:14',1,'admin',NULL,NULL,NULL),
+('ITM00003','SUB00001','Narayanpet cotton saree - Silver border','No','Narayanpet cotton sarees are a cherished traditional handloom craft from Telangana, known for their lightweight durability, distinctive checked and contrast border designs, and deep cultural roots, while their silk counterparts blend Maharashtrian influence and local artistry to offer elegant affordability and versatility.',NULL,'2025-08-24 11:00:02',1,'admin',NULL,NULL,NULL),
+('ITM00004','SUB00001','Narayanpet cotton saree - Thread work','No','Narayanpet cotton sarees are celebrated for their lightweight, durable handwoven fabric, intricate interlocked tread work, and culturally rich designs blending Telangana and Maratha influences.',NULL,'2025-08-24 11:02:25',1,'admin',NULL,NULL,NULL),
+('ITM00005','SUB00001','Narayanpet cotton saree - Temple border','No','Narayanpet cotton sarees are renowned for their distinctive temple-style borders—often triangular, zigzagged, or geometric patterns inspired by South Indian temple architecture, symbolizing cultural heritage and spiritual symbolism.',NULL,'2025-08-24 11:15:17',1,'admin',NULL,NULL,NULL),
+('ITM00006','SUB00001','Narayanpet cotton saree - Rainbow color','No','Narayanpet cotton sarees are renowned for their vibrant and striking colors, including beautiful multicolor and rainbow-inspired designs that highlight traditional craftsmanship with bold contrasts and unique patterns.',NULL,'2025-08-24 11:18:04',1,'admin',NULL,NULL,NULL),
+('ITM00007','SUB00001','Narayanpet cotton saree - Multiline','No','Narayanpet cotton sarees are renowned for their distinctive multi-bordered designs, vibrant colors, and lightweight, breathable fabric, embodying timeless traditional craftsmanship from Telangana, India.',NULL,'2025-08-24 11:25:29',1,'admin',NULL,NULL,NULL),
+('ITM00008','SUB00002','Kanji cotton saree - Silver and gold border 80 counts','No','Kanji cotton sarees with silver and gold borders are exquisite traditional handwoven fabrics from Kanchipuram, blending the softness of cotton with the elegance of silver and gold zari borders for a unique, luxurious yet comfortable attire suitable for festive and special occasions.',NULL,'2025-08-24 11:36:22',1,'admin',NULL,NULL,NULL),
+('ITM00009','SUB00002','Kanji cotton saree - Body work 100 counts','No','100 count Kanji (or Kanchi) cotton sarees feature pure, handloom cotton fabric with a dense, durable weave often measuring 100 threads per inch, combined with intricate body work such as butta designs or zari borders, offering a rich yet breathable saree ideal for both casual and formal wear.',NULL,'2025-08-24 11:38:51',1,'admin',NULL,NULL,NULL),
+('ITM00010','SUB00003','Sungudi cotton saree','No','Handcrafted in Madurai, this Sungudi cotton saree features traditional tie-dye patterns and a rich zari border. Lightweight and breathable, it\'s perfect for everyday elegance or festive charm.',NULL,'2025-08-24 17:38:03',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -445,7 +466,7 @@ LOCK TABLES `order_items` WRITE;
 /*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
 INSERT INTO `order_items` VALUES
 (1,'ORD000001','ITM00002',1.00,3850.00,3690.00,4.34),
-(2,'ORD000002','ITM00001',1.00,4700.00,4466.00,5.24),
+(2,'ORD000002','ITM00003',1.00,4700.00,4346.00,8.14),
 (3,'ORD000003','ITM00002',1.00,4150.00,3690.00,12.47),
 (4,'ORD000004','ITM00007',1.00,4950.00,0.00,0.00),
 (5,'ORD000005','ITM00008',1.00,5450.00,4608.00,18.27),
@@ -477,7 +498,7 @@ CREATE TABLE `order_status_history` (
   PRIMARY KEY (`order_status_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_order_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -501,7 +522,9 @@ INSERT INTO `order_status_history` VALUES
 (13,'ORD000005','Canceled','2025-09-04 19:01:00',NULL,'2025-09-06 13:33:28',1,'admin'),
 (14,'ORD000008','Canceled','2025-09-04 19:07:00',NULL,'2025-09-06 13:39:04',1,'admin'),
 (16,'ORD000009','Delivered','2025-09-03 10:30:00',NULL,'2025-09-06 13:59:40',1,'admin'),
-(17,'ORD000009','Delivered','2025-09-03 22:50:00',NULL,'2025-09-06 14:18:13',1,'admin');
+(17,'ORD000009','Delivered','2025-09-03 22:50:00',NULL,'2025-09-06 14:18:13',1,'admin'),
+(18,'ORD000010','Delivered','2025-09-08 17:20:00',NULL,'2025-09-09 11:52:10',1,'admin'),
+(19,'ORD000011','Delivered','2025-09-08 17:22:00',NULL,'2025-09-09 11:54:08',1,'admin');
 /*!40000 ALTER TABLE `order_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -580,8 +603,8 @@ INSERT INTO `orders` VALUES
 ('ORD000007','CUS00006','2025-08-22','New','Pre-Book',4500.00,0.00,'COD','Pending','','2025-08-25 08:44:22',1,'admin'),
 ('ORD000008','CUS00006','2025-08-22','Canceled','Ex-Stock',6200.00,0.00,'COD','Pending','Ref ORD000011','2025-08-25 08:45:05',1,'admin'),
 ('ORD000009','CUS00005','2025-08-10','Delivered','Ex-Stock',5160.00,560.00,'COD','Received','Bag 100 | SLPOST 460 BD003703529LK','2025-08-26 20:20:36',1,'admin'),
-('ORD000010','CUS00005','2025-08-22','With Courier','Ex-Stock',5910.00,560.00,'COD','Pending','BAG 100 | SLPOST 460 BD003703604LK','2025-09-06 13:37:12',1,'admin'),
-('ORD000011','CUS00006','2025-08-22','With Courier','Ex-Stock',6670.00,570.00,'COD','Pending','Bag 100 | SLPOST 470 BD003703605LK','2025-09-06 13:41:18',1,'admin');
+('ORD000010','CUS00005','2025-08-22','Delivered','Ex-Stock',5910.00,560.00,'COD','Received','BAG 100 | SLPOST 460 BD003703604LK','2025-09-06 13:37:12',1,'admin'),
+('ORD000011','CUS00006','2025-08-22','Delivered','Ex-Stock',6670.00,570.00,'COD','Received','Bag 100 | SLPOST 470 BD003703605LK','2025-09-06 13:41:18',1,'admin');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -604,7 +627,7 @@ CREATE TABLE `payment_status_history` (
   PRIMARY KEY (`payment_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_payment_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -618,7 +641,9 @@ INSERT INTO `payment_status_history` VALUES
 (2,'ORD000002','Received','2025-07-07 10:30:00',NULL,'2025-08-25 09:12:17',1,'admin'),
 (3,'ORD000003','Received','2025-08-11 10:45:00',NULL,'2025-08-25 09:16:17',1,'admin'),
 (5,'ORD000009','Received','2025-09-04 13:45:00',NULL,'2025-09-06 13:59:40',1,'admin'),
-(6,'ORD000009','Received','2025-09-04 13:50:00',NULL,'2025-09-06 14:18:13',1,'admin');
+(6,'ORD000009','Received','2025-09-04 13:50:00',NULL,'2025-09-06 14:18:13',1,'admin'),
+(7,'ORD000010','Received','2025-09-09 14:04:00',NULL,'2025-09-09 11:53:10',1,'admin'),
+(8,'ORD000011','Received','2025-09-09 14:04:00',NULL,'2025-09-09 11:55:10',1,'admin');
 /*!40000 ALTER TABLE `payment_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -681,15 +706,15 @@ CREATE TABLE `purchase_order_items` (
 LOCK TABLES `purchase_order_items` WRITE;
 /*!40000 ALTER TABLE `purchase_order_items` DISABLE KEYS */;
 INSERT INTO `purchase_order_items` VALUES
-(1,'PUR000001','ITM00003',0.00,1.00,0.00,4346.00),
-(2,'PUR000001','ITM00004',0.00,1.00,0.00,4520.00),
-(3,'PUR000001','ITM00001',0.00,1.00,0.00,4466.00),
-(4,'PUR000002','ITM00002',0.00,4.00,0.00,3690.00),
-(5,'PUR000003','ITM00005',0.00,2.00,0.00,3990.00),
-(6,'PUR000003','ITM00006',0.00,1.00,0.00,3634.00),
-(7,'PUR000004','ITM00007',0.00,1.00,0.00,4466.00),
-(8,'PUR000005','ITM00008',0.00,1.00,0.00,4608.00),
-(9,'PUR000005','ITM00009',0.00,1.00,0.00,5499.00);
+(1,'PUR000001','ITM00003',850.00,1.00,550.00,4346.00),
+(2,'PUR000001','ITM00004',899.00,1.00,550.00,4520.00),
+(3,'PUR000001','ITM00001',850.00,1.00,600.00,4466.00),
+(4,'PUR000002','ITM00002',700.00,4.00,500.00,3690.00),
+(5,'PUR000003','ITM00005',750.00,2.00,550.00,3990.00),
+(6,'PUR000003','ITM00006',650.00,1.00,450.00,3634.00),
+(7,'PUR000004','ITM00007',850.00,1.00,500.00,4466.00),
+(8,'PUR000005','ITM00008',880.00,1.00,500.00,4608.00),
+(9,'PUR000005','ITM00009',1130.00,1.00,500.00,5499.00);
 /*!40000 ALTER TABLE `purchase_order_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -810,16 +835,16 @@ CREATE TABLE `stock_levels` (
 LOCK TABLES `stock_levels` WRITE;
 /*!40000 ALTER TABLE `stock_levels` DISABLE KEYS */;
 INSERT INTO `stock_levels` VALUES
-('ITM00001',0.00,'2025-08-25 08:36:36'),
-('ITM00002',2.00,'2025-08-25 08:38:45'),
-('ITM00003',1.00,'2025-08-25 08:09:30'),
+('ITM00001',1.00,'2025-09-08 16:50:36'),
+('ITM00002',2.00,'2025-09-08 17:28:20'),
+('ITM00003',0.00,'2025-09-08 17:29:29'),
 ('ITM00004',1.00,'2025-08-25 08:09:30'),
 ('ITM00005',2.00,'2025-08-26 20:08:02'),
 ('ITM00006',1.00,'2025-08-26 20:08:02'),
 ('ITM00007',0.00,'2025-08-26 21:55:49'),
 ('ITM00008',0.00,'2025-09-06 13:37:12'),
 ('ITM00009',0.00,'2025-09-06 13:41:19'),
-('ITM00010',-2.00,'2025-09-07 02:14:44');
+('ITM00010',0.00,'2025-09-07 04:22:50');
 /*!40000 ALTER TABLE `stock_levels` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -856,7 +881,7 @@ INSERT INTO `stock_transactions` VALUES
 ('TRN000003','ITM00001','IN',1.00,'Received via GRN #GRN000001','2025-08-25 08:09:30',1,'admin'),
 ('TRN000004','ITM00002','IN',4.00,'Received via GRN #GRN000002','2025-08-25 08:10:44',1,'admin'),
 ('TRN000005','ITM00002','OUT',1.00,'Sold via Order #ORD000001','2025-08-25 08:34:48',1,'admin'),
-('TRN000006','ITM00001','OUT',1.00,'Sold via Order #ORD000002','2025-08-25 08:36:36',1,'admin'),
+('TRN000006','ITM00003','OUT',1.00,'Sold via Order #ORD000002','2025-08-25 08:36:36',1,'admin'),
 ('TRN000007','ITM00002','OUT',1.00,'Sold via Order #ORD000003','2025-08-25 08:38:45',1,'admin'),
 ('TRN000008','ITM00007','IN',1.00,'Received via GRN #GRN000003','2025-08-25 11:22:26',1,'admin'),
 ('TRN000009','ITM00005','IN',2.00,'Received via GRN #GRN000004','2025-08-26 20:08:02',1,'admin'),
@@ -913,7 +938,7 @@ INSERT INTO `system_sequences` VALUES
 ('item_id','ITM',1,5,'Item IDs','2025-08-24 17:38:03','1'),
 ('order_id','ORD',12,6,'Sales Order IDs','2025-09-06 13:41:18','1'),
 ('purchase_order_id','PUR',6,6,'Purchase Order IDs','2025-09-07 01:59:23','1'),
-('transaction_id','TRN',75,6,'Stock Transaction IDs','2025-09-07 02:01:04','1');
+('transaction_id','TRN',89,6,'Stock Transaction IDs','2025-09-09 12:12:59','1');
 /*!40000 ALTER TABLE `system_sequences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -933,7 +958,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=122 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=142 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1063,7 +1088,27 @@ INSERT INTO `user_login_audit` VALUES
 (118,1,'2025-09-06 16:02:56','172.20.10.5',1),
 (119,1,'2025-09-06 16:12:37','172.20.10.5',1),
 (120,1,'2025-09-06 16:32:48','172.20.10.5',1),
-(121,1,'2025-09-07 07:06:51','10.0.7.121',1);
+(121,1,'2025-09-07 07:06:51','10.0.7.121',1),
+(122,1,'2025-09-07 09:25:17','10.0.7.121',1),
+(123,1,'2025-09-07 11:22:33','10.0.7.121',1),
+(124,1,'2025-09-08 21:28:48','10.0.7.133',1),
+(125,1,'2025-09-08 22:23:41','10.0.7.121',1),
+(126,1,'2025-09-08 22:58:32','10.0.7.121',1),
+(127,1,'2025-09-09 16:18:10','172.20.10.5',1),
+(128,1,'2025-09-09 21:46:03','172.20.10.5',1),
+(129,1,'2025-09-10 17:05:53','172.20.10.5',1),
+(130,1,'2025-09-10 19:50:09','172.20.10.5',1),
+(131,1,'2025-09-10 22:00:40','172.20.10.5',1),
+(132,1,'2025-09-10 23:01:07','10.0.7.127',1),
+(133,1,'2025-09-11 18:28:51','172.20.10.5',1),
+(134,1,'2025-09-12 16:42:34','172.20.10.5',1),
+(135,1,'2025-09-12 17:06:11','172.20.10.5',1),
+(136,1,'2025-09-12 17:16:35','172.20.10.5',1),
+(137,1,'2025-09-12 18:00:40','172.20.10.5',1),
+(138,1,'2025-09-12 18:55:36','172.20.10.5',1),
+(139,1,'2025-09-12 21:16:44','172.20.10.5',1),
+(140,1,'2025-09-13 02:09:52','10.0.7.130',1),
+(141,1,'2025-09-14 01:41:05','10.0.7.121',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1128,7 +1173,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-09-07 07:06:51','2025-09-07 01:36:51',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-09-14 01:41:05','2025-09-13 20:11:05',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1282,7 +1327,7 @@ CREATE TABLE `db` (
 LOCK TABLES `db` WRITE;
 /*!40000 ALTER TABLE `db` DISABLE KEYS */;
 INSERT INTO `db` VALUES
-('localhost','erpdb','dbauser','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y');
+('localhost','erpdb','dbauser','Y','Y','Y','Y','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N','N');
 /*!40000 ALTER TABLE `db` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1371,7 +1416,7 @@ INSERT INTO `global_priv` VALUES
 ('localhost','root','{\"access\":18446744073709551615,\"plugin\":\"mysql_native_password\",\"authentication_string\":\"invalid\",\"auth_or\":[{},{\"plugin\":\"unix_socket\"}]}'),
 ('localhost','mysql','{\"access\":18446744073709551615,\"plugin\":\"mysql_native_password\",\"authentication_string\":\"invalid\",\"auth_or\":[{},{\"plugin\":\"unix_socket\"}]}'),
 ('%','webuser','{\"access\":549755813887,\"version_id\":101111,\"plugin\":\"mysql_native_password\",\"authentication_string\":\"*E8FF493478066901F07DC13F7E659283EFA30AB3\",\"password_last_changed\":1751768937}'),
-('localhost','dbauser','{\"access\":64,\"version_id\":101111,\"plugin\":\"mysql_native_password\",\"authentication_string\":\"*3FCF5A3E6BC7A71E26F19D8AAE23BB6E2647EE1A\",\"password_last_changed\":1751296320}');
+('localhost','dbauser','{\"access\":0,\"version_id\":101114,\"plugin\":\"mysql_native_password\",\"authentication_string\":\"*3FCF5A3E6BC7A71E26F19D8AAE23BB6E2647EE1A\",\"password_last_changed\":1757794172}');
 /*!40000 ALTER TABLE `global_priv` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -3249,6 +3294,511 @@ CREATE TABLE IF NOT EXISTS `transaction_registry` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Current Database: `phpmyadmin`
+--
+
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `phpmyadmin` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
+
+USE `phpmyadmin`;
+
+--
+-- Table structure for table `pma__bookmark`
+--
+
+DROP TABLE IF EXISTS `pma__bookmark`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__bookmark` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `dbase` varchar(255) NOT NULL DEFAULT '',
+  `user` varchar(255) NOT NULL DEFAULT '',
+  `label` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
+  `query` text NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Bookmarks';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__bookmark`
+--
+
+LOCK TABLES `pma__bookmark` WRITE;
+/*!40000 ALTER TABLE `pma__bookmark` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__bookmark` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__central_columns`
+--
+
+DROP TABLE IF EXISTS `pma__central_columns`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__central_columns` (
+  `db_name` varchar(64) NOT NULL,
+  `col_name` varchar(64) NOT NULL,
+  `col_type` varchar(64) NOT NULL,
+  `col_length` text DEFAULT NULL,
+  `col_collation` varchar(64) NOT NULL,
+  `col_isNull` tinyint(1) NOT NULL,
+  `col_extra` varchar(255) DEFAULT '',
+  `col_default` text DEFAULT NULL,
+  PRIMARY KEY (`db_name`,`col_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Central list of columns';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__central_columns`
+--
+
+LOCK TABLES `pma__central_columns` WRITE;
+/*!40000 ALTER TABLE `pma__central_columns` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__central_columns` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__column_info`
+--
+
+DROP TABLE IF EXISTS `pma__column_info`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__column_info` (
+  `id` int(5) unsigned NOT NULL AUTO_INCREMENT,
+  `db_name` varchar(64) NOT NULL DEFAULT '',
+  `table_name` varchar(64) NOT NULL DEFAULT '',
+  `column_name` varchar(64) NOT NULL DEFAULT '',
+  `comment` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
+  `mimetype` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
+  `transformation` varchar(255) NOT NULL DEFAULT '',
+  `transformation_options` varchar(255) NOT NULL DEFAULT '',
+  `input_transformation` varchar(255) NOT NULL DEFAULT '',
+  `input_transformation_options` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `db_name` (`db_name`,`table_name`,`column_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Column information for phpMyAdmin';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__column_info`
+--
+
+LOCK TABLES `pma__column_info` WRITE;
+/*!40000 ALTER TABLE `pma__column_info` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__column_info` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__designer_settings`
+--
+
+DROP TABLE IF EXISTS `pma__designer_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__designer_settings` (
+  `username` varchar(64) NOT NULL,
+  `settings_data` text NOT NULL,
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Settings related to Designer';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__designer_settings`
+--
+
+LOCK TABLES `pma__designer_settings` WRITE;
+/*!40000 ALTER TABLE `pma__designer_settings` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__designer_settings` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__export_templates`
+--
+
+DROP TABLE IF EXISTS `pma__export_templates`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__export_templates` (
+  `id` int(5) unsigned NOT NULL AUTO_INCREMENT,
+  `username` varchar(64) NOT NULL,
+  `export_type` varchar(10) NOT NULL,
+  `template_name` varchar(64) NOT NULL,
+  `template_data` text NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `u_user_type_template` (`username`,`export_type`,`template_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Saved export templates';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__export_templates`
+--
+
+LOCK TABLES `pma__export_templates` WRITE;
+/*!40000 ALTER TABLE `pma__export_templates` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__export_templates` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__favorite`
+--
+
+DROP TABLE IF EXISTS `pma__favorite`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__favorite` (
+  `username` varchar(64) NOT NULL,
+  `tables` text NOT NULL,
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Favorite tables';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__favorite`
+--
+
+LOCK TABLES `pma__favorite` WRITE;
+/*!40000 ALTER TABLE `pma__favorite` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__favorite` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__history`
+--
+
+DROP TABLE IF EXISTS `pma__history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__history` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `username` varchar(64) NOT NULL DEFAULT '',
+  `db` varchar(64) NOT NULL DEFAULT '',
+  `table` varchar(64) NOT NULL DEFAULT '',
+  `timevalue` timestamp NOT NULL DEFAULT current_timestamp(),
+  `sqlquery` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `username` (`username`,`db`,`table`,`timevalue`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='SQL history for phpMyAdmin';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__history`
+--
+
+LOCK TABLES `pma__history` WRITE;
+/*!40000 ALTER TABLE `pma__history` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__history` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__navigationhiding`
+--
+
+DROP TABLE IF EXISTS `pma__navigationhiding`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__navigationhiding` (
+  `username` varchar(64) NOT NULL,
+  `item_name` varchar(64) NOT NULL,
+  `item_type` varchar(64) NOT NULL,
+  `db_name` varchar(64) NOT NULL,
+  `table_name` varchar(64) NOT NULL,
+  PRIMARY KEY (`username`,`item_name`,`item_type`,`db_name`,`table_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Hidden items of navigation tree';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__navigationhiding`
+--
+
+LOCK TABLES `pma__navigationhiding` WRITE;
+/*!40000 ALTER TABLE `pma__navigationhiding` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__navigationhiding` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__pdf_pages`
+--
+
+DROP TABLE IF EXISTS `pma__pdf_pages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__pdf_pages` (
+  `db_name` varchar(64) NOT NULL DEFAULT '',
+  `page_nr` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `page_descr` varchar(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL DEFAULT '',
+  PRIMARY KEY (`page_nr`),
+  KEY `db_name` (`db_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='PDF relation pages for phpMyAdmin';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__pdf_pages`
+--
+
+LOCK TABLES `pma__pdf_pages` WRITE;
+/*!40000 ALTER TABLE `pma__pdf_pages` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__pdf_pages` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__recent`
+--
+
+DROP TABLE IF EXISTS `pma__recent`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__recent` (
+  `username` varchar(64) NOT NULL,
+  `tables` text NOT NULL,
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Recently accessed tables';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__recent`
+--
+
+LOCK TABLES `pma__recent` WRITE;
+/*!40000 ALTER TABLE `pma__recent` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__recent` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__relation`
+--
+
+DROP TABLE IF EXISTS `pma__relation`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__relation` (
+  `master_db` varchar(64) NOT NULL DEFAULT '',
+  `master_table` varchar(64) NOT NULL DEFAULT '',
+  `master_field` varchar(64) NOT NULL DEFAULT '',
+  `foreign_db` varchar(64) NOT NULL DEFAULT '',
+  `foreign_table` varchar(64) NOT NULL DEFAULT '',
+  `foreign_field` varchar(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (`master_db`,`master_table`,`master_field`),
+  KEY `foreign_field` (`foreign_db`,`foreign_table`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Relation table';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__relation`
+--
+
+LOCK TABLES `pma__relation` WRITE;
+/*!40000 ALTER TABLE `pma__relation` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__relation` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__savedsearches`
+--
+
+DROP TABLE IF EXISTS `pma__savedsearches`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__savedsearches` (
+  `id` int(5) unsigned NOT NULL AUTO_INCREMENT,
+  `username` varchar(64) NOT NULL DEFAULT '',
+  `db_name` varchar(64) NOT NULL DEFAULT '',
+  `search_name` varchar(64) NOT NULL DEFAULT '',
+  `search_data` text NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `u_savedsearches_username_dbname` (`username`,`db_name`,`search_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Saved searches';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__savedsearches`
+--
+
+LOCK TABLES `pma__savedsearches` WRITE;
+/*!40000 ALTER TABLE `pma__savedsearches` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__savedsearches` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__table_coords`
+--
+
+DROP TABLE IF EXISTS `pma__table_coords`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__table_coords` (
+  `db_name` varchar(64) NOT NULL DEFAULT '',
+  `table_name` varchar(64) NOT NULL DEFAULT '',
+  `pdf_page_number` int(11) NOT NULL DEFAULT 0,
+  `x` float unsigned NOT NULL DEFAULT 0,
+  `y` float unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`db_name`,`table_name`,`pdf_page_number`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Table coordinates for phpMyAdmin PDF output';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__table_coords`
+--
+
+LOCK TABLES `pma__table_coords` WRITE;
+/*!40000 ALTER TABLE `pma__table_coords` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__table_coords` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__table_info`
+--
+
+DROP TABLE IF EXISTS `pma__table_info`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__table_info` (
+  `db_name` varchar(64) NOT NULL DEFAULT '',
+  `table_name` varchar(64) NOT NULL DEFAULT '',
+  `display_field` varchar(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (`db_name`,`table_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Table information for phpMyAdmin';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__table_info`
+--
+
+LOCK TABLES `pma__table_info` WRITE;
+/*!40000 ALTER TABLE `pma__table_info` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__table_info` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__table_uiprefs`
+--
+
+DROP TABLE IF EXISTS `pma__table_uiprefs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__table_uiprefs` (
+  `username` varchar(64) NOT NULL,
+  `db_name` varchar(64) NOT NULL,
+  `table_name` varchar(64) NOT NULL,
+  `prefs` text NOT NULL,
+  `last_update` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`username`,`db_name`,`table_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Tables'' UI preferences';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__table_uiprefs`
+--
+
+LOCK TABLES `pma__table_uiprefs` WRITE;
+/*!40000 ALTER TABLE `pma__table_uiprefs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__table_uiprefs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__tracking`
+--
+
+DROP TABLE IF EXISTS `pma__tracking`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__tracking` (
+  `db_name` varchar(64) NOT NULL,
+  `table_name` varchar(64) NOT NULL,
+  `version` int(10) unsigned NOT NULL,
+  `date_created` datetime NOT NULL,
+  `date_updated` datetime NOT NULL,
+  `schema_snapshot` text NOT NULL,
+  `schema_sql` text DEFAULT NULL,
+  `data_sql` longtext DEFAULT NULL,
+  `tracking` set('UPDATE','REPLACE','INSERT','DELETE','TRUNCATE','CREATE DATABASE','ALTER DATABASE','DROP DATABASE','CREATE TABLE','ALTER TABLE','RENAME TABLE','DROP TABLE','CREATE INDEX','DROP INDEX','CREATE VIEW','ALTER VIEW','DROP VIEW') DEFAULT NULL,
+  `tracking_active` int(1) unsigned NOT NULL DEFAULT 1,
+  PRIMARY KEY (`db_name`,`table_name`,`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Database changes tracking for phpMyAdmin';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__tracking`
+--
+
+LOCK TABLES `pma__tracking` WRITE;
+/*!40000 ALTER TABLE `pma__tracking` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__tracking` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__userconfig`
+--
+
+DROP TABLE IF EXISTS `pma__userconfig`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__userconfig` (
+  `username` varchar(64) NOT NULL,
+  `timevalue` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `config_data` text NOT NULL,
+  PRIMARY KEY (`username`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='User preferences storage for phpMyAdmin';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__userconfig`
+--
+
+LOCK TABLES `pma__userconfig` WRITE;
+/*!40000 ALTER TABLE `pma__userconfig` DISABLE KEYS */;
+INSERT INTO `pma__userconfig` VALUES
+('phpmyadmin','2025-09-13 18:13:36','{\"Console\\/Mode\":\"collapse\"}');
+/*!40000 ALTER TABLE `pma__userconfig` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__usergroups`
+--
+
+DROP TABLE IF EXISTS `pma__usergroups`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__usergroups` (
+  `usergroup` varchar(64) NOT NULL,
+  `tab` varchar(64) NOT NULL,
+  `allowed` enum('Y','N') NOT NULL DEFAULT 'N',
+  PRIMARY KEY (`usergroup`,`tab`,`allowed`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='User groups with configured menu items';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__usergroups`
+--
+
+LOCK TABLES `pma__usergroups` WRITE;
+/*!40000 ALTER TABLE `pma__usergroups` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__usergroups` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `pma__users`
+--
+
+DROP TABLE IF EXISTS `pma__users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pma__users` (
+  `username` varchar(64) NOT NULL,
+  `usergroup` varchar(64) NOT NULL,
+  PRIMARY KEY (`username`,`usergroup`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_bin COMMENT='Users and their assignments to user groups';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `pma__users`
+--
+
+LOCK TABLES `pma__users` WRITE;
+/*!40000 ALTER TABLE `pma__users` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pma__users` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Current Database: `erpdb`
 --
 
@@ -3277,6 +3827,12 @@ USE `mysql`;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Current Database: `phpmyadmin`
+--
+
+USE `phpmyadmin`;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -3287,4 +3843,4 @@ USE `mysql`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-09-07  9:08:32
+-- Dump completed on 2025-09-14  1:47:36
