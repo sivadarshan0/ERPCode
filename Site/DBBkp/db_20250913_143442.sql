@@ -1,9 +1,9 @@
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19  Distrib 10.11.11-MariaDB, for debian-linux-gnu (aarch64)
+-- MariaDB dump 10.19  Distrib 10.11.14-MariaDB, for debian-linux-gnu (aarch64)
 --
 -- Host: localhost    Database: 
 -- ------------------------------------------------------
--- Server version	10.11.11-MariaDB-0+deb12u1
+-- Server version	10.11.14-MariaDB-0+deb12u2
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -107,7 +107,7 @@ CREATE TABLE `acc_transactions` (
   KEY `idx_transaction_group_id` (`transaction_group_id`),
   KEY `idx_transaction_date` (`transaction_date`),
   KEY `idx_financial_year` (`financial_year`)
-) ENGINE=InnoDB AUTO_INCREMENT=145 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=169 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -133,8 +133,8 @@ INSERT INTO `acc_transactions` VALUES
 (30,'TRN000030',24,'2025-06-10 17:55:41','2025-2026','Payment for goods INR 2,800 by Janu','Loan from Janu for INR payment',NULL,10080.00,'Posted','manual_entry',NULL,'2025-08-31 17:55:41','admin'),
 (31,'TRN000031',15,'2025-06-10 06:23:51','2025-2026','Cost of goods sold for Order #ORD000001','',3690.00,NULL,'Posted','sales_order','ORD000001','2025-09-01 06:23:51','SystemSync'),
 (32,'TRN000031',4,'2025-06-10 06:23:51','2025-2026','Cost of goods sold for Order #ORD000001','',NULL,3690.00,'Posted','sales_order','ORD000001','2025-09-01 06:23:51','SystemSync'),
-(33,'TRN000032',15,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',4466.00,NULL,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
-(34,'TRN000032',4,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',NULL,4466.00,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
+(33,'TRN000032',15,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',4346.00,NULL,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
+(34,'TRN000032',4,'2025-07-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000002','',NULL,4346.00,'Posted','sales_order','ORD000002','2025-09-01 06:23:51','SystemSync'),
 (35,'TRN000033',15,'2025-08-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000003','',3690.00,NULL,'Posted','sales_order','ORD000003','2025-09-01 06:23:51','SystemSync'),
 (36,'TRN000033',4,'2025-08-02 06:23:51','2025-2026','Cost of goods sold for Order #ORD000003','',NULL,3690.00,'Posted','sales_order','ORD000003','2025-09-01 06:23:51','SystemSync'),
 (37,'TRN000034',6,'2025-08-24 08:26:42','2025-2026','Test entry','Test entry',1000.00,NULL,'Canceled','manual_entry',NULL,'2025-09-01 08:26:42','admin'),
@@ -166,7 +166,27 @@ INSERT INTO `acc_transactions` VALUES
 (141,'TRN000079',23,'2025-09-04 14:20:28','2025-2026','Bag for item','4 Bags each 100',400.00,NULL,'Posted','manual_entry',NULL,'2025-09-06 14:20:28','admin'),
 (142,'TRN000079',20,'2025-09-04 14:20:28','2025-2026','Bag for item','4 Bags each 100',NULL,400.00,'Posted','manual_entry',NULL,'2025-09-06 14:20:28','admin'),
 (143,'TRN000080',25,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',930.00,NULL,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin'),
-(144,'TRN000080',20,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',NULL,930.00,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin');
+(144,'TRN000080',20,'2025-09-04 14:23:16','2025-2026','Local courier expense','For ORD000010 - 460 | ORD000010 - 470',NULL,930.00,'Posted','manual_entry',NULL,'2025-09-06 14:23:16','admin'),
+(149,'TRN000075',24,'2025-09-07 04:30:16','2025-2026','Loan settlement','Loan settlement for Janu by old transections',10080.00,NULL,'Posted','manual_entry',NULL,'2025-09-07 04:30:16','admin'),
+(150,'TRN000075',21,'2025-09-07 04:30:16','2025-2026','Loan settlement','Loan settlement for Janu by old transections',NULL,10080.00,'Posted','manual_entry',NULL,'2025-09-07 04:30:16','admin'),
+(151,'TRN000076',1,'2025-08-22 11:53:10','2025-2026','Sales revenue from Order #ORD000010','',5910.00,NULL,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(152,'TRN000076',13,'2025-08-22 11:53:10','2025-2026','Sales revenue from Order #ORD000010','',NULL,5910.00,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(153,'TRN000081',15,'2025-08-22 11:53:10','2025-2026','Cost of goods sold for Order #ORD000010','',4608.00,NULL,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(154,'TRN000081',4,'2025-08-22 11:53:10','2025-2026','Cost of goods sold for Order #ORD000010','',NULL,4608.00,'Posted','sales_order','ORD000010','2025-09-09 11:53:10','admin'),
+(155,'TRN000082',1,'2025-08-22 11:55:10','2025-2026','Sales revenue from Order #ORD000011','',6670.00,NULL,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(156,'TRN000082',13,'2025-08-22 11:55:10','2025-2026','Sales revenue from Order #ORD000011','',NULL,6670.00,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(157,'TRN000083',15,'2025-08-22 11:55:10','2025-2026','Cost of goods sold for Order #ORD000011','',5499.00,NULL,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(158,'TRN000083',4,'2025-08-22 11:55:10','2025-2026','Cost of goods sold for Order #ORD000011','',NULL,5499.00,'Posted','sales_order','ORD000011','2025-09-09 11:55:10','admin'),
+(159,'TRN000084',2,'2025-07-07 12:01:01','2025-2026','Cash deposit to bank #ORD000002','Cash deposit to bank #ORD000002',4700.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:01:01','admin'),
+(160,'TRN000084',1,'2025-07-07 12:01:01','2025-2026','Cash deposit to bank #ORD000002','Cash deposit to bank #ORD000002',NULL,4700.00,'Posted','manual_entry',NULL,'2025-09-09 12:01:02','admin'),
+(161,'TRN000085',2,'2025-08-11 12:01:01','2025-2026','Cash deposit to bank #ORD000003','Cash deposit to bank #ORD000003',4150.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:02:53','admin'),
+(162,'TRN000085',1,'2025-08-11 12:01:01','2025-2026','Cash deposit to bank #ORD000003','Cash deposit to bank #ORD000003',NULL,4150.00,'Posted','manual_entry',NULL,'2025-09-09 12:02:53','admin'),
+(163,'TRN000086',2,'2025-09-04 12:10:28','2025-2026','Cash deposit to bank #ORD000009','Cash deposit to bank #ORD000009',5160.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:10:28','admin'),
+(164,'TRN000086',1,'2025-09-04 12:10:28','2025-2026','Cash deposit to bank #ORD000009','Cash deposit to bank #ORD000009',NULL,5160.00,'Posted','manual_entry',NULL,'2025-09-09 12:10:28','admin'),
+(165,'TRN000087',2,'2025-09-09 12:11:31','2025-2026','Cash deposit to bank #ORD000010','Cash deposit to bank #ORD000010',5910.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:11:31','admin'),
+(166,'TRN000087',1,'2025-09-09 12:11:31','2025-2026','Cash deposit to bank #ORD000010','Cash deposit to bank #ORD000010',NULL,5910.00,'Posted','manual_entry',NULL,'2025-09-09 12:11:31','admin'),
+(167,'TRN000088',2,'2025-09-09 12:12:59','2025-2026','Cash deposit to bank #ORD000011','Cash deposit to bank #ORD000011',6670.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:12:59','admin'),
+(168,'TRN000088',1,'2025-09-09 12:12:59','2025-2026','Cash deposit to bank #ORD000011','Cash deposit to bank #ORD000011',NULL,6670.00,'Posted','manual_entry',NULL,'2025-09-09 12:12:59','admin');
 /*!40000 ALTER TABLE `acc_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -346,7 +366,7 @@ CREATE TABLE `grn_items` (
   KEY `grn_id` (`grn_id`),
   KEY `item_id` (`item_id`),
   CONSTRAINT `fk_grn_header` FOREIGN KEY (`grn_id`) REFERENCES `grn` (`grn_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -356,16 +376,16 @@ CREATE TABLE `grn_items` (
 LOCK TABLES `grn_items` WRITE;
 /*!40000 ALTER TABLE `grn_items` DISABLE KEYS */;
 INSERT INTO `grn_items` VALUES
-(1,'GRN000001','ITM00003','No',1,4346.00,0),
-(2,'GRN000001','ITM00004','No',1,4520.00,0),
-(3,'GRN000001','ITM00001','No',1,4466.00,0),
-(4,'GRN000002','ITM00002','No',4,3690.00,0),
+(1,'GRN000001','ITM00003','No',1,4346.00,550),
+(2,'GRN000001','ITM00004','No',1,4520.00,550),
+(3,'GRN000001','ITM00001','No',1,4466.00,600),
+(4,'GRN000002','ITM00002','No',4,3690.00,500),
 (5,'GRN000003','ITM00007','No',1,4500.00,600),
-(6,'GRN000004','ITM00005','No',2,3990.00,0),
-(7,'GRN000004','ITM00006','No',1,3634.00,0),
-(8,'GRN000005','ITM00007','No',1,4466.00,0),
-(9,'GRN000006','ITM00008','No',1,4608.00,0),
-(10,'GRN000006','ITM00009','No',1,5499.00,0);
+(6,'GRN000004','ITM00005','No',2,3990.00,550),
+(7,'GRN000004','ITM00006','No',1,3634.00,450),
+(8,'GRN000005','ITM00007','No',1,4466.00,500),
+(9,'GRN000006','ITM00008','No',1,4608.00,500),
+(10,'GRN000006','ITM00009','No',1,5499.00,500);
 /*!40000 ALTER TABLE `grn_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -382,6 +402,7 @@ CREATE TABLE `items` (
   `name` varchar(150) NOT NULL,
   `uom` varchar(20) NOT NULL DEFAULT 'No',
   `description` text DEFAULT NULL,
+  `main_image_path` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `created_by` int(11) DEFAULT NULL,
   `created_by_name` varchar(50) DEFAULT NULL,
@@ -402,16 +423,16 @@ CREATE TABLE `items` (
 LOCK TABLES `items` WRITE;
 /*!40000 ALTER TABLE `items` DISABLE KEYS */;
 INSERT INTO `items` VALUES
-('ITM00001','SUB00001','Anuradha lining border saree','No','Anuradha lining border saree','2025-08-24 10:53:35',1,'admin',NULL,NULL,NULL),
-('ITM00002','SUB00001','Maheshwari cotton saree','No','Maheshwari cotton sarees are timeless handloom masterpieces from Maheshwar, Madhya Pradesh, renowned for their lightweight, reversible borders, and elegant fusion of cotton and silk woven with intricate traditional designs.','2025-08-24 10:55:14',1,'admin',NULL,NULL,NULL),
-('ITM00003','SUB00001','Narayanpet cotton saree - Silver border','No','Narayanpet cotton sarees are a cherished traditional handloom craft from Telangana, known for their lightweight durability, distinctive checked and contrast border designs, and deep cultural roots, while their silk counterparts blend Maharashtrian influence and local artistry to offer elegant affordability and versatility.','2025-08-24 11:00:02',1,'admin',NULL,NULL,NULL),
-('ITM00004','SUB00001','Narayanpet cotton saree - Thread work','No','Narayanpet cotton sarees are celebrated for their lightweight, durable handwoven fabric, intricate interlocked tread work, and culturally rich designs blending Telangana and Maratha influences.','2025-08-24 11:02:25',1,'admin',NULL,NULL,NULL),
-('ITM00005','SUB00001','Narayanpet cotton saree - Temple border','No','Narayanpet cotton sarees are renowned for their distinctive temple-style borders—often triangular, zigzagged, or geometric patterns inspired by South Indian temple architecture, symbolizing cultural heritage and spiritual symbolism.','2025-08-24 11:15:17',1,'admin',NULL,NULL,NULL),
-('ITM00006','SUB00001','Narayanpet cotton saree - Rainbow color','No','Narayanpet cotton sarees are renowned for their vibrant and striking colors, including beautiful multicolor and rainbow-inspired designs that highlight traditional craftsmanship with bold contrasts and unique patterns.','2025-08-24 11:18:04',1,'admin',NULL,NULL,NULL),
-('ITM00007','SUB00001','Narayanpet cotton saree - Multiline','No','Narayanpet cotton sarees are renowned for their distinctive multi-bordered designs, vibrant colors, and lightweight, breathable fabric, embodying timeless traditional craftsmanship from Telangana, India.','2025-08-24 11:25:29',1,'admin',NULL,NULL,NULL),
-('ITM00008','SUB00002','Kanji cotton saree - Silver and gold border 80 counts','No','Kanji cotton sarees with silver and gold borders are exquisite traditional handwoven fabrics from Kanchipuram, blending the softness of cotton with the elegance of silver and gold zari borders for a unique, luxurious yet comfortable attire suitable for festive and special occasions.','2025-08-24 11:36:22',1,'admin',NULL,NULL,NULL),
-('ITM00009','SUB00002','Kanji cotton saree - Body work 100 counts','No','100 count Kanji (or Kanchi) cotton sarees feature pure, handloom cotton fabric with a dense, durable weave often measuring 100 threads per inch, combined with intricate body work such as butta designs or zari borders, offering a rich yet breathable saree ideal for both casual and formal wear.','2025-08-24 11:38:51',1,'admin',NULL,NULL,NULL),
-('ITM00010','SUB00003','Sungudi cotton saree','No','Handcrafted in Madurai, this Sungudi cotton saree features traditional tie-dye patterns and a rich zari border. Lightweight and breathable, it\'s perfect for everyday elegance or festive charm.','2025-08-24 17:38:03',1,'admin',NULL,NULL,NULL);
+('ITM00001','SUB00001','Anuradha lining border saree','No','Anuradha lining border saree',NULL,'2025-08-24 10:53:35',1,'admin',NULL,NULL,NULL),
+('ITM00002','SUB00001','Maheshwari cotton saree','No','Maheshwari cotton sarees are timeless handloom masterpieces from Maheshwar, Madhya Pradesh, renowned for their lightweight, reversible borders, and elegant fusion of cotton and silk woven with intricate traditional designs.',NULL,'2025-08-24 10:55:14',1,'admin',NULL,NULL,NULL),
+('ITM00003','SUB00001','Narayanpet cotton saree - Silver border','No','Narayanpet cotton sarees are a cherished traditional handloom craft from Telangana, known for their lightweight durability, distinctive checked and contrast border designs, and deep cultural roots, while their silk counterparts blend Maharashtrian influence and local artistry to offer elegant affordability and versatility.',NULL,'2025-08-24 11:00:02',1,'admin',NULL,NULL,NULL),
+('ITM00004','SUB00001','Narayanpet cotton saree - Thread work','No','Narayanpet cotton sarees are celebrated for their lightweight, durable handwoven fabric, intricate interlocked tread work, and culturally rich designs blending Telangana and Maratha influences.',NULL,'2025-08-24 11:02:25',1,'admin',NULL,NULL,NULL),
+('ITM00005','SUB00001','Narayanpet cotton saree - Temple border','No','Narayanpet cotton sarees are renowned for their distinctive temple-style borders—often triangular, zigzagged, or geometric patterns inspired by South Indian temple architecture, symbolizing cultural heritage and spiritual symbolism.',NULL,'2025-08-24 11:15:17',1,'admin',NULL,NULL,NULL),
+('ITM00006','SUB00001','Narayanpet cotton saree - Rainbow color','No','Narayanpet cotton sarees are renowned for their vibrant and striking colors, including beautiful multicolor and rainbow-inspired designs that highlight traditional craftsmanship with bold contrasts and unique patterns.',NULL,'2025-08-24 11:18:04',1,'admin',NULL,NULL,NULL),
+('ITM00007','SUB00001','Narayanpet cotton saree - Multiline','No','Narayanpet cotton sarees are renowned for their distinctive multi-bordered designs, vibrant colors, and lightweight, breathable fabric, embodying timeless traditional craftsmanship from Telangana, India.',NULL,'2025-08-24 11:25:29',1,'admin',NULL,NULL,NULL),
+('ITM00008','SUB00002','Kanji cotton saree - Silver and gold border 80 counts','No','Kanji cotton sarees with silver and gold borders are exquisite traditional handwoven fabrics from Kanchipuram, blending the softness of cotton with the elegance of silver and gold zari borders for a unique, luxurious yet comfortable attire suitable for festive and special occasions.',NULL,'2025-08-24 11:36:22',1,'admin',NULL,NULL,NULL),
+('ITM00009','SUB00002','Kanji cotton saree - Body work 100 counts','No','100 count Kanji (or Kanchi) cotton sarees feature pure, handloom cotton fabric with a dense, durable weave often measuring 100 threads per inch, combined with intricate body work such as butta designs or zari borders, offering a rich yet breathable saree ideal for both casual and formal wear.',NULL,'2025-08-24 11:38:51',1,'admin',NULL,NULL,NULL),
+('ITM00010','SUB00003','Sungudi cotton saree','No','Handcrafted in Madurai, this Sungudi cotton saree features traditional tie-dye patterns and a rich zari border. Lightweight and breathable, it\'s perfect for everyday elegance or festive charm.',NULL,'2025-08-24 17:38:03',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -445,7 +466,7 @@ LOCK TABLES `order_items` WRITE;
 /*!40000 ALTER TABLE `order_items` DISABLE KEYS */;
 INSERT INTO `order_items` VALUES
 (1,'ORD000001','ITM00002',1.00,3850.00,3690.00,4.34),
-(2,'ORD000002','ITM00001',1.00,4700.00,4466.00,5.24),
+(2,'ORD000002','ITM00003',1.00,4700.00,4346.00,8.14),
 (3,'ORD000003','ITM00002',1.00,4150.00,3690.00,12.47),
 (4,'ORD000004','ITM00007',1.00,4950.00,0.00,0.00),
 (5,'ORD000005','ITM00008',1.00,5450.00,4608.00,18.27),
@@ -477,7 +498,7 @@ CREATE TABLE `order_status_history` (
   PRIMARY KEY (`order_status_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_order_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -501,7 +522,9 @@ INSERT INTO `order_status_history` VALUES
 (13,'ORD000005','Canceled','2025-09-04 19:01:00',NULL,'2025-09-06 13:33:28',1,'admin'),
 (14,'ORD000008','Canceled','2025-09-04 19:07:00',NULL,'2025-09-06 13:39:04',1,'admin'),
 (16,'ORD000009','Delivered','2025-09-03 10:30:00',NULL,'2025-09-06 13:59:40',1,'admin'),
-(17,'ORD000009','Delivered','2025-09-03 22:50:00',NULL,'2025-09-06 14:18:13',1,'admin');
+(17,'ORD000009','Delivered','2025-09-03 22:50:00',NULL,'2025-09-06 14:18:13',1,'admin'),
+(18,'ORD000010','Delivered','2025-09-08 17:20:00',NULL,'2025-09-09 11:52:10',1,'admin'),
+(19,'ORD000011','Delivered','2025-09-08 17:22:00',NULL,'2025-09-09 11:54:08',1,'admin');
 /*!40000 ALTER TABLE `order_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -580,8 +603,8 @@ INSERT INTO `orders` VALUES
 ('ORD000007','CUS00006','2025-08-22','New','Pre-Book',4500.00,0.00,'COD','Pending','','2025-08-25 08:44:22',1,'admin'),
 ('ORD000008','CUS00006','2025-08-22','Canceled','Ex-Stock',6200.00,0.00,'COD','Pending','Ref ORD000011','2025-08-25 08:45:05',1,'admin'),
 ('ORD000009','CUS00005','2025-08-10','Delivered','Ex-Stock',5160.00,560.00,'COD','Received','Bag 100 | SLPOST 460 BD003703529LK','2025-08-26 20:20:36',1,'admin'),
-('ORD000010','CUS00005','2025-08-22','With Courier','Ex-Stock',5910.00,560.00,'COD','Pending','BAG 100 | SLPOST 460 BD003703604LK','2025-09-06 13:37:12',1,'admin'),
-('ORD000011','CUS00006','2025-08-22','With Courier','Ex-Stock',6670.00,570.00,'COD','Pending','Bag 100 | SLPOST 470 BD003703605LK','2025-09-06 13:41:18',1,'admin');
+('ORD000010','CUS00005','2025-08-22','Delivered','Ex-Stock',5910.00,560.00,'COD','Received','BAG 100 | SLPOST 460 BD003703604LK','2025-09-06 13:37:12',1,'admin'),
+('ORD000011','CUS00006','2025-08-22','Delivered','Ex-Stock',6670.00,570.00,'COD','Received','Bag 100 | SLPOST 470 BD003703605LK','2025-09-06 13:41:18',1,'admin');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -604,7 +627,7 @@ CREATE TABLE `payment_status_history` (
   PRIMARY KEY (`payment_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_payment_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -618,7 +641,9 @@ INSERT INTO `payment_status_history` VALUES
 (2,'ORD000002','Received','2025-07-07 10:30:00',NULL,'2025-08-25 09:12:17',1,'admin'),
 (3,'ORD000003','Received','2025-08-11 10:45:00',NULL,'2025-08-25 09:16:17',1,'admin'),
 (5,'ORD000009','Received','2025-09-04 13:45:00',NULL,'2025-09-06 13:59:40',1,'admin'),
-(6,'ORD000009','Received','2025-09-04 13:50:00',NULL,'2025-09-06 14:18:13',1,'admin');
+(6,'ORD000009','Received','2025-09-04 13:50:00',NULL,'2025-09-06 14:18:13',1,'admin'),
+(7,'ORD000010','Received','2025-09-09 14:04:00',NULL,'2025-09-09 11:53:10',1,'admin'),
+(8,'ORD000011','Received','2025-09-09 14:04:00',NULL,'2025-09-09 11:55:10',1,'admin');
 /*!40000 ALTER TABLE `payment_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -671,7 +696,7 @@ CREATE TABLE `purchase_order_items` (
   KEY `purchase_order_id` (`purchase_order_id`),
   KEY `item_id` (`item_id`),
   CONSTRAINT `fk_po_header` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`purchase_order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -681,15 +706,15 @@ CREATE TABLE `purchase_order_items` (
 LOCK TABLES `purchase_order_items` WRITE;
 /*!40000 ALTER TABLE `purchase_order_items` DISABLE KEYS */;
 INSERT INTO `purchase_order_items` VALUES
-(1,'PUR000001','ITM00003',0.00,1.00,0.00,4346.00),
-(2,'PUR000001','ITM00004',0.00,1.00,0.00,4520.00),
-(3,'PUR000001','ITM00001',0.00,1.00,0.00,4466.00),
-(4,'PUR000002','ITM00002',0.00,4.00,0.00,3690.00),
-(5,'PUR000003','ITM00005',0.00,2.00,0.00,3990.00),
-(6,'PUR000003','ITM00006',0.00,1.00,0.00,3634.00),
-(7,'PUR000004','ITM00007',0.00,1.00,0.00,4466.00),
-(8,'PUR000005','ITM00008',0.00,1.00,0.00,4608.00),
-(9,'PUR000005','ITM00009',0.00,1.00,0.00,5499.00);
+(1,'PUR000001','ITM00003',850.00,1.00,550.00,4346.00),
+(2,'PUR000001','ITM00004',899.00,1.00,550.00,4520.00),
+(3,'PUR000001','ITM00001',850.00,1.00,600.00,4466.00),
+(4,'PUR000002','ITM00002',700.00,4.00,500.00,3690.00),
+(5,'PUR000003','ITM00005',750.00,2.00,550.00,3990.00),
+(6,'PUR000003','ITM00006',650.00,1.00,450.00,3634.00),
+(7,'PUR000004','ITM00007',850.00,1.00,500.00,4466.00),
+(8,'PUR000005','ITM00008',880.00,1.00,500.00,4608.00),
+(9,'PUR000005','ITM00009',1130.00,1.00,500.00,5499.00);
 /*!40000 ALTER TABLE `purchase_order_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -710,7 +735,7 @@ CREATE TABLE `purchase_order_status_history` (
   `created_by_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`history_id`),
   KEY `po_id_idx` (`purchase_order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -810,16 +835,16 @@ CREATE TABLE `stock_levels` (
 LOCK TABLES `stock_levels` WRITE;
 /*!40000 ALTER TABLE `stock_levels` DISABLE KEYS */;
 INSERT INTO `stock_levels` VALUES
-('ITM00001',0.00,'2025-08-25 08:36:36'),
-('ITM00002',2.00,'2025-08-25 08:38:45'),
-('ITM00003',1.00,'2025-08-25 08:09:30'),
+('ITM00001',1.00,'2025-09-08 16:50:36'),
+('ITM00002',2.00,'2025-09-08 17:28:20'),
+('ITM00003',0.00,'2025-09-08 17:29:29'),
 ('ITM00004',1.00,'2025-08-25 08:09:30'),
 ('ITM00005',2.00,'2025-08-26 20:08:02'),
 ('ITM00006',1.00,'2025-08-26 20:08:02'),
 ('ITM00007',0.00,'2025-08-26 21:55:49'),
 ('ITM00008',0.00,'2025-09-06 13:37:12'),
 ('ITM00009',0.00,'2025-09-06 13:41:19'),
-('ITM00010',-2.00,'2025-09-06 13:28:06');
+('ITM00010',0.00,'2025-09-07 04:22:50');
 /*!40000 ALTER TABLE `stock_levels` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -856,7 +881,7 @@ INSERT INTO `stock_transactions` VALUES
 ('TRN000003','ITM00001','IN',1.00,'Received via GRN #GRN000001','2025-08-25 08:09:30',1,'admin'),
 ('TRN000004','ITM00002','IN',4.00,'Received via GRN #GRN000002','2025-08-25 08:10:44',1,'admin'),
 ('TRN000005','ITM00002','OUT',1.00,'Sold via Order #ORD000001','2025-08-25 08:34:48',1,'admin'),
-('TRN000006','ITM00001','OUT',1.00,'Sold via Order #ORD000002','2025-08-25 08:36:36',1,'admin'),
+('TRN000006','ITM00003','OUT',1.00,'Sold via Order #ORD000002','2025-08-25 08:36:36',1,'admin'),
 ('TRN000007','ITM00002','OUT',1.00,'Sold via Order #ORD000003','2025-08-25 08:38:45',1,'admin'),
 ('TRN000008','ITM00007','IN',1.00,'Received via GRN #GRN000003','2025-08-25 11:22:26',1,'admin'),
 ('TRN000009','ITM00005','IN',2.00,'Received via GRN #GRN000004','2025-08-26 20:08:02',1,'admin'),
@@ -909,11 +934,11 @@ INSERT INTO `system_sequences` VALUES
 ('category_id','CAT',1,5,'Category IDs','2025-08-24 10:50:51','1'),
 ('category_sub_id','SUB',1,5,'Sub-Category IDs','2025-08-24 17:33:45','1'),
 ('customer_id','CUS',1,5,'Customer IDs','2025-08-24 17:44:03','1'),
-('grn_id','GRN',7,6,'Goods Received Note IDs','2025-09-06 13:24:34','1'),
+('grn_id','GRN',7,6,'Goods Received Note IDs','2025-09-07 02:01:04','1'),
 ('item_id','ITM',1,5,'Item IDs','2025-08-24 17:38:03','1'),
 ('order_id','ORD',12,6,'Sales Order IDs','2025-09-06 13:41:18','1'),
-('purchase_order_id','PUR',6,6,'Purchase Order IDs','2025-09-06 13:22:07','1'),
-('transaction_id','TRN',81,6,'Stock Transaction IDs','2025-09-06 14:23:16','1');
+('purchase_order_id','PUR',6,6,'Purchase Order IDs','2025-09-07 01:59:23','1'),
+('transaction_id','TRN',89,6,'Stock Transaction IDs','2025-09-09 12:12:59','1');
 /*!40000 ALTER TABLE `system_sequences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -933,7 +958,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=141 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1062,7 +1087,27 @@ INSERT INTO `user_login_audit` VALUES
 (117,1,'2025-09-06 15:09:35','172.20.10.5',1),
 (118,1,'2025-09-06 16:02:56','172.20.10.5',1),
 (119,1,'2025-09-06 16:12:37','172.20.10.5',1),
-(120,1,'2025-09-06 16:32:48','172.20.10.5',1);
+(120,1,'2025-09-06 16:32:48','172.20.10.5',1),
+(121,1,'2025-09-07 07:06:51','10.0.7.121',1),
+(122,1,'2025-09-07 09:25:17','10.0.7.121',1),
+(123,1,'2025-09-07 11:22:33','10.0.7.121',1),
+(124,1,'2025-09-08 21:28:48','10.0.7.133',1),
+(125,1,'2025-09-08 22:23:41','10.0.7.121',1),
+(126,1,'2025-09-08 22:58:32','10.0.7.121',1),
+(127,1,'2025-09-09 16:18:10','172.20.10.5',1),
+(128,1,'2025-09-09 21:46:03','172.20.10.5',1),
+(129,1,'2025-09-10 17:05:53','172.20.10.5',1),
+(130,1,'2025-09-10 19:50:09','172.20.10.5',1),
+(131,1,'2025-09-10 22:00:40','172.20.10.5',1),
+(132,1,'2025-09-10 23:01:07','10.0.7.127',1),
+(133,1,'2025-09-11 18:28:51','172.20.10.5',1),
+(134,1,'2025-09-12 16:42:34','172.20.10.5',1),
+(135,1,'2025-09-12 17:06:11','172.20.10.5',1),
+(136,1,'2025-09-12 17:16:35','172.20.10.5',1),
+(137,1,'2025-09-12 18:00:40','172.20.10.5',1),
+(138,1,'2025-09-12 18:55:36','172.20.10.5',1),
+(139,1,'2025-09-12 21:16:44','172.20.10.5',1),
+(140,1,'2025-09-13 02:09:52','10.0.7.130',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1127,7 +1172,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-09-06 16:32:48','2025-09-06 11:02:48',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-09-13 02:09:51','2025-09-12 20:39:51',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -3286,4 +3331,4 @@ USE `mysql`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-09-07  6:51:43
+-- Dump completed on 2025-09-13 14:34:43
