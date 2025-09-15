@@ -73,7 +73,8 @@ git clone https://github.com/sivadarshan0/ERPCode.git /home/admin/ERPCode
 
 git pull
 
-fhdfd
+erpdb < /var/www/html/scripts/db_20250913_143442.sql
+
 
 git clone git@github.com/sivadarshan0/ERPCode /home/admin/ERPCode
 
@@ -130,4 +131,50 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 
 sudo docker run hello-world
 
+n8n activation key 
+2c2e8214-887b-4da0-b6b6-3fac11323d31
+sivadarshan@gmail.com
+Sr1l@nk@
+
+Webhook URL
+Test - http://localhost:5678/webhook-test/cf921467-266b-4017-a7e1-fb64135098b7
+Prod - http://localhost:5678/webhook/cf921467-266b-4017-a7e1-fb64135098b7
+
+
+---------Setup No-IP client 
+
+No-IP
+sivadarshan@gmail.com
+Sr1lankA
+
+sivan8n.ddns.net
+f856f5g - NC3Bdt7CEFE7
+
+wget --content-disposition https://www.noip.com/download/linux/latest
+tar xf noip-duc_3.3.0.tar.gz
+cd /home/$USER/noip-duc_3.3.0/binaries
+sudo apt install ./noip-duc_3.3.0_amd64.deb
+
+sudo nano /etc/systemd/system/noip-duc.service
+      [Unit]
+      Description=No-IP Dynamic Update Client
+      After=network.target
+
+      [Service]
+      User=root
+      ExecStart=/usr/bin/noip-duc -g all.ddnskey.com --username f856f5g --password NC3Bdt7CEFE7
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl enable noip-duc.service
+sudo systemctl start noip-duc.service
+sudo systemctl status noip-duc.service
+
+To restart the service 
+sudo systemctl restart noip-duc.service
+
+sudo journalctl -u noip-duc.service
 
