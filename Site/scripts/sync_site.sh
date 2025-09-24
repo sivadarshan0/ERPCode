@@ -8,6 +8,7 @@ EXCLUDES=(
   "--exclude=phpmyadmin/"
   "--exclude=logs/"
   "--exclude=DBBkp/"
+  "--exclude=Images/"
 )
 
 # ─── 1. Confirm Git Repo ───────────────────────
