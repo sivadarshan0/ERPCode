@@ -1,6 +1,6 @@
 <?php
 // File: /modules/inventory/entry_item.php
-// FINAL version with full image management capabilities.
+// FINAL version with corrected AJAX endpoint structure.
 
 session_start();
 error_reporting(E_ALL);
@@ -10,6 +10,25 @@ define('_IN_APP_', true);
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// --- AJAX Endpoints: This block MUST be at the top ---
+if (isset($_GET['get_sub_categories'])) {
+    header('Content-Type: application/json');
+    try {
+        $category_id = trim($_GET['get_sub_categories']);
+        echo json_encode(get_sub_categories_by_category_id($category_id));
+    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
+    exit;
+}
+if (isset($_GET['item_lookup'])) {
+    header('Content-Type: application/json');
+    try {
+        $name = trim($_GET['item_lookup']);
+        echo json_encode(strlen($name) >= 2 ? search_items_by_name($name) : []);
+    } catch (Exception $e) { http_response_code(500); echo json_encode(['error' => $e->getMessage()]); }
+    exit;
+}
+
+// --- Standard Page Logic ---
 require_login();
 
 $db = db();
@@ -34,7 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             $full_server_path = realpath(__DIR__ . '/../../' . $image_path_to_delete);
             
-            // Security check to prevent directory traversal
             if (!$full_server_path || strpos($full_server_path, realpath(__DIR__ . '/../../Images')) !== 0) {
                 throw new Exception("Invalid image path.");
             }
@@ -115,7 +133,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
             $image_dir = __DIR__ . '/../../Images/';
             $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
             
-            // Find the highest existing number for this item's images to continue the sequence
             $existing_images = glob($image_dir . $action_item_id . '-*.jpg');
             $last_num = 0;
             if ($existing_images) {
@@ -138,7 +155,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
                         throw new Exception("Failed to move uploaded image.");
                     }
                     
-                    // If this is the VERY FIRST image uploaded for this item, set it as the main image.
                     $check_main = $db->prepare("SELECT main_image_path FROM items WHERE item_id = ?");
                     $check_main->bind_param("s", $action_item_id);
                     $check_main->execute();
@@ -185,7 +201,6 @@ if ($item_id_from_get) {
     }
 }
 
-// Handle session messages
 if (isset($_SESSION['success_message'])) { $message = $_SESSION['success_message']; $message_type = 'success'; unset($_SESSION['success_message']); }
 if (isset($_SESSION['error_message'])) { $message = $_SESSION['error_message']; $message_type = 'danger'; unset($_SESSION['error_message']); }
 
@@ -203,7 +218,6 @@ require_once __DIR__ . '/../../includes/header.php';
     <div id="alert-message" class="alert alert-<?= $message_type ?> alert-dismissible fade show"><?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
 
-    <!-- Main Item Details Form -->
     <form method="POST" class="row g-3 needs-validation mb-5" novalidate id="itemForm" enctype="multipart/form-data" action="entry_item.php<?= $is_edit ? '?item_id=' . htmlspecialchars($item['item_id']) : '' ?>">
         <input type="hidden" name="item_id" value="<?= htmlspecialchars($item['item_id'] ?? '') ?>">
         
@@ -220,7 +234,6 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
         </div>
 
-        <!-- Image Management Section -->
         <div class="card mt-4">
             <div class="card-header">2. Image Management</div>
             <div class="card-body">
@@ -235,7 +248,6 @@ require_once __DIR__ . '/../../includes/header.php';
                                 <div class="col-auto text-center">
                                     <img src="<?= htmlspecialchars($image_url) ?>" class="img-thumbnail" style="height: 100px; width: 100px; object-fit: cover;" alt="Item Image">
                                     <div class="d-flex justify-content-center gap-1 mt-1">
-                                        <!-- Form for "Set as Main" -->
                                         <form method="POST" action="entry_item.php" class="d-inline">
                                             <input type="hidden" name="item_id" value="<?= htmlspecialchars($item['item_id']) ?>">
                                             <input type="hidden" name="image_path" value="<?= htmlspecialchars($image_url) ?>">
@@ -247,7 +259,6 @@ require_once __DIR__ . '/../../includes/header.php';
                                                 </button>
                                             <?php endif; ?>
                                         </form>
-                                        <!-- Form for "Delete" -->
                                         <form method="POST" action="entry_item.php" class="d-inline">
                                             <input type="hidden" name="item_id" value="<?= htmlspecialchars($item['item_id']) ?>">
                                             <input type="hidden" name="image_path" value="<?= htmlspecialchars($image_url) ?>">
