@@ -37,3 +37,7 @@ echo "✅ Sync complete at $(date)"
 
 # ─── 3. Make script executable ──────
 sudo chmod +x /var/www/html/scripts/*
+
+# ─── 4. Apply permision to Image folder  ──────
+#sudo chown www-data:www-data /var/www/html/Images/
+#sudo chmod 775 /var/www/html/Images/
