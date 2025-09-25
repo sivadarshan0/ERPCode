@@ -178,3 +178,17 @@ sudo systemctl restart noip-duc.service
 
 sudo journalctl -u noip-duc.service
 
+
+---------Setup Passwordless authentication for git --------------------
+
+ssh-keygen -t ed25519 -C "sivadarshan@gmail.com"
+cat ~/.ssh/id_ed25519.pub
+
+Add this key to "SSH and GPG keys" in settings in GitHub
+
+ssh -T git@github.com
+cd /home/admin/ERPCode
+git remote set-url origin git@github.com:sivadarshan0/ERPCode.git
+git remote -v
+
+
