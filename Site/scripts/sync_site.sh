@@ -11,7 +11,7 @@ EXCLUDES=( "--exclude=Images/" "--exclude=phpmyadmin/" "--exclude=logs/" "--excl
 # --- 1. Pull Latest Changes (run AS ADMIN user) ---
 echo "🔄 Pulling latest changes from GitHub as 'admin' user..."
 # Uses the helper script to run the git pull command as the 'admin' user
-run_as_admin.sh git -C "$REPO_DIR" pull origin main
+/var/www/html/scripts/run_as_admin.sh git -C "$REPO_DIR" pull origin main
 
 # --- 2. Sync Site to Web Directory (run as root) ---
 echo "🚚 Syncing code to $TARGET_DIR..."
