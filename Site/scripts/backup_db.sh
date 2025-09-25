@@ -35,6 +35,6 @@ fi
 
 # --- 4. Hand Off to the Helper for Git Operations (run AS ADMIN user) ---
 echo "🚀 Handing over to 'admin' user for Git operations..."
-/home/admin/ERPCode/Site/scripts/run_as_admin.sh /var/www/html/scripts/git_commit_push.sh
+/var/www/html/scripts/run_as_admin.sh /var/www/html/scripts/git_commit_push.sh
 
 echo "✨ Backup and sync process finished."

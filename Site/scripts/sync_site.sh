@@ -22,7 +22,7 @@ fi
 # --- 2. Sync Site to Web Directory (run as root) ---
 echo "🚚 Syncing code to $TARGET_DIR..."
 # The --owner and --group flags tell rsync to set the ownership during the copy.
-rsync -av --delete "${EXCLUDES[@]}" --owner=www-data --group=www-data "$SITE_DIR/" "$TARGET_DIR/"
+rsync -av --delete "${EXCLUDES[@]}" --chown=www-data:www-data "$SITE_DIR/" "$TARGET_DIR/"
 echo "✅ Code sync complete."
 
 
