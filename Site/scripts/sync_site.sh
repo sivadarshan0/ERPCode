@@ -34,7 +34,7 @@ echo "🔑 Setting final permissions for the web server..."
 chown -R www-data:www-data "$TARGET_DIR"
 find "$TARGET_DIR" -type d -exec chmod 775 {} \;
 find "$TARGET_DIR" -type f -exec chmod 664 {} \;
-chmod +x "$TARGET_DIR/scripts/"*.sh
+sudo chmod +x "$TARGET_DIR/scripts/"*.sh
 
 echo "✅ Permissions set."
 echo "✨ Sync process finished successfully."

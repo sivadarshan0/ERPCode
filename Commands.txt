@@ -191,4 +191,18 @@ cd /home/admin/ERPCode
 git remote set-url origin git@github.com:sivadarshan0/ERPCode.git
 git remote -v
 
+-------------Pull code from GitHub-------------------------
+cd ERPCode
+git reset --hard HEAD
+git pull origin main
 
+-------------Sync with live folder-------------------------
+sudo rsync -av --delete \
+--exclude 'Images/' \
+--exclude 'DBBkp/' \
+--exclude 'logs/' \
+--exclude 'phpmyadmin/' \
+/home/admin/ERPCode/Site/ /var/www/html/
+
+-------------Make script executable-------------------------
+sudo chmod +x /var/www/html/scripts/*.sh
