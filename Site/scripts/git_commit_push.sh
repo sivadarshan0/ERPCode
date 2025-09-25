@@ -10,6 +10,7 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 # --- 1. Navigate to Repository ---
 cd "$SITE_REPO_DIR" || { echo "❌ Git helper failed: Could not cd into $SITE_REPO_DIR"; exit 1; }
+git pull origin main
 
 # --- 2. Cleanup Old Backups ---
 echo "🧹 Cleaning up old database backups..."
