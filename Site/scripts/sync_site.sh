@@ -1,45 +1,38 @@
 #!/bin/bash
+# FINAL SYNC SCRIPT - To be run by the root user (e.g., from a root cron job)
+set -e
 
-# ─── Configuration ─────────────────────────────
+# --- Configuration ---
 REPO_DIR="/home/admin/ERPCode"
 SITE_DIR="$REPO_DIR/Site"
 TARGET_DIR="/var/www/html"
-EXCLUDES=(
-  "--exclude=Images/"   # Protect user-uploaded images
-  "--exclude=phpmyadmin/"
-  "--exclude=logs/"
-  "--exclude=DBBkp/"
-)
+EXCLUDES=( "--exclude=Images/" "--exclude=phpmyadmin/" "--exclude=logs/" "--exclude=DBBkp/" )
 
-# ─── 1. Confirm Git Repo ───────────────────────
-if [ ! -d "$REPO_DIR/.git" ]; then
-  echo "❌ $REPO_DIR is not a Git repository!"
-  exit 3
-fi
+# --- 1. Pull Latest Changes (run AS ADMIN user) ---
+echo "🔄 Pulling latest changes from GitHub as 'admin' user..."
+# Uses the helper script to run the git pull command as the 'admin' user
+run_as_admin.sh git -C "$REPO_DIR" pull origin main
 
-# ─── 2. Pull Latest Changes (as the current user) ──
-echo "🔄 Pulling latest changes as user '$(whoami)' at $(date)..."
-cd "$REPO_DIR" || {
-  echo "❌ Failed to cd into $REPO_DIR"
-  exit 1
-}
+# --- 2. Sync Site to Web Directory (run as root) ---
+echo "🚚 Syncing code to $TARGET_DIR..."
+rsync -av --delete "${EXCLUDES[@]}" "$SITE_DIR/" "$TARGET_DIR/"
+echo "✅ Code sync complete."
 
-# This command will now use the SSH key of the user running the script (e.g., 'admin')
-git pull origin main || {
-  echo "❌ Git pull failed. Resolve any conflicts before running again."
-  exit 2
-}
+# --- 3. Set Final, Secure Permissions (run as root) ---
+echo "🔑 Setting final permissions for the web server..."
 
-# ─── 3. Sync Site Folder to /var/www/html (using sudo) ──────
-echo "🚚 Syncing $SITE_DIR to $TARGET_DIR..."
-# ONLY this rsync command needs sudo because it's writing to a protected directory.
-sudo rsync -av --delete "${EXCLUDES[@]}" "$SITE_DIR/" "$TARGET_DIR/"
+# Set ownership of all files to the web server user (www-data)
+# This is crucial for security and for allowing the web application to function.
+chown -R www-data:www-data "$TARGET_DIR"
 
-echo "✅ Sync complete at $(date)"
+# Set directory permissions: owner/group can read/write/execute, others can only read/execute.
+find "$TARGET_DIR" -type d -exec chmod 775 {} \;
 
-# ─── 4. Make scripts executable (using sudo) ──────
-echo "🔑 Setting script permissions..."
-# This command also needs sudo to change file modes in the target directory.
-sudo chmod +x /var/www/html/scripts/*.sh
+# Set file permissions: owner/group can read/write, others can only read.
+find "$TARGET_DIR" -type f -exec chmod 664 {} \;
 
+# Explicitly make your shell scripts executable by the owner and group.
+chmod +x /var/www/html/scripts/*.sh
+
+echo "✅ Permissions set."
 echo "✨ Sync process finished successfully."
