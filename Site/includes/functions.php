@@ -303,6 +303,7 @@ function get_item_details($item_id) {
     $stmt = $db->prepare("
         SELECT 
             i.*, 
+            cs.category_id, -- THIS IS THE CRITICAL ADDITION
             c.name as category_name, 
             cs.name as sub_category_name
         FROM items i
