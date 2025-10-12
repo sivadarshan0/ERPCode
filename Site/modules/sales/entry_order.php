@@ -37,6 +37,7 @@ if (isset($_GET['get_item_details'])) {
     exit;
 }
 
+$db = db();
 $message = '';
 $message_type = '';
 $is_edit = false;
