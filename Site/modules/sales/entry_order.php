@@ -328,13 +328,22 @@ require_once __DIR__ . '/../../includes/header.php';
         
         <div class="col-12 mt-4">
             <?php if ($is_edit): ?>
-                <button class="btn btn-primary" type="submit" name="action" value="update_header"><i class="bi bi-floppy"></i> Update Order Details</button>
+                <button class="btn btn-primary" type="submit" name="action" value="update_header">
+                    <i class="bi bi-floppy"></i> Update Order Details
+                </button>
+                
                 <?php if (isset($order['status']) && $order['status'] === 'With Courier'): ?>
-                    <button class="btn btn-success" type="submit" name="action" value="update_items"><i class="bi bi-save"></i> Update Items & Recalculate</button>
+                    <button class="btn btn-success" type="submit" name="action" value="update_items">
+                        <i class="bi bi-save"></i> Update Items & Recalculate
+                    </button>
                 <?php endif; ?>
+
             <?php else: ?>
-                <button class="btn btn-primary btn-lg" type="submit" name="action" value="create_order"><i class="bi bi-save"></i> Create Order & Update Stock</button>
+                <button class="btn btn-primary" type="submit" name="action" value="create_order">
+                    <i class="bi bi-save"></i> Create Order & Update Stock
+                </button>
             <?php endif; ?>
+
             <a href="/index.php" class="btn btn-outline-secondary">Back</a>
         </div>
     </form>
