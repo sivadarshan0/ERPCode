@@ -411,7 +411,8 @@ function initOrderEntry() {
     const itemRowsContainer = document.getElementById('orderItemRows');
     const template = document.getElementById('orderItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
-    const orderTotalDisplay = document.getElementById('orderTotal');
+    const itemsTotalDisplay = document.getElementById('itemsTotalDisplay'); // For Edit mode footer
+    const orderTotalDisplay = document.getElementById('orderTotalDisplay'); // For header total
     const otherExpensesInput = document.getElementById('other_expenses');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
     const orderStatusSelect = document.getElementById('order_status');
@@ -450,21 +451,35 @@ function initOrderEntry() {
         let itemsTotal = 0;
         if (itemRowsContainer) {
             itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                const priceInput = row.querySelector('.price-input');
-                const quantityInput = row.querySelector('.quantity-input');
+                const priceEl = row.querySelector('.price-input') || row.querySelector('td:nth-child(6)');
+                const quantityEl = row.querySelector('.quantity-input') || row.querySelector('td:nth-child(7)');
                 const subtotalDisplay = row.querySelector('.subtotal-display');
-                if (priceInput && quantityInput && subtotalDisplay) {
-                    const price = parseFloat(priceInput.value) || 0;
-                    const quantity = parseFloat(quantityInput.value) || 0;
-                    const subtotal = price * quantity;
-                    subtotalDisplay.textContent = subtotal.toFixed(2);
-                    itemsTotal += subtotal;
+                const costInput = row.querySelector('.cost-input');
+                const marginDisplay = row.querySelector('.margin-display');
+
+                const price = parseFloat(priceEl.value || priceEl.textContent.replace(/,/g, '')) || 0;
+                const quantity = parseFloat(quantityEl.value || quantityEl.textContent.replace(/,/g, '')) || 0;
+                const cost = parseFloat(costInput ? costInput.value : 0) || 0;
+
+                const subtotal = price * quantity;
+                if (subtotalDisplay) subtotalDisplay.textContent = subtotal.toFixed(2);
+                itemsTotal += subtotal;
+                
+                if (marginDisplay) {
+                    const margin = (cost > 0 && price > 0) ? (((price / cost) - 1) * 100) : 0;
+                    if (marginDisplay.tagName === 'INPUT') {
+                        marginDisplay.value = margin.toFixed(2);
+                    }
                 }
             });
         }
-        if (orderTotalDisplay) {
-            orderTotalDisplay.textContent = new Intl.NumberFormat('en-US', { style: 'decimal', minimumFractionDigits: 2 }).format(itemsTotal);
-        }
+        
+        if (itemsTotalDisplay) itemsTotalDisplay.textContent = itemsTotal.toFixed(2);
+        
+        // The grand total is now ONLY the sum of the items. Other Expenses are ignored.
+        const grandTotal = itemsTotal;
+        
+        if (orderTotalDisplay) orderTotalDisplay.textContent = grandTotal.toFixed(2);
     };
 
     if (otherExpensesInput) {

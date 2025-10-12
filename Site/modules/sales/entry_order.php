@@ -55,9 +55,46 @@ if (isset($_GET['order_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? ($is_edit ? 'update_header' : 'create_order');
     try {
-        if ($is_edit) {
-            $order_id_to_update = $_POST['order_id'] ?? '';
+        if ($action === 'update_items' && $is_edit) {
+            // --- NEW LOGIC TO UPDATE ITEM DETAILS ---
+            $db->begin_transaction();
+            $order_id_to_update = $_POST['order_id'];
+            $items_data = $_POST['items'] ?? [];
+            $new_total_amount = 0;
+
+            if (empty($items_data['order_item_id'])) {
+                throw new Exception("No items found to update.");
+            }
+
+            $stmt_update_item = $db->prepare("UPDATE order_items SET price = ?, quantity = ?, profit_margin = ? WHERE order_item_id = ?");
+            if (!$stmt_update_item) throw new Exception("DB prepare failed for item update.");
+
+            foreach ($items_data['order_item_id'] as $index => $order_item_id) {
+                $price = (float)($items_data['price'][$index] ?? 0);
+                $quantity = (float)($items_data['quantity'][$index] ?? 0);
+                $cost = (float)($items_data['cost'][$index] ?? 0);
+                $margin = ($cost > 0 && $price > 0) ? (($price / $cost) - 1) * 100 : 0;
+                
+                $stmt_update_item->bind_param("dddi", $price, $quantity, $margin, $order_item_id);
+                $stmt_update_item->execute();
+                $new_total_amount += $price * $quantity;
+            }
+
+            $stmt_update_total = $db->prepare("UPDATE orders SET total_amount = ? WHERE order_id = ?");
+            if (!$stmt_update_total) throw new Exception("DB prepare failed for total update.");
+            $stmt_update_total->bind_param("ds", $new_total_amount, $order_id_to_update);
+            $stmt_update_total->execute();
+
+            $db->commit();
+            $_SESSION['success_message'] = "✅ Order items and total have been successfully updated.";
+            header("Location: entry_order.php?order_id=" . $order_id_to_update);
+            exit;
+
+        } elseif ($action === 'update_header' && $is_edit) {
+            // This is your existing logic for updating the order header
+            $order_id_to_update = $_POST['order_id'];
             $details_to_update = [
                 'order_status'   => $_POST['order_status'] ?? 'New',
                 'payment_method' => $_POST['payment_method'] ?? 'COD',
@@ -65,20 +102,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'other_expenses' => $_POST['other_expenses'] ?? 0,
                 'remarks'        => $_POST['remarks'] ?? ''
             ];
-            // Pass the entire $_POST array to the backend function
-            if (update_order_details($order_id_to_update, $details_to_update, $_POST)) {
-                $_SESSION['success_message'] = "✅ Order #$order_id_to_update successfully updated.";
-                header("Location: entry_order.php?order_id=" . $order_id_to_update);
-                exit;
-            }
-        } else {
+            update_order_details($order_id_to_update, $details_to_update, $_POST);
+            $_SESSION['success_message'] = "✅ Order details successfully updated.";
+            header("Location: entry_order.php?order_id=" . $order_id_to_update);
+            exit;
+
+        } elseif ($action === 'create_order') {
+            // This is your existing logic for creating a new order
             $order_details = [
-                'payment_method' => $_POST['payment_method'] ?? 'COD',
-                'payment_status' => $_POST['payment_status'] ?? 'Pending',
-                'order_status'   => $_POST['order_status'] ?? 'New',
-                'stock_type'     => $_POST['stock_type'] ?? 'Ex-Stock',
-                'remarks'        => $_POST['remarks'] ?? '',
-                'other_expenses' => $_POST['other_expenses'] ?? 0
+                'payment_method' => $_POST['payment_method'] ?? 'COD', 'payment_status' => $_POST['payment_status'] ?? 'Pending',
+                'order_status'   => $_POST['order_status'] ?? 'New', 'stock_type'     => $_POST['stock_type'] ?? 'Ex-Stock',
+                'remarks'        => $_POST['remarks'] ?? '', 'other_expenses' => $_POST['other_expenses'] ?? 0
             ];
             $items_to_process = [];
             foreach ($_POST['items']['id'] ?? [] as $index => $item_id) {
@@ -95,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "❌ Error: " . $e->getMessage();
         $message_type = 'danger';
         $order = array_merge($order ?? [], $_POST);
-        $order['customer'] = get_customer($_POST['customer_id'] ?? '');
+        if (isset($_POST['customer_id'])) $order['customer'] = get_customer($_POST['customer_id']);
     }
 }
 
@@ -203,10 +237,10 @@ require_once __DIR__ . '/../../includes/header.php';
             </div>
             <!-- Right Column -->
             <div class="col-lg-4">
-                 <div class="card h-100">
-                     <div class="card-header">2. Status & Totals</div>
-                     <div class="card-body">
-                         <div class="mb-3">
+                <div class="card h-100">
+                    <div class="card-header">2. Status & Totals</div>
+                    <div class="card-body">
+                        <div class="mb-3">
                             <label for="order_status" class="form-label">Order Status</label>
                             <select name="order_status" id="order_status" class="form-select">
                                 <option value="New" <?= ($is_edit && $order['status'] == 'New') ? 'selected' : '' ?>>New</option>
@@ -221,14 +255,14 @@ require_once __DIR__ . '/../../includes/header.php';
                             <label for="order_status_event_date" class="form-label">Status Date</label>
                             <input type="datetime-local" class="form-control" id="order_status_event_date" name="order_status_event_date">
                         </div>
-                         <div class="mb-3">
-                             <label for="other_expenses" class="form-label">Other Expenses</label>
-                             <input type="number" class="form-control" id="other_expenses" name="other_expenses" value="<?= $is_edit ? htmlspecialchars($order['other_expenses'] ?? '0.00') : '0.00' ?>" min="0.00" step="0.01">
-                         </div>
-                         <hr>
-                         <h3 class="text-end">Total: <span id="orderTotal"><?= $is_edit ? htmlspecialchars(number_format($order['total_amount'], 2)) : '0.00' ?></span></h3>
-                     </div>
-                 </div>
+                        <div class="mb-3">
+                            <label for="other_expenses" class="form-label">Other Expenses</label>
+                            <input type="number" class="form-control" id="other_expenses" name="other_expenses" value="<?= $is_edit ? htmlspecialchars($order['other_expenses'] ?? '0.00') : '0.00' ?>" min="0.00" step="0.01">
+                        </div>
+                        <hr>
+                        <h3 class="text-end">Total: <span id="orderTotalDisplay">0.00</span></h3>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -240,28 +274,41 @@ require_once __DIR__ . '/../../includes/header.php';
                     <?php if ($is_edit && !empty($order['items'])): ?>
                         <?php foreach ($order['items'] as $item): ?>
                             <tr class="order-item-row">
+                                <input type="hidden" name="items[order_item_id][]" value="<?= htmlspecialchars($item['order_item_id']) ?>">
+                                <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
+                                <input type="hidden" name="items[cost][]" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
+                                <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                <td><?= htmlspecialchars($item['uom']) ?></td>
+                                <td class="stock-col"><?= htmlspecialchars(number_format($item['stock_on_hand'], 2)) ?></td>
+                                <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
+                                <td><input type="text" class="form-control-plaintext form-control-sm text-end margin-display" value="<?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?>" readonly></td>
                                 <td>
-                                    <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
-                                    <?= htmlspecialchars($item['item_name']) ?>
+                                    <?php if ($is_edit && $order['status'] === 'With Courier'): ?>
+                                        <input type="number" class="form-control form-control-sm text-end price-input" name="items[price][]" value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars(number_format($item['price'], 2)) ?>
+                                    <?php endif; ?>
                                 </td>
-                                <td><input type="text" class="form-control-plaintext form-control-sm uom-display" value="<?= htmlspecialchars($item['uom']) ?>" readonly></td>
-                                <td class="stock-col"><input type="text" class="form-control-plaintext form-control-sm stock-display" value="<?= htmlspecialchars(number_format($item['stock_on_hand'], 2)) ?>" readonly></td>
-                                <td class="cost-col">
-                                    <input type="hidden" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
-                                    <input type="text" class="form-control-plaintext form-control-sm cost-display" value="<?= htmlspecialchars(number_format($item['cost_price'], 2)) ?>" readonly>
-                                </td>
-                                <td><input type="text" class="form-control-plaintext form-control-sm margin-input" value="<?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?>" readonly></td>
                                 <td>
-                                    <!-- THE FIX: The 'value' attribute must not have commas -->
-                                    <input type="text" class="form-control-plaintext form-control-sm price-input" value="<?= htmlspecialchars($item['price']) ?>" readonly>
+                                    <?php if ($is_edit && $order['status'] === 'With Courier'): ?>
+                                        <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars(number_format($item['quantity'], 2)) ?>
+                                    <?php endif; ?>
                                 </td>
-                                <td><input type="text" class="form-control-plaintext form-control-sm quantity-input" value="<?= htmlspecialchars(number_format($item['quantity'], 2)) ?>" readonly></td>
-                                <td class="text-end fw-bold subtotal-display"><?= htmlspecialchars(number_format($item['quantity'] * $item['price'], 2)) ?></td>
+                                <td class="text-end fw-bold subtotal-display">0.00</td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody> 
-            <?php if($is_edit): ?><tfoot><tr><th colspan="7" class="text-end border-0">Items Total:</th><th class="text-end border-0"><?= htmlspecialchars(number_format($order['total_amount'], 2)) ?></th></tr></tfoot><?php endif; ?></table></div></div>
+            <?php if($is_edit): ?>
+            <tfoot>
+                <tr>
+                    <th colspan="7" class="text-end border-0">Items Total:</th>
+                    <th id="itemsTotalDisplay" class="text-end border-0">0.00</th>
+                </tr>
+            </tfoot>
+            <?php endif; ?>
         </div>
         
         <!-- History Sections -->
@@ -279,8 +326,15 @@ require_once __DIR__ . '/../../includes/header.php';
         <?php endif; ?>
         
         <div class="col-12 mt-4">
-            <button class="btn btn-primary btn-lg" type="submit" id="submitBtn"><i class="bi bi-<?= $is_edit ? 'floppy' : 'save' ?>"></i> <?= $is_edit ? 'Update Order' : 'Create Order & Update Stock' ?></button>
-            <a href="/index.php" class="btn btn-outline-secondary btn-lg">Back</a>
+            <?php if ($is_edit): ?>
+                <button class="btn btn-primary" type="submit" name="action" value="update_header"><i class="bi bi-floppy"></i> Update Order Details</button>
+                <?php if (isset($order['status']) && $order['status'] === 'With Courier'): ?>
+                    <button class="btn btn-success" type="submit" name="action" value="update_items"><i class="bi bi-save"></i> Update Items & Recalculate</button>
+                <?php endif; ?>
+            <?php else: ?>
+                <button class="btn btn-primary btn-lg" type="submit" name="action" value="create_order"><i class="bi bi-save"></i> Create Order & Update Stock</button>
+            <?php endif; ?>
+            <a href="/index.php" class="btn btn-outline-secondary">Back</a>
         </div>
     </form>
 </main>
