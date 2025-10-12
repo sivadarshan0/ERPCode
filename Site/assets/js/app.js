@@ -148,21 +148,28 @@ function initSubCategoryEntry() {
     });
 }
 
-// ───── Item Entry Handler ─────
-function initItemEntry() {
-    const itemForm = document.getElementById('itemForm');
-    if (!itemForm) return;
+// -----------------------------------------
+// ----- UNIFIED Item Management Page Handler -----
+// This function handles the "Manage Item" page (entry_item.php)
+// -----------------------------------------
+
+function initItemManagement() {
+    const form = document.getElementById('itemForm');
+    if (!form) return;
+
+    // --- Part 1: Cascading Dropdown and Live Search Logic (from old initItemEntry) ---
     const categorySelect = document.getElementById('category_id');
     const subCategorySelect = document.getElementById('category_sub_id');
     const nameInput = document.getElementById('name');
     const itemResults = document.getElementById('itemResults');
 
-    if (categorySelect) {
+    if (categorySelect && subCategorySelect) {
         categorySelect.addEventListener('change', function () {
             const categoryId = this.value;
             subCategorySelect.innerHTML = '<option value="">Loading...</option>';
             subCategorySelect.disabled = true;
             if (!categoryId) { subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>'; return; }
+            
             fetch(`/modules/inventory/entry_item.php?get_sub_categories=${encodeURIComponent(categoryId)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Failed to load sub-categories'))
                 .then(data => {
@@ -176,14 +183,14 @@ function initItemEntry() {
         });
     }
 
-    if (nameInput) {
+    if (nameInput && itemResults) {
         const doItemLookup = debounce(() => {
             const name = nameInput.value.trim();
-            if (name.length < 2) { if (itemResults) itemResults.classList.add('d-none'); return; }
+            if (name.length < 2) { itemResults.classList.add('d-none'); return; }
+            
             fetch(`/modules/inventory/entry_item.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
-                    if (!itemResults) return;
                     itemResults.innerHTML = '';
                     if (data.error) throw new Error(data.error);
                     if (data.length > 0) {
@@ -197,16 +204,41 @@ function initItemEntry() {
                         itemResults.classList.remove('d-none');
                     } else { itemResults.classList.add('d-none'); }
                 })
-                .catch(error => { console.error('[doItemLookup] Error:', error); if (itemResults) itemResults.classList.add('d-none'); });
+                .catch(error => { console.error('[doItemLookup] Error:', error); itemResults.classList.add('d-none'); });
         }, 300);
         nameInput.addEventListener('input', doItemLookup);
+
+        document.addEventListener('click', (e) => {
+            if (itemResults && !itemResults.contains(e.target) && e.target !== nameInput) {
+                itemResults.classList.add('d-none');
+            }
+        });
     }
 
-    document.addEventListener('click', (e) => {
-        if (itemResults && !itemResults.contains(e.target) && e.target !== nameInput) {
-            itemResults.classList.add('d-none');
-        }
-    });
+    // --- Part 2: New Image Management Click Handling ---
+    const imageManagementSection = document.getElementById('imageManagementSection');
+    const imageActionInput = document.getElementById('imageAction');
+    const imagePathInput = document.getElementById('imagePath');
+
+    if (imageManagementSection) {
+        imageManagementSection.addEventListener('click', function(event) {
+            // Use .closest() to ensure the click is handled even if the user clicks the icon inside the button
+            const button = event.target.closest('button');
+            if (!button) return;
+
+            if (button.classList.contains('btn-delete-image')) {
+                if (confirm('Are you sure you want to permanently delete this image?')) {
+                    imageActionInput.value = 'delete_image';
+                    imagePathInput.value = button.dataset.imagePath;
+                    form.submit();
+                }
+            } else if (button.classList.contains('btn-set-main')) {
+                imageActionInput.value = 'set_main_image';
+                imagePathInput.value = button.dataset.imagePath;
+                form.submit();
+            }
+        });
+    }
 }
 
 // ───── Stock Adjustment Handler ─────
