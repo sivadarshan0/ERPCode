@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if ($is_edit_post) {
                     $stmt = $db->prepare("UPDATE items SET name = ?, category_sub_id = ?, uom = ?, description = ?, updated_at = NOW(), updated_by = ?, updated_by_name = ? WHERE item_id = ?");
-                    $stmt->bind_param("ssssisss", $name, $category_sub_id, $uom, $description, $_SESSION['user_id'], $_SESSION['username'], $posted_id);
+                    $stmt->bind_param("ssssiss", $name, $category_sub_id, $uom, $description, $_SESSION['user_id'], $_SESSION['username'], $posted_id);
                     $action_item_id = $posted_id;
                     $form_action = 'updated';
                 } else {
