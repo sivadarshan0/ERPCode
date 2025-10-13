@@ -1476,7 +1476,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
     if (document.getElementById('categoryForm')) { initCategoryEntry(); }
     if (document.getElementById('subCategoryForm')) { initSubCategoryEntry(); }
-    if (document.getElementById('itemForm')) { initItemEntry(); }
+//    if (document.getElementById('itemForm')) { initItemEntry(); }
+    if (document.getElementById('itemForm')) { initItemManagement(); }
     if (document.getElementById('stockAdjustmentForm')) { initStockAdjustmentEntry(); }    
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
