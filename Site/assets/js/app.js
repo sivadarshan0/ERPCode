@@ -411,8 +411,10 @@ function initOrderEntry() {
     const itemRowsContainer = document.getElementById('orderItemRows');
     const template = document.getElementById('orderItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
-    const itemsTotalDisplay = document.getElementById('itemsTotalDisplay'); // For Edit mode footer
-    const orderTotalDisplay = document.getElementById('orderTotalDisplay'); // For header total
+    // --- CORRECTED: Get elements by their new, correct IDs ---
+    const itemsTotalDisplay = document.getElementById('itemsTotalDisplay');
+    const orderTotalDisplay = document.getElementById('orderTotalDisplay');
+    // --- END CORRECTION ---
     const otherExpensesInput = document.getElementById('other_expenses');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
     const orderStatusSelect = document.getElementById('order_status');
@@ -447,6 +449,7 @@ function initOrderEntry() {
         }
     };
 
+    // --- NEW, ROBUST CALCULATION FUNCTION ---
     const calculateTotals = () => {
         let itemsTotal = 0;
         if (itemRowsContainer) {
@@ -481,12 +484,22 @@ function initOrderEntry() {
         
         if (orderTotalDisplay) orderTotalDisplay.textContent = grandTotal.toFixed(2);
     };
+    // --- END NEW CALCULATION FUNCTION ---
 
-    if (otherExpensesInput) {
-        otherExpensesInput.addEventListener('input', calculateTotals);
+    // Event listener for editable item rows
+    if (itemRowsContainer) {
+        itemRowsContainer.addEventListener('input', (e) => {
+            if (e.target.matches('.price-input, .quantity-input')) {
+                calculateTotals();
+            }
+        });
     }
     
+    // --- KEY FIX FOR EDIT MODE ---
     if (isEditMode) {
+        // Run calculation once on page load to set initial totals.
+        calculateTotals();
+
         const orderStatusDateWrapper = document.getElementById('order_status_date_wrapper');
         const paymentStatusDateWrapper = document.getElementById('payment_status_date_wrapper');
 

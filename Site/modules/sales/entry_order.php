@@ -15,29 +15,32 @@ require_once __DIR__ . '/../../includes/functions_acc.php';
 require_login();
 
 // --- AJAX Endpoints ---
-if (isset($_GET['customer_lookup'])) {
+if (isset($_GET['action'])) {
     header('Content-Type: application/json');
-    echo json_encode(search_customers_by_phone(trim($_GET['customer_lookup'])));
-    exit;
-}
-if (isset($_GET['item_lookup'])) {
-    header('Content-Type: application/json');
-    $name = trim($_GET['item_lookup']);
-    $type = $_GET['type'] ?? 'Ex-Stock';
-    echo json_encode(strlen($name) >= 2 ? ($type === 'Pre-Book' ? search_items_for_prebook($name) : search_items_for_order($name)) : []);
-    exit;
-}
-if (isset($_GET['get_item_details'])) {
-    header('Content-Type: application/json');
-    $db = db();
-    $stmt = $db->prepare("SELECT i.item_id, i.name, i.uom, COALESCE(sl.quantity, 0) as stock FROM items i LEFT JOIN stock_levels sl ON i.item_id = sl.item_id WHERE i.item_id = ?");
-    $stmt->bind_param("s", $_GET['get_item_details']);
-    $stmt->execute();
-    echo json_encode($stmt->get_result()->fetch_assoc());
+    try {
+        switch ($_GET['action']) {
+            case 'customer_lookup':
+                echo json_encode(search_customers_by_phone(trim($_GET['query'] ?? '')));
+                break;
+            case 'item_lookup':
+                $name = trim($_GET['query'] ?? '');
+                $type = $_GET['type'] ?? 'Ex-Stock';
+                echo json_encode(strlen($name) >= 2 ? ($type === 'Pre-Book' ? search_items_for_prebook($name) : search_items_for_order($name)) : []);
+                break;
+            case 'get_item_stock_details':
+                echo json_encode(get_item_stock_details($_GET['item_id'] ?? null)); 
+                break;
+        }
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()]);
+    }
     exit;
 }
 
+require_login();
 $db = db();
+
 $message = '';
 $message_type = '';
 $is_edit = false;
@@ -59,7 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? ($is_edit ? 'update_header' : 'create_order');
     try {
         if ($action === 'update_items' && $is_edit) {
-            // --- NEW LOGIC TO UPDATE ITEM DETAILS ---
             $db->begin_transaction();
             $order_id_to_update = $_POST['order_id'];
             $items_data = $_POST['items'] ?? [];
@@ -94,14 +96,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         } elseif ($action === 'update_header' && $is_edit) {
-            // This is your existing logic for updating the order header
             $order_id_to_update = $_POST['order_id'];
             $details_to_update = [
-                'order_status'   => $_POST['order_status'] ?? 'New',
-                'payment_method' => $_POST['payment_method'] ?? 'COD',
-                'payment_status' => $_POST['payment_status'] ?? 'Pending',
-                'other_expenses' => $_POST['other_expenses'] ?? 0,
-                'remarks'        => $_POST['remarks'] ?? ''
+                'order_status'   => $_POST['order_status'] ?? $order['status'],
+                'payment_method' => $_POST['payment_method'] ?? $order['payment_method'],
+                'payment_status' => $_POST['payment_status'] ?? $order['payment_status'],
+                'other_expenses' => $_POST['other_expenses'] ?? $order['other_expenses'],
+                'remarks'        => $_POST['remarks'] ?? $order['remarks']
             ];
             update_order_details($order_id_to_update, $details_to_update, $_POST);
             $_SESSION['success_message'] = "✅ Order details successfully updated.";
@@ -109,7 +110,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         } elseif ($action === 'create_order') {
-            // This is your existing logic for creating a new order
             $order_details = [
                 'payment_method' => $_POST['payment_method'] ?? 'COD', 'payment_status' => $_POST['payment_status'] ?? 'Pending',
                 'order_status'   => $_POST['order_status'] ?? 'New', 'stock_type'     => $_POST['stock_type'] ?? 'Ex-Stock',
@@ -140,35 +140,6 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-if (isset($_GET['action'])) {
-    header('Content-Type: application/json');
-    try {
-        switch ($_GET['action']) {
-            case 'customer_lookup':
-                echo json_encode(search_customers_by_phone(trim($_GET['query'] ?? '')));
-                break;
-
-            case 'item_lookup':
-                $name = trim($_GET['query'] ?? '');
-                $type = $_GET['type'] ?? 'Ex-Stock';
-                echo json_encode(strlen($name) >= 2 ? ($type === 'Pre-Book' ? search_items_for_prebook($name) : search_items_for_order($name)) : []);
-                break;
-            
-            // --- ADD THIS NEW CASE ---
-            case 'get_item_stock_details':
-                $item_id = $_GET['item_id'] ?? null;
-                // We will create this new function in the next step
-                echo json_encode(get_item_stock_details($item_id)); 
-                break;
-            // --- END NEW CASE ---
-        }
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => $e->getMessage()]);
-    }
-    exit;
-}
-
 require_once __DIR__ . '/../../includes/header.php';
 ?>
 
@@ -189,130 +160,87 @@ require_once __DIR__ . '/../../includes/header.php';
                     <div class="card-header">1. Order & Customer Details</div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-6 position-relative">
-                                <label for="customer_search" class="form-label">Search Customer by Phone *</label>
-                                <input type="text" class="form-control" id="customer_search" required autocomplete="off" value="<?= $is_edit ? htmlspecialchars($order['customer']['phone']) : '' ?>" <?= $is_edit ? 'readonly' : '' ?>>
-                                <div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div>
-                                <input type="hidden" name="customer_id" id="customer_id" value="<?= $is_edit ? htmlspecialchars($order['customer_id']) : '' ?>">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Selected Customer</label>
-                                <div id="selected_customer_display" class="form-control-plaintext fw-bold"><?= $is_edit ? htmlspecialchars($order['customer']['name']) . ' (ID: ' . htmlspecialchars($order['customer_id']) . ')' : 'None' ?></div>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="stock_type" class="form-label">Stock Type</label>
-                                <select name="stock_type" id="stock_type" class="form-select" <?= $is_edit ? 'onclick="return false;" onkeydown="return false;"' : '' ?>>
-                                    <option value="Ex-Stock" <?= ($is_edit && $order['stock_type'] == 'Ex-Stock') ? 'selected' : '' ?>>Ex-Stock</option>
-                                    <option value="Pre-Book" <?= ($is_edit && $order['stock_type'] == 'Pre-Book') ? 'selected' : '' ?>>Pre-Book</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="payment_method" class="form-label">Payment Method</label>
-                                <select name="payment_method" id="payment_method" class="form-select">
-                                    <option value="COD" <?= ($is_edit && $order['payment_method'] == 'COD') ? 'selected' : '' ?>>COD</option>
-                                    <option value="BT" <?= ($is_edit && $order['payment_method'] == 'BT') ? 'selected' : '' ?>>Bank Transfer</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="payment_status" class="form-label">Payment Status</label>
-                                <select name="payment_status" id="payment_status" class="form-select">
-                                    <option value="Pending" <?= ($is_edit && $order['payment_status'] == 'Pending') ? 'selected' : '' ?>>Pending</option>
-                                    <option value="Received" <?= ($is_edit && $order['payment_status'] == 'Received') ? 'selected' : '' ?>>Received</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 d-none" id="payment_status_date_wrapper">
-                                <label for="payment_status_event_date" class="form-label">Payment Date</label>
-                                <input type="datetime-local" class="form-control" id="payment_status_event_date" name="payment_status_event_date">
-                            </div>
-                             <div class="col-md-4">
-                                <label for="order_date" class="form-label">Order Date *</label>
-                                <input type="date" class="form-control" id="order_date" name="order_date" value="<?= $is_edit ? htmlspecialchars($order['order_date']) : date('Y-m-d') ?>" required <?= $is_edit ? 'readonly' : '' ?>>
-                            </div>
-                            <div class="col-md-8">
-                                <label for="remarks" class="form-label">Remarks</label>
-                                <input type="text" class="form-control" id="remarks" name="remarks" placeholder="e.g., Delivery notes..." value="<?= $is_edit ? htmlspecialchars($order['remarks']) : '' ?>">
-                            </div>
+                            <div class="col-md-6 position-relative"><label for="customer_search" class="form-label">Search Customer by Phone *</label><input type="text" class="form-control" id="customer_search" required autocomplete="off" value="<?= $is_edit ? htmlspecialchars($order['customer']['phone']) : '' ?>" <?= $is_edit ? 'readonly' : '' ?>><div id="customerResults" class="list-group mt-1 position-absolute w-100 d-none" style="z-index: 1000;"></div><input type="hidden" name="customer_id" id="customer_id" value="<?= $is_edit ? htmlspecialchars($order['customer_id']) : '' ?>"></div>
+                            <div class="col-md-6"><label class="form-label">Selected Customer</label><div id="selected_customer_display" class="form-control-plaintext fw-bold"><?= $is_edit ? htmlspecialchars($order['customer']['name']) . ' (ID: ' . htmlspecialchars($order['customer_id']) . ')' : 'None' ?></div></div>
+                            <div class="col-md-4"><label for="stock_type" class="form-label">Stock Type</label><select name="stock_type" id="stock_type" class="form-select" <?= $is_edit ? 'disabled' : '' ?>><option value="Ex-Stock" <?= ($is_edit && $order['stock_type'] == 'Ex-Stock') ? 'selected' : '' ?>>Ex-Stock</option><option value="Pre-Book" <?= ($is_edit && $order['stock_type'] == 'Pre-Book') ? 'selected' : '' ?>>Pre-Book</option></select></div>
+                            <div class="col-md-4"><label for="payment_method" class="form-label">Payment Method</label><select name="payment_method" id="payment_method" class="form-select"><option value="COD" <?= ($is_edit && $order['payment_method'] == 'COD') ? 'selected' : '' ?>>COD</option><option value="BT" <?= ($is_edit && $order['payment_method'] == 'BT') ? 'selected' : '' ?>>Bank Transfer</option></select></div>
+                            <div class="col-md-4"><label for="payment_status" class="form-label">Payment Status</label><select name="payment_status" id="payment_status" class="form-select"><option value="Pending" <?= ($is_edit && $order['payment_status'] == 'Pending') ? 'selected' : '' ?>>Pending</option><option value="Received" <?= ($is_edit && $order['payment_status'] == 'Received') ? 'selected' : '' ?>>Received</option></select></div>
+                            <div class="col-md-4 d-none" id="payment_status_date_wrapper"><label for="payment_status_event_date" class="form-label">Payment Date</label><input type="datetime-local" class="form-control" id="payment_status_event_date" name="payment_status_event_date"></div>
+                            <div class="col-md-4"><label for="order_date" class="form-label">Order Date *</label><input type="date" class="form-control" id="order_date" name="order_date" value="<?= $is_edit ? htmlspecialchars($order['order_date']) : date('Y-m-d') ?>" required <?= $is_edit ? 'readonly' : '' ?>></div>
+                            <div class="col-md-8"><label for="remarks" class="form-label">Remarks</label><input type="text" class="form-control" id="remarks" name="remarks" placeholder="e.g., Delivery notes..." value="<?= $is_edit ? htmlspecialchars($order['remarks']) : '' ?>"></div>
                         </div>
                     </div>
                 </div>
             </div>
             <!-- Right Column -->
             <div class="col-lg-4">
-                <div class="card h-100">
-                    <div class="card-header">2. Status & Totals</div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="order_status" class="form-label">Order Status</label>
-                            <select name="order_status" id="order_status" class="form-select">
-                                <option value="New" <?= ($is_edit && $order['status'] == 'New') ? 'selected' : '' ?>>New</option>
-                                <option value="Processing" <?= ($is_edit && $order['status'] == 'Processing') ? 'selected' : '' ?>>Processing</option>
-                                <option value="Awaiting Stock" <?= ($is_edit && $order['status'] == 'Awaiting Stock') ? 'selected' : '' ?>>Awaiting Stock</option>
-                                <option value="With Courier" <?= ($is_edit && $order['status'] == 'With Courier') ? 'selected' : '' ?>>With Courier</option>
-                                <option value="Delivered" <?= ($is_edit && $order['status'] == 'Delivered') ? 'selected' : '' ?>>Delivered</option>
-                                <option value="Canceled" <?= ($is_edit && $order['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option>
-                            </select>
-                        </div>
-                        <div class="mb-3 d-none" id="order_status_date_wrapper">
-                            <label for="order_status_event_date" class="form-label">Status Date</label>
-                            <input type="datetime-local" class="form-control" id="order_status_event_date" name="order_status_event_date">
-                        </div>
-                        <div class="mb-3">
-                            <label for="other_expenses" class="form-label">Other Expenses</label>
-                            <input type="number" class="form-control" id="other_expenses" name="other_expenses" value="<?= $is_edit ? htmlspecialchars($order['other_expenses'] ?? '0.00') : '0.00' ?>" min="0.00" step="0.01">
-                        </div>
-                        <hr>
-                        <h3 class="text-end">Total: <span id="orderTotalDisplay">0.00</span></h3>
-                    </div>
-                </div>
+                 <div class="card h-100">
+                     <div class="card-header">2. Status & Totals</div>
+                     <div class="card-body">
+                         <div class="mb-3"><label for="order_status" class="form-label">Order Status</label><select name="order_status" id="order_status" class="form-select"><option value="New" <?= ($is_edit && $order['status'] == 'New') ? 'selected' : '' ?>>New</option><option value="Processing" <?= ($is_edit && $order['status'] == 'Processing') ? 'selected' : '' ?>>Processing</option><option value="Awaiting Stock" <?= ($is_edit && $order['status'] == 'Awaiting Stock') ? 'selected' : '' ?>>Awaiting Stock</option><option value="With Courier" <?= ($is_edit && $order['status'] == 'With Courier') ? 'selected' : '' ?>>With Courier</option><option value="Delivered" <?= ($is_edit && $order['status'] == 'Delivered') ? 'selected' : '' ?>>Delivered</option><option value="Canceled" <?= ($is_edit && $order['status'] == 'Canceled') ? 'selected' : '' ?>>Canceled</option></select></div>
+                        <div class="mb-3 d-none" id="order_status_date_wrapper"><label for="order_status_event_date" class="form-label">Status Date</label><input type="datetime-local" class="form-control" id="order_status_event_date" name="order_status_event_date"></div>
+                         <div class="mb-3"><label for="other_expenses" class="form-label">Other Expenses</label><input type="number" class="form-control" id="other_expenses" name="other_expenses" value="<?= $is_edit ? htmlspecialchars($order['other_expenses'] ?? '0.00') : '0.00' ?>" min="0.00" step="0.01"></div>
+                         <hr>
+                         <!-- CORRECTED ID -->
+                         <h3 class="text-end">Total: <span id="orderTotalDisplay">0.00</span></h3>
+                     </div>
+                 </div>
             </div>
         </div>
 
         <!-- Items Section -->
         <div class="card mt-3">
             <div class="card-header d-flex justify-content-between align-items-center"><span>3. Items</span><?php if (!$is_edit): ?><button type="button" class="btn btn-sm btn-success" id="addItemRow"><i class="bi bi-plus-circle"></i> Add Item</button><?php endif; ?></div>
-            <div class="card-body p-2"><div class="table-responsive"><table class="table table-sm"><thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead>
-               <tbody id="orderItemRows">
-                    <?php if ($is_edit && !empty($order['items'])): ?>
-                        <?php foreach ($order['items'] as $item): ?>
-                            <tr class="order-item-row">
-                                <input type="hidden" name="items[order_item_id][]" value="<?= htmlspecialchars($item['order_item_id']) ?>">
-                                <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
-                                <input type="hidden" name="items[cost][]" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
-                                <td><?= htmlspecialchars($item['item_name']) ?></td>
-                                <td><?= htmlspecialchars($item['uom']) ?></td>
-                                <td class="stock-col"><?= htmlspecialchars(number_format($item['stock_on_hand'], 2)) ?></td>
-                                <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
-                                <td><input type="text" class="form-control-plaintext form-control-sm text-end margin-display" value="<?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?>" readonly></td>
-                                <td>
-                                    <?php if ($is_edit && $order['status'] === 'With Courier'): ?>
-                                        <input type="number" class="form-control form-control-sm text-end price-input" name="items[price][]" value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required>
-                                    <?php else: ?>
-                                        <?= htmlspecialchars(number_format($item['price'], 2)) ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if ($is_edit && $order['status'] === 'With Courier'): ?>
-                                        <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
-                                    <?php else: ?>
-                                        <?= htmlspecialchars(number_format($item['quantity'], 2)) ?>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-end fw-bold subtotal-display">0.00</td>
+            <div class="card-body p-2">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead>
+                        <tbody id="orderItemRows">
+                            <?php if ($is_edit && !empty($order['items'])): ?>
+                                <?php foreach ($order['items'] as $item): ?>
+                                    <tr class="order-item-row">
+                                        <input type="hidden" name="items[order_item_id][]" value="<?= htmlspecialchars($item['order_item_id']) ?>">
+                                        <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
+                                        <input type="hidden" name="items[cost][]" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
+                                        <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                        <td><?= htmlspecialchars($item['uom']) ?></td>
+                                        <td class="stock-col"><?= htmlspecialchars(number_format($item['stock_on_hand'], 2)) ?></td>
+                                        <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
+                                        <td><input type="text" class="form-control-plaintext form-control-sm text-end margin-display" value="<?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?>" readonly></td>
+                                        <td>
+                                            <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
+                                                <input type="number" class="form-control form-control-sm text-end price-input" name="items[price][]" value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required>
+                                            <?php else: ?>
+                                                <?= htmlspecialchars(number_format($item['price'], 2)) ?>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
+                                                 <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
+                                            <?php else: ?>
+                                                <?= htmlspecialchars(number_format($item['quantity'], 2)) ?>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-end fw-bold subtotal-display">0.00</td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody> 
+                        <?php if($is_edit): ?>
+                        <tfoot>
+                            <tr>
+                                <th colspan="7" class="text-end border-0">Items Total:</th>
+                                <!-- CORRECTED ID -->
+                                <th id="itemsTotalDisplay" class="text-end border-0">0.00</th>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody> 
-            <?php if($is_edit): ?>
-            <tfoot>
-                <tr>
-                    <th colspan="7" class="text-end border-0">Items Total:</th>
-                    <th id="itemsTotalDisplay" class="text-end border-0">0.00</th>
-                </tr>
-            </tfoot>
-            <?php endif; ?>
+                        </tfoot>
+                        <?php endif; ?>
+                    </table>
+                </div><!-- THIS DIV WAS MISSING ITS CLOSING TAG -->
+            </div>
         </div>
         
-        <!-- History Sections -->
+        <!-- History Sections (Unchanged) -->
         <?php if ($is_edit && !empty($order['status_history'])): ?>
         <div class="card mt-3">
             <div class="card-header"><i class="bi bi-clock-history"></i> Order Status History</div>
@@ -326,26 +254,19 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
         <?php endif; ?>
         
+        <!-- CORRECTED BUTTON LAYOUT -->
         <div class="col-12 mt-4">
             <?php if ($is_edit): ?>
-                <button class="btn btn-primary me-2" type="submit" name="action" value="update_header">
-                    <i class="bi bi-floppy"></i> Update Order Details
-                </button>
-                
+                <button class="btn btn-primary me-2" type="submit" name="action" value="update_header"><i class="bi bi-floppy"></i> Update Order Details</button>
                 <?php if (isset($order['status']) && $order['status'] === 'With Courier'): ?>
-                    <button class="btn btn-success me-2" type="submit" name="action" value="update_items">
-                        <i class="bi bi-save"></i> Update Items & Recalculate
-                    </button>
+                    <button class="btn btn-success me-2" type="submit" name="action" value="update_items"><i class="bi bi-save"></i> Update Items & Recalculate</button>
                 <?php endif; ?>
-
             <?php else: ?>
-                <button class="btn btn-primary me-2" type="submit" name="action" value="create_order">
-                    <i class="bi bi-save"></i> Create Order & Update Stock
-                </button>
+                <button class="btn btn-primary me-2" type="submit" name="action" value="create_order"><i class="bi bi-save"></i> Create Order & Update Stock</button>
             <?php endif; ?>
-
             <a href="/index.php" class="btn btn-outline-secondary">Back</a>
         </div>
+
     </form>
 </main>
 
