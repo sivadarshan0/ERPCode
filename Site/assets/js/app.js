@@ -451,6 +451,12 @@ function initOrderEntry() {
 
     // --- NEW, ROBUST CALCULATION FUNCTION ---
     const calculateTotals = () => {
+        // Create a number formatter for consistency.
+        const formatter = new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+
         let itemsTotal = 0;
         if (itemRowsContainer) {
             itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
@@ -465,7 +471,10 @@ function initOrderEntry() {
                 const cost = parseFloat(costInput ? costInput.value : 0) || 0;
 
                 const subtotal = price * quantity;
-                if (subtotalDisplay) subtotalDisplay.textContent = subtotal.toFixed(2);
+                if (subtotalDisplay) {
+                    // Use the formatter for the subtotal
+                    subtotalDisplay.textContent = formatter.format(subtotal);
+                }
                 itemsTotal += subtotal;
                 
                 if (marginDisplay) {
@@ -477,12 +486,17 @@ function initOrderEntry() {
             });
         }
         
-        if (itemsTotalDisplay) itemsTotalDisplay.textContent = itemsTotal.toFixed(2);
+        if (itemsTotalDisplay) {
+            // Use the formatter for the items total
+            itemsTotalDisplay.textContent = formatter.format(itemsTotal);
+        }
         
-        // The grand total is now ONLY the sum of the items. Other Expenses are ignored.
-        const grandTotal = itemsTotal;
+        const grandTotal = itemsTotal; // Total does not include other expenses
         
-        if (orderTotalDisplay) orderTotalDisplay.textContent = grandTotal.toFixed(2);
+        if (orderTotalDisplay) {
+            // Use the formatter for the grand total
+            orderTotalDisplay.textContent = formatter.format(grandTotal);
+        }
     };
     // --- END NEW CALCULATION FUNCTION ---
 
