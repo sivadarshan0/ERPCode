@@ -203,3 +203,17 @@ main {
     min-width: 80px; /* Set a minimum width for usability */
 }
 
+/*
+ * --- Custom Column Widths for Order Entry Table ---
+ */
+
+/* Target the header and the cell in the body for specific columns */
+.table th.col-tight,
+.table td .quantity-input {
+    width: 100px !important; /* Sets a fixed width for the quantity column */
+}
+
+.table th.col-tight,
+.table td .margin-display {
+    width: 100px !important; /* Sets a fixed width for the margin column */
+}

@@ -194,7 +194,19 @@ require_once __DIR__ . '/../../includes/header.php';
             <div class="card-body p-2">
                 <div class="table-responsive">
                     <table class="table table-sm">
-                        <thead class="table-light"><tr><th class="w-25">Item</th><th>UOM</th><th class="stock-col">Stock</th><th class="cost-col">Cost Price</th><th>Margin %</th><th>Sell Price</th><th>Quantity</th><th class="text-end">Subtotal</th><?php if (!$is_edit): ?><th></th><?php endif; ?></tr></thead>
+                        <thead class="table-light">
+                            <tr>
+                                <th class="w-25">Item</th>
+                                <th>UOM</th>
+                                <th class="stock-col">Stock</th>
+                                <th class="cost-col">Cost Price</th>
+                                <th class="col-tight">Margin %</th>
+                                <th>Sell Price</th>
+                                <th class="col-tight">Quantity</th>
+                                <th class="text-end">Subtotal</th>
+                                <?php if (!$is_edit): ?><th></th><?php endif; ?>
+                            </tr>
+                        </thead>
                         <tbody id="orderItemRows">
                             <?php if ($is_edit && !empty($order['items'])): ?>
                                 <?php foreach ($order['items'] as $item): ?>
@@ -206,7 +218,10 @@ require_once __DIR__ . '/../../includes/header.php';
                                         <td><?= htmlspecialchars($item['uom']) ?></td>
                                         <td class="stock-col"><?= htmlspecialchars(number_format($item['stock_on_hand'], 2)) ?></td>
                                         <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>
-                                        <td><input type="text" class="form-control-plaintext form-control-sm text-end margin-display" value="<?= htmlspecialchars(number_format($item['profit_margin'], 2)) ?>" readonly></td>
+                                        <td>
+                                            <!-- CORRECTED: The value attribute now uses the raw number -->
+                                            <input type="text" class="form-control-plaintext form-control-sm text-end margin-display" value="<?= htmlspecialchars($item['profit_margin']) ?>" readonly>
+                                        </td>
                                         <td>
                                             <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
                                                 <input type="number" class="form-control form-control-sm text-end price-input" name="items[price][]" value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required>
@@ -216,7 +231,7 @@ require_once __DIR__ . '/../../includes/header.php';
                                         </td>
                                         <td>
                                             <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
-                                                 <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
+                                                <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
                                             <?php else: ?>
                                                 <?= htmlspecialchars(number_format($item['quantity'], 2)) ?>
                                             <?php endif; ?>
