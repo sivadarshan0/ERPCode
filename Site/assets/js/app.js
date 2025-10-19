@@ -411,10 +411,8 @@ function initOrderEntry() {
     const itemRowsContainer = document.getElementById('orderItemRows');
     const template = document.getElementById('orderItemRowTemplate');
     const addRowBtn = document.getElementById('addItemRow');
-    // --- CORRECTED: Get elements by their new, correct IDs ---
-    const itemsTotalDisplay = document.getElementById('itemsTotalDisplay');
-    const orderTotalDisplay = document.getElementById('orderTotalDisplay');
-    // --- END CORRECTION ---
+    //const itemsTotalDisplay = document.getElementById('itemsTotalDisplay');
+    //const orderTotalDisplay = document.getElementById('orderTotalDisplay');
     const otherExpensesInput = document.getElementById('other_expenses');
     const createOrderBtn = document.querySelector('#orderForm button[type="submit"]');
     const orderStatusSelect = document.getElementById('order_status');
@@ -452,6 +450,8 @@ function initOrderEntry() {
     // --- NEW, ROBUST CALCULATION FUNCTION ---
     const calculateTotals = () => {
         // Create a number formatter for consistency.
+        const itemsTotalDisplay = document.getElementById('itemsTotalDisplay');
+        const orderTotalDisplay = document.getElementById('orderTotalDisplay');
         const formatter = new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
