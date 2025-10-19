@@ -460,8 +460,8 @@ function initOrderEntry() {
         let itemsTotal = 0;
         if (itemRowsContainer) {
             itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
-                const priceEl = row.querySelector('.price-input') || row.querySelector('td:nth-child(6)');
-                const quantityEl = row.querySelector('.quantity-input') || row.querySelector('td:nth-child(7)');
+                const priceEl = row.querySelector('.price-input') || row.querySelector('.price-display');
+                const quantityEl = row.querySelector('.quantity-input') || row.querySelector('.quantity-display');
                 const subtotalDisplay = row.querySelector('.subtotal-display');
                 const costInput = row.querySelector('.cost-input');
                 const marginDisplay = row.querySelector('.margin-display');

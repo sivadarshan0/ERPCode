@@ -222,16 +222,17 @@ require_once __DIR__ . '/../../includes/header.php';
                                             <!-- CORRECTED: The value attribute now uses the raw number -->
                                             <input type="text" class="form-control-plaintext form-control-sm text-end margin-display" value="<?= htmlspecialchars($item['profit_margin']) ?>" readonly>
                                         </td>
-                                        <td>
+                                        <!-- CORRECTED: Added classes to the read-only TDs -->
+                                        <td class="text-end price-display">
                                             <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
                                                 <input type="number" class="form-control form-control-sm text-end price-input" name="items[price][]" value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required>
                                             <?php else: ?>
                                                 <?= htmlspecialchars(number_format($item['price'], 2)) ?>
                                             <?php endif; ?>
                                         </td>
-                                        <td>
+                                        <td class="text-end quantity-display">
                                             <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
-                                                <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
+                                                    <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
                                             <?php else: ?>
                                                 <?= htmlspecialchars(number_format($item['quantity'], 2)) ?>
                                             <?php endif; ?>
