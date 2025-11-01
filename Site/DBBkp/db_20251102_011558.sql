@@ -107,7 +107,7 @@ CREATE TABLE `acc_transactions` (
   KEY `idx_transaction_group_id` (`transaction_group_id`),
   KEY `idx_transaction_date` (`transaction_date`),
   KEY `idx_financial_year` (`financial_year`)
-) ENGINE=InnoDB AUTO_INCREMENT=169 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=203 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -186,7 +186,41 @@ INSERT INTO `acc_transactions` VALUES
 (165,'TRN000087',2,'2025-09-09 12:11:31','2025-2026','Cash deposit to bank #ORD000010','Cash deposit to bank #ORD000010',5910.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:11:31','admin'),
 (166,'TRN000087',1,'2025-09-09 12:11:31','2025-2026','Cash deposit to bank #ORD000010','Cash deposit to bank #ORD000010',NULL,5910.00,'Posted','manual_entry',NULL,'2025-09-09 12:11:31','admin'),
 (167,'TRN000088',2,'2025-09-09 12:12:59','2025-2026','Cash deposit to bank #ORD000011','Cash deposit to bank #ORD000011',6670.00,NULL,'Posted','manual_entry',NULL,'2025-09-09 12:12:59','admin'),
-(168,'TRN000088',1,'2025-09-09 12:12:59','2025-2026','Cash deposit to bank #ORD000011','Cash deposit to bank #ORD000011',NULL,6670.00,'Posted','manual_entry',NULL,'2025-09-09 12:12:59','admin');
+(168,'TRN000088',1,'2025-09-09 12:12:59','2025-2026','Cash deposit to bank #ORD000011','Cash deposit to bank #ORD000011',NULL,6670.00,'Posted','manual_entry',NULL,'2025-09-09 12:12:59','admin'),
+(169,'TRN000089',4,'2025-09-24 18:49:59','2025-2026','Payment for goods (Ref PO #PUR000007)','',3400.00,NULL,'Posted','purchase_order','PUR000007','2025-09-25 18:49:59','admin'),
+(170,'TRN000089',20,'2025-09-24 18:49:59','2025-2026','Payment for goods (Ref PO #PUR000007)','',NULL,3400.00,'Posted','purchase_order','PUR000007','2025-09-25 18:49:59','admin'),
+(171,'TRN000090',4,'2025-09-24 18:51:30','2025-2026','Payment for goods (Ref PO #PUR000006)','',3480.00,NULL,'Posted','purchase_order','PUR000006','2025-09-25 18:51:30','admin'),
+(172,'TRN000090',20,'2025-09-24 18:51:30','2025-2026','Payment for goods (Ref PO #PUR000006)','',NULL,3480.00,'Posted','purchase_order','PUR000006','2025-09-25 18:51:30','admin'),
+(173,'TRN000091',4,'2025-10-07 12:15:46','2025-2026','Payment for logistics (Ref PO #PUR000007)','',1149.86,NULL,'Posted','purchase_order','PUR000007','2025-10-12 12:15:46','admin'),
+(174,'TRN000091',20,'2025-10-07 12:15:46','2025-2026','Payment for logistics (Ref PO #PUR000007)','',NULL,1149.86,'Posted','purchase_order','PUR000007','2025-10-12 12:15:46','admin'),
+(175,'TRN000094',4,'2025-10-06 16:29:26','2025-2026','Payment for logistics (Ref PO #PUR000006)','',1373.14,NULL,'Posted','purchase_order','PUR000006','2025-10-13 16:29:26','admin'),
+(176,'TRN000094',20,'2025-10-06 16:29:26','2025-2026','Payment for logistics (Ref PO #PUR000006)','',NULL,1373.14,'Posted','purchase_order','PUR000006','2025-10-13 16:29:26','admin'),
+(177,'TRN000097',25,'2025-10-07 16:45:24','2025-2026','Local courier expense','Local courier expense - BD003852016LK',470.00,NULL,'Posted','manual_entry',NULL,'2025-10-13 16:45:24','admin'),
+(178,'TRN000097',20,'2025-10-07 16:45:24','2025-2026','Local courier expense','Local courier expense - BD003852016LK',NULL,470.00,'Posted','manual_entry',NULL,'2025-10-13 16:45:24','admin'),
+(179,'TRN000098',1,'2025-09-15 14:24:30','2025-2026','Sales revenue from Order #ORD000012','',6120.00,NULL,'Posted','sales_order','ORD000012','2025-10-19 14:24:30','admin'),
+(180,'TRN000098',13,'2025-09-15 14:24:30','2025-2026','Sales revenue from Order #ORD000012','',NULL,6120.00,'Posted','sales_order','ORD000012','2025-10-19 14:24:30','admin'),
+(181,'TRN000099',15,'2025-09-15 14:24:30','2025-2026','Cost of goods sold for Order #ORD000012','',4549.86,NULL,'Posted','sales_order','ORD000012','2025-10-19 14:24:30','admin'),
+(182,'TRN000099',4,'2025-09-15 14:24:30','2025-2026','Cost of goods sold for Order #ORD000012','',NULL,4549.86,'Posted','sales_order','ORD000012','2025-10-19 14:24:30','admin'),
+(183,'TRN000100',2,'2025-10-14 14:37:07','2025-2026','Cash deposit to bank #ORD000012','Cash deposit to bank #ORD000012',6120.00,NULL,'Posted','manual_entry',NULL,'2025-10-19 14:37:07','admin'),
+(184,'TRN000100',1,'2025-10-14 14:37:07','2025-2026','Cash deposit to bank #ORD000012','Cash deposit to bank #ORD000012',NULL,6120.00,'Posted','manual_entry',NULL,'2025-10-19 14:37:07','admin'),
+(185,'TRN000101',23,'2025-10-18 16:57:15','2025-2026','Bag for item','Bag for item. 2 Bags each 100.00',200.00,NULL,'Posted','manual_entry',NULL,'2025-10-19 16:57:15','admin'),
+(186,'TRN000101',20,'2025-10-18 16:57:15','2025-2026','Bag for item','Bag for item. 2 Bags each 100.00',NULL,200.00,'Posted','manual_entry',NULL,'2025-10-19 16:57:15','admin'),
+(187,'TRN000102',23,'2025-10-18 17:01:01','2025-2026','Courier bag','Courier bags | Size 16 X 11 | 50 nos | Each bag 24.00',1200.00,NULL,'Posted','manual_entry',NULL,'2025-10-19 17:01:01','admin'),
+(188,'TRN000102',20,'2025-10-18 17:01:01','2025-2026','Courier bag','Courier bags | Size 16 X 11 | 50 nos | Each bag 24.00',NULL,1200.00,'Posted','manual_entry',NULL,'2025-10-19 17:01:01','admin'),
+(189,'TRN000103',4,'2025-10-04 17:36:30','2025-2026','Payment for goods (Ref PO #PUR000008)','',3782.00,NULL,'Posted','purchase_order','PUR000008','2025-10-19 17:36:30','admin'),
+(190,'TRN000103',20,'2025-10-04 17:36:30','2025-2026','Payment for goods (Ref PO #PUR000008)','',NULL,3782.00,'Posted','purchase_order','PUR000008','2025-10-19 17:36:30','admin'),
+(191,'TRN000104',1,'2025-09-23 08:42:22','2025-2026','Sales revenue from Order #ORD000013','',6170.00,NULL,'Posted','sales_order','ORD000013','2025-11-01 08:42:22','admin'),
+(192,'TRN000104',13,'2025-09-23 08:42:22','2025-2026','Sales revenue from Order #ORD000013','',NULL,6170.00,'Posted','sales_order','ORD000013','2025-11-01 08:42:22','admin'),
+(193,'TRN000105',15,'2025-09-23 08:42:22','2025-2026','Cost of goods sold for Order #ORD000013','',4853.14,NULL,'Posted','sales_order','ORD000013','2025-11-01 08:42:22','admin'),
+(194,'TRN000105',4,'2025-09-23 08:42:22','2025-2026','Cost of goods sold for Order #ORD000013','',NULL,4853.14,'Posted','sales_order','ORD000013','2025-11-01 08:42:22','admin'),
+(195,'TRN000106',2,'2025-10-27 08:46:05','2025-2026','Cash deposit to bank #ORD000013','Cash deposit to bank #ORD000013',6170.00,NULL,'Posted','manual_entry',NULL,'2025-11-01 08:46:05','admin'),
+(196,'TRN000106',1,'2025-10-27 08:46:05','2025-2026','Cash deposit to bank #ORD000013','Cash deposit to bank #ORD000013',NULL,6170.00,'Posted','manual_entry',NULL,'2025-11-01 08:46:05','admin'),
+(197,'TRN000107',4,'2025-10-16 19:42:00','2025-2026','Payment for goods (Ref PO #PUR000009)','',4615.00,NULL,'Posted','purchase_order','PUR000009','2025-11-01 19:42:00','admin'),
+(198,'TRN000107',20,'2025-10-16 19:42:00','2025-2026','Payment for goods (Ref PO #PUR000009)','',NULL,4615.00,'Posted','purchase_order','PUR000009','2025-11-01 19:42:00','admin'),
+(199,'TRN000108',4,'2025-10-28 19:44:13','2025-2026','Payment for logistics (Ref PO #PUR000009)','',1000.00,NULL,'Posted','purchase_order','PUR000009','2025-11-01 19:44:13','admin'),
+(200,'TRN000108',20,'2025-10-28 19:44:13','2025-2026','Payment for logistics (Ref PO #PUR000009)','',NULL,1000.00,'Posted','purchase_order','PUR000009','2025-11-01 19:44:13','admin'),
+(201,'TRN000116',4,'2025-10-28 19:44:50','2025-2026','Payment for logistics (Ref PO #PUR000008)','',1000.00,NULL,'Posted','purchase_order','PUR000008','2025-11-01 19:44:50','admin'),
+(202,'TRN000116',20,'2025-10-28 19:44:50','2025-2026','Payment for logistics (Ref PO #PUR000008)','',NULL,1000.00,'Posted','purchase_order','PUR000008','2025-11-01 19:44:50','admin');
 /*!40000 ALTER TABLE `acc_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -219,7 +253,8 @@ CREATE TABLE `categories` (
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
 INSERT INTO `categories` VALUES
-('CAT00001','Saree','Saree category','2025-08-24 10:50:51',1,'admin',NULL,NULL,NULL);
+('CAT00001','Saree','Saree category','2025-08-24 10:50:51',1,'admin',NULL,NULL,NULL),
+('CAT00002','Jewelry','Jewelry category','2025-10-13 17:37:42',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -257,7 +292,9 @@ LOCK TABLES `categories_sub` WRITE;
 INSERT INTO `categories_sub` VALUES
 ('SUB00001','CAT00001','Cotton saree','Cotton saree sub category','2025-08-24 10:52:40',1,'admin',NULL,NULL,NULL),
 ('SUB00002','CAT00001','Kanchi cotton saree','Kanchi cotton sarees are handwoven, elegant, and breathable traditional sarees from Kanchipuram, Tamil Nadu, celebrated for their unique craftsmanship, temple-inspired designs, and comfortable fabric, making them a popular choice for daily wear and special occasions alike.','2025-08-24 11:31:55',1,'admin',NULL,NULL,NULL),
-('SUB00003','CAT00001','Sungudi cotton saree','Sungudi cotton saree sub category','2025-08-24 17:33:45',1,'admin','2025-08-24 17:37:14',1,'admin');
+('SUB00003','CAT00001','Sungudi cotton saree','Sungudi cotton saree sub category','2025-08-24 17:33:45',1,'admin','2025-08-24 17:37:14',1,'admin'),
+('SUB00004','CAT00002','Earrings','Earrings sub category','2025-10-13 17:39:31',1,'admin',NULL,NULL,NULL),
+('SUB00005','CAT00002','Necklace','Necklace sub category','2025-10-13 18:23:47',1,'admin',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `categories_sub` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -343,7 +380,11 @@ INSERT INTO `grn` VALUES
 ('GRN000003','2025-08-25','Canceled','Test GRn','2025-08-25 11:22:26',1,'admin'),
 ('GRN000004','2025-08-26','Posted','Auto-generated from completed PO #PUR000003','2025-08-26 20:08:02',1,'System for admin'),
 ('GRN000005','2025-08-26','Posted','Auto-generated from completed PO #PUR000004','2025-08-26 20:16:18',1,'System for admin'),
-('GRN000006','2025-09-01','Posted','Auto-generated from completed PO #PUR000005','2025-09-01 11:06:09',1,'System for admin');
+('GRN000006','2025-09-01','Posted','Auto-generated from completed PO #PUR000005','2025-09-01 11:06:09',1,'System for admin'),
+('GRN000007','2025-10-12','Posted','Auto-generated from completed PO #PUR000007','2025-10-12 12:15:46',1,'System for admin'),
+('GRN000008','2025-10-13','Posted','Auto-generated from completed PO #PUR000006','2025-10-13 16:29:26',1,'System for admin'),
+('GRN000009','2025-11-01','Posted','Auto-generated from completed PO #PUR000009','2025-11-01 19:44:13',1,'System for admin'),
+('GRN000010','2025-11-01','Posted','Auto-generated from completed PO #PUR000008','2025-11-01 19:44:50',1,'System for admin');
 /*!40000 ALTER TABLE `grn` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -366,7 +407,7 @@ CREATE TABLE `grn_items` (
   KEY `grn_id` (`grn_id`),
   KEY `item_id` (`item_id`),
   CONSTRAINT `fk_grn_header` FOREIGN KEY (`grn_id`) REFERENCES `grn` (`grn_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -385,7 +426,21 @@ INSERT INTO `grn_items` VALUES
 (7,'GRN000004','ITM00006','No',1,3634.00,450),
 (8,'GRN000005','ITM00007','No',1,4466.00,500),
 (9,'GRN000006','ITM00008','No',1,4608.00,500),
-(10,'GRN000006','ITM00009','No',1,5499.00,500);
+(10,'GRN000006','ITM00009','No',1,5499.00,500),
+(22,'GRN000007','ITM00011','No',1,4549.86,700),
+(23,'GRN000008','ITM00012','No',1,4853.14,700),
+(24,'GRN000009','ITM00018','Pair',1,827.21,15),
+(25,'GRN000009','ITM00019','Pair',1,669.29,15),
+(26,'GRN000009','ITM00025','No',1,757.02,15),
+(27,'GRN000009','ITM00021','No',1,528.91,15),
+(28,'GRN000009','ITM00022','Pair',1,792.12,15),
+(29,'GRN000009','ITM00023','Pair',1,1037.78,15),
+(30,'GRN000009','ITM00024','Pair',1,1002.69,15),
+(31,'GRN000010','ITM00013','Pair',1,670.58,10),
+(32,'GRN000010','ITM00014','Pair',1,558.68,10),
+(33,'GRN000010','ITM00015','Pair',1,480.36,10),
+(34,'GRN000010','ITM00016','Pair',1,670.58,10),
+(35,'GRN000010','ITM00017','Set',1,2401.80,50);
 /*!40000 ALTER TABLE `grn_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -433,7 +488,21 @@ INSERT INTO `items` VALUES
 ('ITM00008','SUB00002','Kanji cotton saree - Silver and gold border 80 counts','No','Kanji cotton sarees with silver and gold borders are exquisite traditional handwoven fabrics from Kanchipuram, blending the softness of cotton with the elegance of silver and gold zari borders for a unique, luxurious yet comfortable attire suitable for festive and special occasions.',NULL,'2025-08-24 11:36:22',1,'admin',NULL,NULL,NULL),
 ('ITM00009','SUB00002','Kanji cotton saree - Body work 100 counts','No','100 count Kanji (or Kanchi) cotton sarees feature pure, handloom cotton fabric with a dense, durable weave often measuring 100 threads per inch, combined with intricate body work such as butta designs or zari borders, offering a rich yet breathable saree ideal for both casual and formal wear.',NULL,'2025-08-24 11:38:51',1,'admin',NULL,NULL,NULL),
 ('ITM00010','SUB00003','Sungudi cotton saree','No','Handcrafted in Madurai, this Sungudi cotton saree features traditional tie-dye patterns and a rich zari border. Lightweight and breathable, it\'s perfect for everyday elegance or festive charm.',NULL,'2025-08-24 17:38:03',1,'admin',NULL,NULL,NULL),
-('ITM00011','SUB00002','Kanji cotton saree - Kovari putta 80 counts','No','Gracefully handwoven in the traditional looms of Kanji, this cotton saree features the distinctive Kovari putta motif, known for its subtle geometric charm. Crafted with 80-count fine cotton, it offers a lightweight drape and breathable comfort—perfect for everyday elegance or understated festive wear. A timeless blend of heritage and simplicity.','/Images/ITM00011-01.jpg','2025-09-24 18:15:35',1,'admin','2025-09-25 05:45:41',1,'admin');
+('ITM00011','SUB00002','Kanji cotton saree - Kovari putta 80 counts','No','Gracefully handwoven in the traditional looms of Kanji, this cotton saree features the distinctive Kovari putta motif, known for its subtle geometric charm. Crafted with 80-count fine cotton, it offers a lightweight drape and breathable comfort perfect for everyday elegance or understated festive wear. A timeless blend of heritage and simplicity.','/Images/ITM00011-01.jpg','2025-09-24 18:15:35',1,'admin','2025-10-12 11:49:29',1,'admin'),
+('ITM00012','SUB00003','Premium Velthari Sungudi','No','A timeless blend of tradition and grace. Hand-dyed with classic Sungudi ring patterns and finished with shimmering Velthari zari borders, this lightweight cotton saree offers breathable comfort and refined beauty — perfect for festive wear or everyday elegance.','/Images/ITM00012-01.jpg','2025-09-25 18:27:12',1,'admin','2025-09-25 18:27:12',NULL,NULL),
+('ITM00013','SUB00004','Dangle Earring - Peacock','Pair','Celebrate tradition with a touch of opulence. These gold-toned earrings feature intricately crafted peacocks adorned with vibrant red and green enamel detailing. A sparkling clear stone near each peacock’s head adds a hint of elegance, while cascading chains with white beads and colorful accents in green, red, and white create graceful movement. Perfect for festive occasions, weddings, or cultural events, these earrings bring regal charm to any ensemble.','/Images/ITM00013-01.jpg','2025-10-13 18:09:37',1,'admin','2025-10-13 18:09:37',NULL,NULL),
+('ITM00014','SUB00004','Jimikki - Elephant','Pair','Celebrate timeless artistry with the Rajakala Jhumkas, a regal pair of earrings inspired by South Indian temple jewelry. Each piece features a delicate floral crest crowned with a vibrant gemstone—emerald green and ruby red—symbolizing prosperity and passion. Beneath, a finely sculpted elephant motif pays homage to strength and wisdom, adorned with matching stones for a touch of grandeur. The crescent-shaped base is encrusted with alternating green and red stones, finished with a fringe of lustrous pearl-like beads that sway with grace. Perfect for festive occasions or cultural ensembles, these earrings are a tribute to tradition with a modern twist.','/Images/ITM00014-01.jpg','2025-10-13 18:15:59',1,'admin','2025-10-13 18:15:59',NULL,NULL),
+('ITM00015','SUB00004','Jimikki - Elephant small','Pair','Step into a world of regal charm with the Gajavalli Jhumkas, a stunning fusion of heritage and artistry. Each earring begins with a vibrant floral motif in red and green, blossoming into a majestic elephant centerpiece—an emblem of wisdom and prosperity. The lower bell-shaped jhumka is adorned with intricate gold detailing and a fringe of black and white beads that sway with every movement, echoing the rhythm of classical dance. Ideal for festive wear or statement styling, these earrings are a tribute to cultural elegance and timeless beauty.','/Images/ITM00015-01.jpg','2025-10-13 18:18:39',1,'admin','2025-10-13 18:18:39',NULL,NULL),
+('ITM00016','SUB00004','Jimikki - Lotus purple','Pair','Embrace the serenity of tradition with the Padmashree Jhumkas, a radiant pair of earrings inspired by the sacred lotus. The top and dome are adorned with purple and gold lotus motifs, each petal delicately etched to reflect divine beauty. Crafted in sterling silver (S925), the filigree dome showcases exquisite detailing, while the fringe of soft purple beads adds a gentle sway with every movement. These jhumkas are a celebration of spiritual elegance—perfect for festive wear, temple visits, or adding a touch of grace to contemporary ensembles.','/Images/ITM00016-01.jpg','2025-10-13 18:21:15',1,'admin','2025-10-13 18:21:15',NULL,NULL),
+('ITM00017','SUB00005','Necklace set - Rose','Set','The Haritha Roja Set is a radiant celebration of South Indian craftsmanship, blending the lushness of green leaf motifs with the vibrance of ruby-red stones. The necklace features a symmetrical cascade of alternating green and red elements, framed in antique gold tones that evoke timeless elegance. At its heart lies a regal pendant—an ornate cluster of red stones encircling a central emerald green gem, finished with delicate gold bead danglers. Paired with matching earrings that echo the same floral and festive charm, this set is perfect for weddings, temple visits, or any occasion that calls for grace steeped in tradition.','/Images/ITM00017-01.jpg','2025-10-13 18:26:45',1,'admin','2025-10-13 18:26:45',NULL,NULL),
+('ITM00018','SUB00004','Silver Oxidised Pink Stone Bird Jhumka','Pair','This elegant pair of silver oxidised jhumkas features a finely crafted bird motif perched above a floral design set with a vibrant pink stone. The dome-shaped lower half showcases intricate patterns, culminating in a single white pearl drop that adds graceful movement. With its antique finish and traditional detailing, this piece blends heritage charm with festive appeal—ideal for ethnic wear or special occasions.','/Images/ITM00018-01.jpg','2025-11-01 19:05:00',1,'admin','2025-11-01 19:05:00',NULL,NULL),
+('ITM00019','SUB00004','Silver Toned Mint Stone Motif Jhumkas','Pair','These silver-toned jhumkas feature a striking mint-green stone set at the center of a floral stud, framed by intricate oxidised detailing. The bell-shaped lower half is adorned with engraved floral and geometric patterns, lending a handcrafted elegance to the design. A fringe of delicate white pearl-like beads lines the base, adding movement and charm. Perfect for festive occasions or ethnic ensembles, this pair blends traditional artistry with a refreshing pop of color.','/Images/ITM00019-01.jpg','2025-11-01 19:07:48',1,'admin','2025-11-01 19:07:48',NULL,NULL),
+('ITM00020','SUB00004','Silver Toned Yellow Monalisa Stud Jhumkas','Pair','These silver-toned jhumkas feature a radiant yellow Monalisa stone set in an ornate stud, encircled by delicate white accents that enhance its vintage charm. The dome-shaped lower half is intricately engraved with traditional motifs, offering a rich, handcrafted aesthetic. A fringe of white pearl-like beads adds graceful movement and completes the ethnic appeal. Ideal for festive occasions and traditional attire, this pair blends luminous color with timeless craftsmanship.','/Images/ITM00020-01.jpg','2025-11-01 19:09:33',1,'admin','2025-11-01 19:09:33',NULL,NULL),
+('ITM00021','SUB00004','Silver Toned Medium Size Embossed Jhumkas','No','These medium-sized silver-toned jhumkas showcase a beautifully embossed dome design, featuring intricate traditional patterns that highlight skilled craftsmanship. The oxidised finish lends a vintage charm, while the base is adorned with a delicate fringe of white pearl-like beads that sway gracefully with movement. Lightweight and versatile, this pair is ideal for ethnic wear, festive occasions, or everyday elegance with a touch of tradition.','/Images/ITM00021-01.jpg','2025-11-01 19:11:29',1,'admin','2025-11-01 19:11:29',NULL,NULL),
+('ITM00022','SUB00004','Silver Oxidised Pink Stone Tulip Danglers','Pair','These silver oxidised danglers feature a unique tulip-shaped pendant that blends modern artistry with traditional charm. The floral stud at the top adds a delicate touch, while the central pink stone set within the tulip form brings a vibrant pop of color. Finished with a handcrafted antique texture and accented by two small silver beads, this pair offers a graceful silhouette ideal for ethnic wear, casual elegance, or statement styling.','/Images/ITM00022-01.jpg','2025-11-01 19:13:01',1,'admin','2025-11-01 19:13:01',NULL,NULL),
+('ITM00023','SUB00004','Silver Oxidized Ruby Monaliza Stone Pearl Balis','Pair','These silver oxidized balis feature a regal heart-shaped ruby Monalisa stone at the center, framed by a graceful arc of white pearl beads that add softness and movement. The upper section is adorned with floral and leaf-like motifs set with green and pink stones, enhancing the earrings\' festive elegance. Crafted with intricate silver detailing and a vintage finish, this pair blends rich color with traditional charm—perfect for weddings, cultural events, or statement ethnic wear.','/Images/ITM00023-01.jpg','2025-11-01 19:14:49',1,'admin','2025-11-01 19:20:26',1,'admin'),
+('ITM00024','SUB00004','Silver Toned Pink Stone Chandbalis','Pair','These silver-toned chandbalis feature a striking teardrop-shaped pink stone at the center, framed by intricate oxidised metalwork and smaller pink accents that enhance their regal charm. The floral stud at the top adds a delicate touch, while clusters of white pearl-like beads dangle gracefully from the base, offering movement and elegance. Rich in traditional detailing and festive appeal, this pair is perfect for weddings, cultural celebrations, or statement ethnic wear.','/Images/ITM00024-01.jpg','2025-11-01 19:22:14',1,'admin','2025-11-01 19:22:14',NULL,NULL),
+('ITM00025','SUB00004','Silver Oxidised Pink Teardrop Chandbalis','No','These silver oxidised chandbalis feature a bold and elegant design, highlighted by teardrop-shaped pink stones arranged in a symmetrical pattern. The upper section showcases a mix of square and petal-shaped accents, adding geometric flair to the traditional silhouette. Intricate metalwork enhances the antique finish, while clusters of white pearl-like beads at the base lend graceful movement and festive charm. Perfect for weddings, cultural events, or statement ethnic wear, this pair blends vibrant color with timeless craftsmanship.','/Images/ITM00025-01.jpg','2025-11-01 19:32:18',1,'admin','2025-11-01 19:33:15',1,'admin');
 /*!40000 ALTER TABLE `items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -456,7 +525,7 @@ CREATE TABLE `order_items` (
   KEY `order_id` (`order_id`),
   KEY `item_id` (`item_id`),
   CONSTRAINT `fk_order_header` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -476,7 +545,9 @@ INSERT INTO `order_items` VALUES
 (8,'ORD000008','ITM00009',1.00,6200.00,5499.00,12.75),
 (9,'ORD000009','ITM00007',1.00,5160.00,4466.00,15.54),
 (10,'ORD000010','ITM00008',1.00,5910.00,4608.00,28.26),
-(11,'ORD000011','ITM00009',1.00,6670.00,5499.00,21.29);
+(11,'ORD000011','ITM00009',1.00,6670.00,5499.00,21.29),
+(12,'ORD000012','ITM00011',1.00,6120.00,4549.86,34.51),
+(13,'ORD000013','ITM00012',1.00,6170.00,4853.14,27.13);
 /*!40000 ALTER TABLE `order_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -499,7 +570,7 @@ CREATE TABLE `order_status_history` (
   PRIMARY KEY (`order_status_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_order_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -527,7 +598,13 @@ INSERT INTO `order_status_history` VALUES
 (18,'ORD000010','Delivered','2025-09-08 17:20:00',NULL,'2025-09-09 11:52:10',1,'admin'),
 (19,'ORD000011','Delivered','2025-09-08 17:22:00',NULL,'2025-09-09 11:54:08',1,'admin'),
 (20,'ORD000007','Canceled','2025-09-24 23:14:00',NULL,'2025-09-24 17:46:11',1,'admin'),
-(21,'ORD000006','Canceled','2025-09-24 23:15:00',NULL,'2025-09-24 17:46:59',1,'admin');
+(21,'ORD000006','Canceled','2025-09-24 23:15:00',NULL,'2025-09-24 17:46:59',1,'admin'),
+(22,'ORD000012','Processing',NULL,'Stock fulfilled from PO #PUR000007','2025-10-12 12:15:46',1,'System for admin'),
+(23,'ORD000012','With Courier','2025-10-07 14:20:00',NULL,'2025-10-12 12:19:41',1,'admin'),
+(24,'ORD000013','Processing',NULL,'Stock fulfilled from PO #PUR000006','2025-10-13 16:29:26',1,'System for admin'),
+(25,'ORD000012','Delivered','2025-10-14 12:10:00',NULL,'2025-10-19 14:24:30',1,'admin'),
+(26,'ORD000013','With Courier','2025-10-21 11:40:00',NULL,'2025-11-01 08:37:05',1,'admin'),
+(27,'ORD000013','Delivered','2025-10-27 11:50:00',NULL,'2025-11-01 08:42:22',1,'admin');
 /*!40000 ALTER TABLE `order_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -548,7 +625,7 @@ CREATE TABLE `order_stock_type_history` (
   `created_by_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`history_id`),
   KEY `order_id_idx` (`order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -559,7 +636,9 @@ LOCK TABLES `order_stock_type_history` WRITE;
 /*!40000 ALTER TABLE `order_stock_type_history` DISABLE KEYS */;
 INSERT INTO `order_stock_type_history` VALUES
 (1,'ORD000005','Ex-Stock','Stock fulfilled from PO #PUR000005','2025-09-01 11:06:09',1,'System for admin'),
-(2,'ORD000008','Ex-Stock','Stock fulfilled from PO #PUR000005','2025-09-01 11:06:09',1,'System for admin');
+(2,'ORD000008','Ex-Stock','Stock fulfilled from PO #PUR000005','2025-09-01 11:06:09',1,'System for admin'),
+(3,'ORD000012','Ex-Stock','Stock fulfilled from PO #PUR000007','2025-10-12 12:15:46',1,'System for admin'),
+(4,'ORD000013','Ex-Stock','Stock fulfilled from PO #PUR000006','2025-10-13 16:29:26',1,'System for admin');
 /*!40000 ALTER TABLE `order_stock_type_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -607,7 +686,9 @@ INSERT INTO `orders` VALUES
 ('ORD000008','CUS00006','2025-08-22','Canceled','Ex-Stock',6200.00,0.00,'COD','Pending','Ref ORD000011','2025-08-25 08:45:05',1,'admin'),
 ('ORD000009','CUS00005','2025-08-10','Delivered','Ex-Stock',5160.00,560.00,'COD','Received','Bag 100 | SLPOST 460 BD003703529LK','2025-08-26 20:20:36',1,'admin'),
 ('ORD000010','CUS00005','2025-08-22','Delivered','Ex-Stock',5910.00,560.00,'COD','Received','BAG 100 | SLPOST 460 BD003703604LK','2025-09-06 13:37:12',1,'admin'),
-('ORD000011','CUS00006','2025-08-22','Delivered','Ex-Stock',6670.00,570.00,'COD','Received','Bag 100 | SLPOST 470 BD003703605LK','2025-09-06 13:41:18',1,'admin');
+('ORD000011','CUS00006','2025-08-22','Delivered','Ex-Stock',6670.00,570.00,'COD','Received','Bag 100 | SLPOST 470 BD003703605LK','2025-09-06 13:41:18',1,'admin'),
+('ORD000012','CUS00005','2025-09-15','Delivered','Ex-Stock',6120.00,570.00,'COD','Received','Bag 100 | SLPOST 470 - BD003852016LK','2025-09-25 18:36:52',1,'admin'),
+('ORD000013','CUS00006','2025-09-23','Delivered','Ex-Stock',6170.00,570.00,'COD','Received','Bag 100 | SLPOST - 470 - BD003852198LK','2025-09-25 18:37:41',1,'admin');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -630,7 +711,7 @@ CREATE TABLE `payment_status_history` (
   PRIMARY KEY (`payment_history_id`),
   KEY `order_id` (`order_id`),
   CONSTRAINT `fk_payment_status_history` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -646,7 +727,9 @@ INSERT INTO `payment_status_history` VALUES
 (5,'ORD000009','Received','2025-09-04 13:45:00',NULL,'2025-09-06 13:59:40',1,'admin'),
 (6,'ORD000009','Received','2025-09-04 13:50:00',NULL,'2025-09-06 14:18:13',1,'admin'),
 (7,'ORD000010','Received','2025-09-09 14:04:00',NULL,'2025-09-09 11:53:10',1,'admin'),
-(8,'ORD000011','Received','2025-09-09 14:04:00',NULL,'2025-09-09 11:55:10',1,'admin');
+(8,'ORD000011','Received','2025-09-09 14:04:00',NULL,'2025-09-09 11:55:10',1,'admin'),
+(9,'ORD000012','Received','2025-10-14 12:20:00',NULL,'2025-10-19 14:24:30',1,'admin'),
+(10,'ORD000013','Received','2025-10-27 11:50:00',NULL,'2025-11-01 08:42:22',1,'admin');
 /*!40000 ALTER TABLE `payment_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -665,7 +748,7 @@ CREATE TABLE `po_so_links` (
   PRIMARY KEY (`link_id`),
   UNIQUE KEY `po_so_unique` (`purchase_order_id`,`sales_order_id`),
   KEY `idx_sales_order` (`sales_order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -676,7 +759,9 @@ LOCK TABLES `po_so_links` WRITE;
 /*!40000 ALTER TABLE `po_so_links` DISABLE KEYS */;
 INSERT INTO `po_so_links` VALUES
 (1,'PUR000005','ORD000005','2025-08-28 10:40:28'),
-(2,'PUR000005','ORD000008','2025-08-28 10:40:28');
+(2,'PUR000005','ORD000008','2025-08-28 10:40:28'),
+(5,'PUR000006','ORD000013','2025-09-25 18:43:47'),
+(6,'PUR000007','ORD000012','2025-09-25 18:46:41');
 /*!40000 ALTER TABLE `po_so_links` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -699,7 +784,7 @@ CREATE TABLE `purchase_order_items` (
   KEY `purchase_order_id` (`purchase_order_id`),
   KEY `item_id` (`item_id`),
   CONSTRAINT `fk_po_header` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`purchase_order_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -717,7 +802,21 @@ INSERT INTO `purchase_order_items` VALUES
 (6,'PUR000003','ITM00006',650.00,1.00,450.00,3634.00),
 (7,'PUR000004','ITM00007',850.00,1.00,500.00,4466.00),
 (8,'PUR000005','ITM00008',880.00,1.00,500.00,4608.00),
-(9,'PUR000005','ITM00009',1130.00,1.00,500.00,5499.00);
+(9,'PUR000005','ITM00009',1130.00,1.00,500.00,5499.00),
+(23,'PUR000006','ITM00012',999.00,1.00,700.00,4853.14),
+(24,'PUR000007','ITM00011',980.00,1.00,700.00,4549.86),
+(25,'PUR000008','ITM00013',150.00,1.00,10.00,670.58),
+(26,'PUR000008','ITM00014',120.00,1.00,10.00,558.68),
+(27,'PUR000008','ITM00015',99.00,1.00,10.00,480.36),
+(28,'PUR000008','ITM00016',150.00,1.00,10.00,670.58),
+(29,'PUR000008','ITM00017',495.00,1.00,50.00,2401.80),
+(30,'PUR000009','ITM00018',195.00,1.00,15.00,827.21),
+(31,'PUR000009','ITM00019',150.00,1.00,15.00,669.29),
+(32,'PUR000009','ITM00025',175.00,1.00,15.00,757.02),
+(33,'PUR000009','ITM00021',110.00,1.00,15.00,528.91),
+(34,'PUR000009','ITM00022',185.00,1.00,15.00,792.12),
+(35,'PUR000009','ITM00023',255.00,1.00,15.00,1037.78),
+(36,'PUR000009','ITM00024',245.00,1.00,15.00,1002.69);
 /*!40000 ALTER TABLE `purchase_order_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -738,7 +837,7 @@ CREATE TABLE `purchase_order_status_history` (
   `created_by_name` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`history_id`),
   KEY `po_id_idx` (`purchase_order_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=95 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -771,7 +870,25 @@ INSERT INTO `purchase_order_status_history` VALUES
 (23,'PUR000005','Paid','2025-08-26 18:22:00','2025-09-01 11:04:16',1,'admin'),
 (24,'PUR000005','Delivered','2025-08-29 17:00:00','2025-09-01 11:05:16',1,'admin'),
 (25,'PUR000005','With int courier','2025-08-30 16:34:00','2025-09-01 11:05:47',1,'admin'),
-(26,'PUR000005','Received','2025-09-01 11:34:00','2025-09-01 11:06:09',1,'admin');
+(26,'PUR000005','Received','2025-09-01 11:34:00','2025-09-01 11:06:09',1,'admin'),
+(77,'PUR000006','Draft',NULL,'2025-09-25 18:43:47',1,'admin'),
+(78,'PUR000007','Draft',NULL,'2025-09-25 18:46:41',1,'admin'),
+(79,'PUR000007','Paid','2025-09-24 12:28:00','2025-09-25 18:49:59',1,'admin'),
+(80,'PUR000006','Paid','2025-09-24 13:22:00','2025-09-25 18:51:30',1,'admin'),
+(81,'PUR000007','Delivered','2025-10-06 17:43:00','2025-10-12 12:13:36',1,'admin'),
+(82,'PUR000007','Received','2025-10-07 11:20:00','2025-10-12 12:15:46',1,'admin'),
+(83,'PUR000006','Received','2025-10-06 18:29:00','2025-10-13 16:29:26',1,'admin'),
+(84,'PUR000008','Draft',NULL,'2025-10-19 17:32:51',1,'admin'),
+(85,'PUR000008','Ordered','2025-10-02 23:03:00','2025-10-19 17:33:22',1,'admin'),
+(86,'PUR000008','Paid','2025-10-04 22:54:00','2025-10-19 17:36:30',1,'admin'),
+(87,'PUR000008','Delivered','2025-10-05 23:06:00','2025-10-19 17:37:25',1,'admin'),
+(88,'PUR000008','With int courier','2025-10-08 23:08:00','2025-10-19 17:38:12',1,'admin'),
+(89,'PUR000009','Draft',NULL,'2025-11-01 19:40:07',1,'admin'),
+(90,'PUR000009','Ordered','2025-11-04 01:10:00','2025-11-01 19:40:30',1,'admin'),
+(91,'PUR000009','Paid','2025-10-16 18:50:00','2025-11-01 19:42:00',1,'admin'),
+(92,'PUR000009','With int courier','2025-11-20 13:12:00','2025-11-01 19:42:42',1,'admin'),
+(93,'PUR000009','Received','2025-10-28 17:00:00','2025-11-01 19:44:13',1,'admin'),
+(94,'PUR000008','Received','2025-10-28 17:00:00','2025-11-01 19:44:50',1,'admin');
 /*!40000 ALTER TABLE `purchase_order_status_history` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -812,7 +929,11 @@ INSERT INTO `purchase_orders` VALUES
 ('PUR000002','2025-07-06','A2Ve Enterprises - Jalakandapuram',NULL,NULL,NULL,NULL,'Received','A2Ve Enterprises - Jalakandapuram - Tamilnadu','2025-08-25 06:51:20',1,'admin'),
 ('PUR000003','2025-07-06','Sri Krishna - Karnataka',NULL,NULL,NULL,NULL,'Received','Sri Krishna - Karnataka','2025-08-25 06:53:23',1,'admin'),
 ('PUR000004','2025-08-12','Sri Krishna - Karnataka',NULL,NULL,NULL,NULL,'Received','Sri Krishna - Karnataka','2025-08-25 08:46:50',1,'admin'),
-('PUR000005','2025-08-22','Murugan Tex',NULL,NULL,NULL,NULL,'Received','Murugan Tex - Tamilnadu','2025-08-25 08:48:24',1,'admin');
+('PUR000005','2025-08-22','Murugan Tex',NULL,NULL,NULL,NULL,'Received','Murugan Tex - Tamilnadu','2025-08-25 08:48:24',1,'admin'),
+('PUR000006','2025-09-23','Sungudi saree shopping',3480.00,20,1373.14,20,'Received','Sungudi saree shopping - Tamil Nadu','2025-09-25 18:43:47',1,'admin'),
+('PUR000007','2025-09-23','M K A Textiles',3400.00,20,1149.86,20,'Received','M K A Textiles - Tamil Nadu','2025-09-25 18:46:41',1,'admin'),
+('PUR000008','2025-09-28','Bavas Collections',3782.00,20,1000.00,20,'Received','Bavas Collections - Kerala - Postage INR 70 has been paid additionally','2025-10-19 17:32:51',1,'admin'),
+('PUR000009','2025-10-03','Silver Dust Handmade Jewelery',4615.00,20,1000.00,20,'Received','Silver Dust Handmade Jewelry - Jamshedpur \r\nGround Floor, H.No - 128\r\nJamshedpur\r\nEast Singhbhum, Jharkhand, 831004\r\nEmail: silverdusthandmadejewelry@gmail.com','2025-11-01 19:40:07',1,'admin');
 /*!40000 ALTER TABLE `purchase_orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -847,7 +968,21 @@ INSERT INTO `stock_levels` VALUES
 ('ITM00007',0.00,'2025-08-26 21:55:49'),
 ('ITM00008',0.00,'2025-09-06 13:37:12'),
 ('ITM00009',0.00,'2025-09-06 13:41:19'),
-('ITM00010',0.00,'2025-09-07 04:22:50');
+('ITM00010',0.00,'2025-09-07 04:22:50'),
+('ITM00011',0.00,'2025-10-12 12:15:46'),
+('ITM00012',0.00,'2025-10-13 16:29:26'),
+('ITM00013',1.00,'2025-11-01 19:44:50'),
+('ITM00014',1.00,'2025-11-01 19:44:50'),
+('ITM00015',1.00,'2025-11-01 19:44:50'),
+('ITM00016',1.00,'2025-11-01 19:44:50'),
+('ITM00017',1.00,'2025-11-01 19:44:50'),
+('ITM00018',1.00,'2025-11-01 19:44:13'),
+('ITM00019',1.00,'2025-11-01 19:44:13'),
+('ITM00021',1.00,'2025-11-01 19:44:13'),
+('ITM00022',1.00,'2025-11-01 19:44:13'),
+('ITM00023',1.00,'2025-11-01 19:44:13'),
+('ITM00024',1.00,'2025-11-01 19:44:13'),
+('ITM00025',1.00,'2025-11-01 19:44:13');
 /*!40000 ALTER TABLE `stock_levels` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -904,7 +1039,23 @@ INSERT INTO `stock_transactions` VALUES
 ('TRN000071','ITM00008','IN',1.00,'Stock returned from canceled Order #ORD000005','2025-09-06 13:33:28',1,'admin'),
 ('TRN000072','ITM00008','OUT',1.00,'Sold via Order #ORD000010','2025-09-06 13:37:12',1,'admin'),
 ('TRN000073','ITM00009','IN',1.00,'Stock returned from canceled Order #ORD000008','2025-09-06 13:39:04',1,'admin'),
-('TRN000074','ITM00009','OUT',1.00,'Sold via Order #ORD000011','2025-09-06 13:41:19',1,'admin');
+('TRN000074','ITM00009','OUT',1.00,'Sold via Order #ORD000011','2025-09-06 13:41:19',1,'admin'),
+('TRN000092','ITM00011','IN',1.00,'Received via GRN #GRN000007','2025-10-12 12:15:46',1,'admin'),
+('TRN000093','ITM00011','OUT',1.00,'Fulfilled from stock received via PO #PUR000007','2025-10-12 12:15:46',1,'admin'),
+('TRN000095','ITM00012','IN',1.00,'Received via GRN #GRN000008','2025-10-13 16:29:26',1,'admin'),
+('TRN000096','ITM00012','OUT',1.00,'Fulfilled from stock received via PO #PUR000006','2025-10-13 16:29:26',1,'admin'),
+('TRN000109','ITM00018','IN',1.00,'Received via GRN #GRN000009','2025-11-01 19:44:13',1,'admin'),
+('TRN000110','ITM00019','IN',1.00,'Received via GRN #GRN000009','2025-11-01 19:44:13',1,'admin'),
+('TRN000111','ITM00025','IN',1.00,'Received via GRN #GRN000009','2025-11-01 19:44:13',1,'admin'),
+('TRN000112','ITM00021','IN',1.00,'Received via GRN #GRN000009','2025-11-01 19:44:13',1,'admin'),
+('TRN000113','ITM00022','IN',1.00,'Received via GRN #GRN000009','2025-11-01 19:44:13',1,'admin'),
+('TRN000114','ITM00023','IN',1.00,'Received via GRN #GRN000009','2025-11-01 19:44:13',1,'admin'),
+('TRN000115','ITM00024','IN',1.00,'Received via GRN #GRN000009','2025-11-01 19:44:13',1,'admin'),
+('TRN000117','ITM00013','IN',1.00,'Received via GRN #GRN000010','2025-11-01 19:44:50',1,'admin'),
+('TRN000118','ITM00014','IN',1.00,'Received via GRN #GRN000010','2025-11-01 19:44:50',1,'admin'),
+('TRN000119','ITM00015','IN',1.00,'Received via GRN #GRN000010','2025-11-01 19:44:50',1,'admin'),
+('TRN000120','ITM00016','IN',1.00,'Received via GRN #GRN000010','2025-11-01 19:44:50',1,'admin'),
+('TRN000121','ITM00017','IN',1.00,'Received via GRN #GRN000010','2025-11-01 19:44:50',1,'admin');
 /*!40000 ALTER TABLE `stock_transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -934,14 +1085,14 @@ CREATE TABLE `system_sequences` (
 LOCK TABLES `system_sequences` WRITE;
 /*!40000 ALTER TABLE `system_sequences` DISABLE KEYS */;
 INSERT INTO `system_sequences` VALUES
-('category_id','CAT',1,5,'Category IDs','2025-08-24 10:50:51','1'),
-('category_sub_id','SUB',1,5,'Sub-Category IDs','2025-08-24 17:33:45','1'),
+('category_id','CAT',3,5,'Category IDs','2025-10-13 17:37:42','1'),
+('category_sub_id','SUB',6,5,'Sub-Category IDs','2025-10-13 18:23:47','1'),
 ('customer_id','CUS',1,5,'Customer IDs','2025-08-24 17:44:03','1'),
-('grn_id','GRN',7,6,'Goods Received Note IDs','2025-09-07 02:01:04','1'),
-('item_id','ITM',12,5,'Item IDs','2025-09-24 18:15:35','1'),
-('order_id','ORD',12,6,'Sales Order IDs','2025-09-06 13:41:18','1'),
-('purchase_order_id','PUR',6,6,'Purchase Order IDs','2025-09-07 01:59:23','1'),
-('transaction_id','TRN',89,6,'Stock Transaction IDs','2025-09-09 12:12:59','1');
+('grn_id','GRN',11,6,'Goods Received Note IDs','2025-11-01 19:44:50','1'),
+('item_id','ITM',26,5,'Item IDs','2025-11-01 19:32:18','1'),
+('order_id','ORD',14,6,'Sales Order IDs','2025-09-25 18:37:41','1'),
+('purchase_order_id','PUR',10,6,'Purchase Order IDs','2025-11-01 19:40:07','1'),
+('transaction_id','TRN',122,6,'Stock Transaction IDs','2025-11-01 19:44:50','1');
 /*!40000 ALTER TABLE `system_sequences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -961,7 +1112,7 @@ CREATE TABLE `user_login_audit` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `user_login_audit_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=155 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=192 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1124,7 +1275,44 @@ INSERT INTO `user_login_audit` VALUES
 (151,1,'2025-09-24 23:41:43','172.18.0.2',1),
 (152,1,'2025-09-25 00:00:18','172.18.0.2',1),
 (153,1,'2025-09-25 00:05:40','172.18.0.2',1),
-(154,1,'2025-09-25 11:03:32','172.18.0.3',1);
+(154,1,'2025-09-25 11:03:32','172.18.0.3',1),
+(155,1,'2025-09-25 22:22:30','172.18.0.2',1),
+(156,1,'2025-09-25 22:50:07','172.18.0.2',1),
+(157,1,'2025-09-25 23:02:56','172.18.0.2',1),
+(158,1,'2025-09-25 23:44:38','172.18.0.2',1),
+(159,1,'2025-09-26 00:26:09','172.18.0.2',1),
+(160,1,'2025-09-26 14:49:00','172.18.0.2',1),
+(161,1,'2025-10-01 22:18:33','172.18.0.2',1),
+(162,1,'2025-10-02 21:42:03','172.18.0.2',1),
+(163,1,'2025-10-07 13:49:22','172.18.0.2',1),
+(164,1,'2025-10-12 14:12:41','172.18.0.2',1),
+(165,1,'2025-10-12 15:44:36','172.18.0.2',1),
+(166,1,'2025-10-12 15:45:32','172.18.0.2',1),
+(167,1,'2025-10-12 15:49:12','172.18.0.2',1),
+(168,1,'2025-10-12 17:05:30','172.18.0.2',1),
+(169,1,'2025-10-12 17:18:26','172.18.0.2',1),
+(170,1,'2025-10-12 17:22:52','172.18.0.2',1),
+(171,1,'2025-10-13 00:30:13','172.18.0.2',1),
+(172,1,'2025-10-13 00:34:58','172.18.0.2',1),
+(173,1,'2025-10-13 00:44:54','172.18.0.2',1),
+(174,1,'2025-10-13 00:59:50','172.18.0.2',1),
+(175,1,'2025-10-13 18:43:40','172.18.0.2',1),
+(176,1,'2025-10-13 19:22:43','172.18.0.2',1),
+(177,1,'2025-10-13 19:25:07','172.18.0.2',1),
+(178,1,'2025-10-13 19:31:19','172.18.0.2',1),
+(179,1,'2025-10-13 19:49:44','172.18.0.2',1),
+(180,1,'2025-10-13 21:01:30','172.18.0.2',1),
+(181,1,'2025-10-13 21:56:26','172.18.0.2',1),
+(182,1,'2025-10-13 23:06:05','172.18.0.2',1),
+(183,1,'2025-10-13 23:13:02','172.18.0.2',1),
+(184,1,'2025-10-19 19:50:04','172.18.0.2',1),
+(185,1,'2025-10-19 21:41:48','172.18.0.2',1),
+(186,1,'2025-10-19 21:42:03','172.18.0.2',1),
+(187,1,'2025-10-19 21:42:40','172.18.0.2',1),
+(188,1,'2025-10-19 22:17:48','172.18.0.2',1),
+(189,1,'2025-10-19 22:24:01','172.18.0.2',1),
+(190,1,'2025-11-01 14:05:25','172.18.0.2',1),
+(191,1,'2025-11-02 00:30:42','172.18.0.2',1);
 /*!40000 ALTER TABLE `user_login_audit` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1189,7 +1377,7 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-09-25 11:03:32','2025-09-25 05:33:32',NULL,NULL,0,NULL);
+(1,'admin','$2y$10$HznC8m2P0fPqWm6O9M1YQuWHPzbA9MIoJ0PA9M/qn16dK.LjDbHxC','2025-07-05 10:24:07',1,'2025-11-02 00:30:42','2025-11-01 19:00:42',NULL,NULL,0,NULL);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -3859,4 +4047,4 @@ USE `phpmyadmin`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-09-25 13:44:15
+-- Dump completed on 2025-11-02  1:15:58
