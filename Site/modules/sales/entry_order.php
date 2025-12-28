@@ -102,9 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // It uses $_POST['order_status_event_date'] internally if present.
             update_order_details($order_id_to_update, $details_to_update, $_POST);
 
-            // Re-update total amount (Item Total + Other Expenses)
-            // Note: update_order_details doesn't recalculate total from items, so we do it here.
-            $final_total = $new_total_amount + (float) ($details_to_update['other_expenses']);
+            // Re-update total amount (Item Total ONLY, per user request)
+            // Note: User requested "Total should not contain other expence", so we store only Item Total in total_amount.
+            $final_total = $new_total_amount;
 
             $stmt_update_total = $db->prepare("UPDATE orders SET total_amount = ? WHERE order_id = ?");
             if (!$stmt_update_total)
@@ -328,8 +328,10 @@ require_once __DIR__ . '/../../includes/header.php';
                                         </td>
                                         <td class="text-end fw-bold subtotal-display">
                                             <?php
-                                            // [FIX] Calculate PHP Subtotal
-                                            $line_total = $item['price'] * $item['quantity'];
+                                            // [FIX] Calculate PHP Subtotal with robust cleaning
+                                            $clean_price = (float) str_replace(',', '', $item['price']);
+                                            $clean_qty = (float) str_replace(',', '', $item['quantity']);
+                                            $line_total = $clean_price * $clean_qty;
                                             echo number_format($line_total, 2);
                                             ?>
                                         </td>
@@ -348,7 +350,9 @@ require_once __DIR__ . '/../../includes/header.php';
                                         $items_total = 0;
                                         if (!empty($order['items'])) {
                                             foreach ($order['items'] as $it) {
-                                                $items_total += $it['price'] * $it['quantity'];
+                                                $cl_p = (float) str_replace(',', '', $it['price']);
+                                                $cl_q = (float) str_replace(',', '', $it['quantity']);
+                                                $items_total += $cl_p * $cl_q;
                                             }
                                         }
                                         echo number_format($items_total, 2);
@@ -486,8 +490,8 @@ require_once __DIR__ . '/../../includes/header.php';
                 const subtotalDisplay = row.querySelector('.subtotal-display');
 
                 if (priceInput && qtyInput && subtotalDisplay) {
-                    const price = parseFloat(priceInput.value) || 0;
-                    const qty = parseFloat(qtyInput.value) || 0;
+                    const price = parseFloat(priceInput.value.replace(/,/g, '')) || 0;
+                    const qty = parseFloat(qtyInput.value.replace(/,/g, '')) || 0;
                     const total = price * qty;
                     grandItemsTotal += total;
 
