@@ -317,14 +317,14 @@ require_once __DIR__ . '/../../includes/header.php';
                                             $readonly_attr = $is_courier ? '' : 'readonly';
                                             $input_class = $is_courier ? 'form-control form-control-sm text-end price-input' : 'form-control-plaintext form-control-sm text-end price-input border-0';
                                             ?>
-                                            <input type="number" class="<?= $input_class ?> dynamic-price" name="items[price][]"
-                                                value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required
+                                            <input type="text" class="<?= $input_class ?> dynamic-price" name="items[price][]"
+                                                value="<?= htmlspecialchars($item['price']) ?>" inputmode="decimal" required
                                                 <?= $readonly_attr ?>>
                                         </td>
                                         <td class="text-end quantity-display">
-                                            <input type="number" class="<?= $input_class ?> dynamic-qty"
-                                                name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>"
-                                                min="1" step="1" required <?= $readonly_attr ?>>
+                                            <input type="text" class="<?= $input_class ?> dynamic-qty" name="items[quantity][]"
+                                                value="<?= htmlspecialchars($item['quantity']) ?>" inputmode="numeric" required
+                                                <?= $readonly_attr ?>>
                                         </td>
                                         <td class="text-end fw-bold subtotal-display">
                                             <?php
