@@ -329,8 +329,8 @@ require_once __DIR__ . '/../../includes/header.php';
                                         <td class="text-end fw-bold subtotal-display">
                                             <?php
                                             // [FIX] Calculate PHP Subtotal with robust cleaning
-                                            $clean_price = (float) str_replace(',', '', $item['price']);
-                                            $clean_qty = (float) str_replace(',', '', $item['quantity']);
+                                            $clean_price = (float) preg_replace('/[^0-9.]/', '', $item['price']);
+                                            $clean_qty = (float) preg_replace('/[^0-9.]/', '', $item['quantity']);
                                             $line_total = $clean_price * $clean_qty;
                                             echo number_format($line_total, 2);
                                             ?>
@@ -350,8 +350,8 @@ require_once __DIR__ . '/../../includes/header.php';
                                         $items_total = 0;
                                         if (!empty($order['items'])) {
                                             foreach ($order['items'] as $it) {
-                                                $cl_p = (float) str_replace(',', '', $it['price']);
-                                                $cl_q = (float) str_replace(',', '', $it['quantity']);
+                                                $cl_p = (float) preg_replace('/[^0-9.]/', '', $it['price']);
+                                                $cl_q = (float) preg_replace('/[^0-9.]/', '', $it['quantity']);
                                                 $items_total += $cl_p * $cl_q;
                                             }
                                         }
