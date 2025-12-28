@@ -338,6 +338,18 @@ require_once __DIR__ . '/../../includes/header.php';
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
+                            <?php if ($is_edit): ?>
+                                <script>
+                                    console.group("Order Item Debug Data");
+                                    <?php foreach ($order['items'] as $item): ?>
+                                        console.log("Item ID: <?= $item['item_id'] ?>");
+                                        console.log("Raw Price: '<?= htmlspecialchars($item['price']) ?>'");
+                                        console.log("Raw Qty: '<?= htmlspecialchars($item['quantity']) ?>'");
+                                        console.log("Parsed Price: <?= (float) preg_replace('/[^0-9.]/', '', $item['price']) ?>");
+                                    <?php endforeach; ?>
+                                    console.groupEnd();
+                                </script>
+                            <?php endif; ?>
                         </tbody>
                         <?php if ($is_edit): ?>
                             <tfoot>
