@@ -85,9 +85,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $new_total_amount += $price * $quantity;
             }
 
-            $stmt_update_total = $db->prepare("UPDATE orders SET total_amount = ? WHERE order_id = ?");
+            // [UPDATED] Update total AND status.
+            // The form now sends 'order_status' even with the update_items button (or we ensure it does).
+            $new_status = $_POST['order_status'] ?? $order['status']; 
+            
+            $stmt_update_total = $db->prepare("UPDATE orders SET total_amount = ?, status = ? WHERE order_id = ?");
             if (!$stmt_update_total) throw new Exception("DB prepare failed for total update.");
-            $stmt_update_total->bind_param("ds", $new_total_amount, $order_id_to_update);
+            $stmt_update_total->bind_param("dss", $new_total_amount, $new_status, $order_id_to_update);
             $stmt_update_total->execute();
 
             $db->commit();
@@ -222,20 +226,18 @@ require_once __DIR__ . '/../../includes/header.php';
                                             <!-- CORRECTED: The value attribute now uses the raw number -->
                                             <input type="text" class="form-control-plaintext form-control-sm text-end margin-display" value="<?= htmlspecialchars($item['profit_margin']) ?>" readonly>
                                         </td>
-                                        <!-- CORRECTED: Added classes to the read-only TDs -->
+                                        <!-- [UPDATED] Always render inputs, but toggle readonly based on status -->
                                         <td class="text-end price-display">
-                                            <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
-                                                <input type="number" class="form-control form-control-sm text-end price-input" name="items[price][]" value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required>
-                                            <?php else: ?>
-                                                <?= htmlspecialchars(number_format($item['price'], 2)) ?>
-                                            <?php endif; ?>
+                                            <?php 
+                                            // Determine initial state based on CURRENT loaded status
+                                            $is_courier = ($is_edit && isset($order['status']) && $order['status'] === 'With Courier');
+                                            $readonly_attr = $is_courier ? '' : 'readonly';
+                                            $input_class = $is_courier ? 'form-control form-control-sm text-end price-input' : 'form-control-plaintext form-control-sm text-end price-input border-0';
+                                            ?>
+                                            <input type="number" class="<?= $input_class ?> dynamic-price" name="items[price][]" value="<?= htmlspecialchars($item['price']) ?>" min="0.00" step="0.01" required <?= $readonly_attr ?>>
                                         </td>
                                         <td class="text-end quantity-display">
-                                            <?php if ($is_edit && isset($order['status']) && $order['status'] === 'With Courier'): ?>
-                                                    <input type="number" class="form-control form-control-sm text-end quantity-input" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required>
-                                            <?php else: ?>
-                                                <?= htmlspecialchars(number_format($item['quantity'], 2)) ?>
-                                            <?php endif; ?>
+                                            <input type="number" class="<?= $input_class ?> dynamic-qty" name="items[quantity][]" value="<?= htmlspecialchars($item['quantity']) ?>" min="1" step="1" required <?= $readonly_attr ?>>
                                         </td>
                                         <td class="text-end fw-bold subtotal-display">0.00</td>
                                     </tr>
@@ -252,7 +254,7 @@ require_once __DIR__ . '/../../includes/header.php';
                         </tfoot>
                         <?php endif; ?>
                     </table>
-                </div><!-- THIS DIV WAS MISSING ITS CLOSING TAG -->
+                </div>
             </div>
         </div>
         
@@ -270,13 +272,16 @@ require_once __DIR__ . '/../../includes/header.php';
         </div>
         <?php endif; ?>
         
-        <!-- CORRECTED BUTTON LAYOUT -->
+        <!-- [UPDATED] Button Layout for Dynamic Edit -->
         <div class="col-12 mt-4">
             <?php if ($is_edit): ?>
                 <button class="btn btn-primary me-2" type="submit" name="action" value="update_header"><i class="bi bi-floppy"></i> Update Order Details</button>
-                <?php if (isset($order['status']) && $order['status'] === 'With Courier'): ?>
-                    <button class="btn btn-success me-2" type="submit" name="action" value="update_items"><i class="bi bi-save"></i> Update Items & Recalculate</button>
-                <?php endif; ?>
+                
+                <?php 
+                $show_update_items = ($is_edit && isset($order['status']) && $order['status'] === 'With Courier');
+                ?>
+                <button class="btn btn-success me-2 <?= $show_update_items ? '' : 'd-none' ?>" id="btnUpdateItems" type="submit" name="action" value="update_items"><i class="bi bi-save"></i> Update Items & Recalculate</button>
+                
             <?php else: ?>
                 <button class="btn btn-primary me-2" type="submit" name="action" value="create_order"><i class="bi bi-save"></i> Create Order & Update Stock</button>
             <?php endif; ?>
@@ -299,5 +304,54 @@ require_once __DIR__ . '/../../includes/header.php';
         <td><button type="button" class="btn btn-danger btn-sm remove-item-row" tabindex="-1"><i class="bi bi-trash"></i></button></td>
     </tr>
 </template>
+
+<!-- [UPDATED] Script for Dynamic Status Handling -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('order_status');
+    const updateItemsBtn = document.getElementById('btnUpdateItems');
+    
+    // Only run if we are in edit mode (elements exist)
+    if (statusSelect && updateItemsBtn) {
+        
+        function updateEditability() {
+            const status = statusSelect.value;
+            const isCourier = (status === 'With Courier');
+            
+            // Toggle Button Visibility
+            if (isCourier) {
+                updateItemsBtn.classList.remove('d-none');
+            } else {
+                updateItemsBtn.classList.add('d-none');
+            }
+            
+            // Toggle Inputs
+            const priceInputs = document.querySelectorAll('.dynamic-price');
+            const qtyInputs = document.querySelectorAll('.dynamic-qty');
+            
+            // Helper to toggle
+            const toggleInput = (inputs, enable) => {
+                inputs.forEach(input => {
+                    if (enable) {
+                        input.removeAttribute('readonly');
+                        input.classList.remove('form-control-plaintext', 'border-0');
+                        input.classList.add('form-control');
+                    } else {
+                        input.setAttribute('readonly', 'readonly');
+                        input.classList.add('form-control-plaintext', 'border-0');
+                        input.classList.remove('form-control');
+                    }
+                });
+            };
+            
+            toggleInput(priceInputs, isCourier);
+            toggleInput(qtyInputs, isCourier);
+        }
+
+        // Listen for changes
+        statusSelect.addEventListener('change', updateEditability);
+    }
+});
+</script>
 
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
