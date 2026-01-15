@@ -19,7 +19,7 @@ function showAlert(message, type = 'danger') {
 function setupFormSubmitSpinner(formElement) {
     if (!formElement) {
         // This is a safety check, not part of the main debug
-        return; 
+        return;
     }
 
     // --- DEBUGGING FORM SUBMISSION ---
@@ -169,7 +169,7 @@ function initItemManagement() {
             subCategorySelect.innerHTML = '<option value="">Loading...</option>';
             subCategorySelect.disabled = true;
             if (!categoryId) { subCategorySelect.innerHTML = '<option value="">Choose Sub-Category...</option>'; return; }
-            
+
             fetch(`/modules/inventory/entry_item.php?get_sub_categories=${encodeURIComponent(categoryId)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Failed to load sub-categories'))
                 .then(data => {
@@ -187,7 +187,7 @@ function initItemManagement() {
         const doItemLookup = debounce(() => {
             const name = nameInput.value.trim();
             if (name.length < 2) { itemResults.classList.add('d-none'); return; }
-            
+
             fetch(`/modules/inventory/entry_item.php?item_lookup=${encodeURIComponent(name)}`)
                 .then(response => response.ok ? response.json() : Promise.reject('Item search failed'))
                 .then(data => {
@@ -221,7 +221,7 @@ function initItemManagement() {
     const imagePathInput = document.getElementById('imagePath');
 
     if (imageManagementSection) {
-        imageManagementSection.addEventListener('click', function(event) {
+        imageManagementSection.addEventListener('click', function (event) {
             // Use .closest() to ensure the click is handled even if the user clicks the icon inside the button
             const button = event.target.closest('button');
             if (!button) return;
@@ -301,7 +301,7 @@ function initGrnPage() {
     if (addRowBtn) {
         const itemRowsContainer = document.getElementById('grnItemRows');
         const template = document.getElementById('grnItemRowTemplate');
-        
+
         const addRow = () => {
             if (!template) return;
             const newRow = template.content.cloneNode(true);
@@ -309,13 +309,13 @@ function initGrnPage() {
         };
         addRow(); // Add initial row
         addRowBtn.addEventListener('click', addRow);
-        
+
         itemRowsContainer.addEventListener('click', function (e) {
             if (e.target.closest('.remove-item-row')) {
                 e.target.closest('.grn-item-row').remove();
             }
         });
-        
+
         itemRowsContainer.addEventListener('input', debounce((e) => {
             if (e.target.classList.contains('item-search-input')) {
                 const searchInput = e.target;
@@ -354,7 +354,7 @@ function initGrnPage() {
 
     // --- LOGIC FOR "VIEW" MODE (CANCELLATION) ---
     if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
+        cancelBtn.addEventListener('click', function () {
             const grnId = this.dataset.grnId;
             const csrfToken = this.dataset.csrfToken;
 
@@ -364,7 +364,7 @@ function initGrnPage() {
 
             this.disabled = true;
             this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Canceling...';
-            
+
             const formData = new FormData();
             formData.append('grn_id', grnId);
             formData.append('csrf_token', csrfToken); // Add CSRF token
@@ -373,27 +373,27 @@ function initGrnPage() {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert(data.message, 'success');
-                    this.remove();
-                    const pageTitle = document.querySelector('h2');
-                    if (pageTitle) {
-                        pageTitle.innerHTML += ' <span class="badge bg-danger">Canceled</span>';
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert(data.message, 'success');
+                        this.remove();
+                        const pageTitle = document.querySelector('h2');
+                        if (pageTitle) {
+                            pageTitle.innerHTML += ' <span class="badge bg-danger">Canceled</span>';
+                        }
+                    } else {
+                        showAlert(data.error, 'danger');
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
                     }
-                } else {
-                    showAlert(data.error, 'danger');
+                })
+                .catch(error => {
+                    showAlert('A network error occurred or the response was not valid JSON. Please try again.', 'danger');
                     this.disabled = false;
                     this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
-                }
-            })
-            .catch(error => {
-                showAlert('A network error occurred or the response was not valid JSON. Please try again.', 'danger');
-                this.disabled = false;
-                this.innerHTML = '<i class="bi bi-x-circle"></i> Cancel GRN';
-                console.error('Cancellation Error:', error);
-            });
+                    console.error('Cancellation Error:', error);
+                });
         });
     }
 }
@@ -471,16 +471,18 @@ function initOrderEntry() {
                 let rawPrice = '0';
                 if (priceEl) {
                     if (priceEl.tagName === 'INPUT') {
-                        rawPrice = priceEl.value;
+                        // FIX: Remove commas from input value too
+                        rawPrice = priceEl.value.replace(/,/g, '');
                     } else {
                         rawPrice = priceEl.textContent.replace(/,/g, '');
                     }
                 }
-                
+
                 let rawQuantity = '0';
                 if (quantityEl) {
                     if (quantityEl.tagName === 'INPUT') {
-                        rawQuantity = quantityEl.value;
+                        // FIX: Remove commas from input value too
+                        rawQuantity = quantityEl.value.replace(/,/g, '');
                     } else {
                         rawQuantity = quantityEl.textContent.replace(/,/g, '');
                     }
@@ -498,7 +500,7 @@ function initOrderEntry() {
                     subtotalDisplay.textContent = formatter.format(subtotal);
                 }
                 itemsTotal += subtotal;
-                
+
                 if (marginDisplay) {
                     const margin = (cost > 0 && price > 0) ? (((price / cost) - 1) * 100) : 0;
                     if (marginDisplay.tagName === 'INPUT') {
@@ -507,16 +509,16 @@ function initOrderEntry() {
                 }
             });
         }
-        
+
         console.log('Items Total:', itemsTotal);
 
         if (itemsTotalDisplay) {
             // Use the formatter for the items total
             itemsTotalDisplay.textContent = formatter.format(itemsTotal);
         }
-        
+
         const grandTotal = itemsTotal; // Total does not include other expenses
-        
+
         if (orderTotalDisplay) {
             // Use the formatter for the grand total
             orderTotalDisplay.textContent = formatter.format(grandTotal);
@@ -532,7 +534,7 @@ function initOrderEntry() {
             }
         });
     }
-    
+
     // --- KEY FIX FOR EDIT MODE ---
     if (isEditMode) {
         // Run calculation once on page load to set initial totals.
@@ -543,7 +545,7 @@ function initOrderEntry() {
 
         if (orderStatusSelect && orderStatusDateWrapper) {
             const originalOrderStatus = orderStatusSelect.value;
-            orderStatusSelect.addEventListener('change', function() {
+            orderStatusSelect.addEventListener('change', function () {
                 if (this.value !== originalOrderStatus) {
                     orderStatusDateWrapper.classList.remove('d-none');
                 } else {
@@ -554,7 +556,7 @@ function initOrderEntry() {
 
         if (paymentStatusSelect && paymentStatusDateWrapper) {
             const originalPaymentStatus = paymentStatusSelect.value;
-            paymentStatusSelect.addEventListener('change', function() {
+            paymentStatusSelect.addEventListener('change', function () {
                 if (this.value !== originalPaymentStatus) {
                     paymentStatusDateWrapper.classList.remove('d-none');
                 } else {
@@ -582,12 +584,12 @@ function initOrderEntry() {
                                     const costDisplay = row.querySelector('.cost-display');
                                     const marginDisplay = row.querySelector('.margin-input');
                                     const priceDisplay = row.querySelector('.price-input');
-                                    
+
                                     if (stockDisplay) stockDisplay.value = parseFloat(details.stock_on_hand).toFixed(2);
-                                    
+
                                     const cost = parseFloat(details.last_cost) || 0;
                                     if (costDisplay) costDisplay.value = cost.toFixed(2);
-                                    
+
                                     const price = parseFloat(priceDisplay.value) || 0;
                                     let margin = 0.00;
                                     if (cost > 0 && price > 0) {
@@ -604,7 +606,7 @@ function initOrderEntry() {
                                         row.appendChild(costInputHidden);
                                     }
                                     costInputHidden.value = cost.toFixed(2);
-                                    
+
                                     let marginInputHidden = row.querySelector('input.margin-input-hidden');
                                     if (!marginInputHidden) {
                                         marginInputHidden = document.createElement('input');
@@ -694,7 +696,7 @@ function initOrderEntry() {
                     calculateTotals();
                 }
             });
-        
+
             itemRowsContainer.addEventListener('input', e => {
                 const row = e.target.closest('.order-item-row');
                 if (!row) return;
@@ -787,7 +789,7 @@ function initOrderEntry() {
                 }
             });
         }
-        
+
         if (itemRowsContainer && itemRowsContainer.children.length === 0) {
             addRow();
         }
@@ -918,7 +920,7 @@ function initPoEntry() {
                 let paymentSubmitted = false;
                 let receiptSubmitted = false;
 
-                statusSelect.addEventListener('change', function() {
+                statusSelect.addEventListener('change', function () {
                     const newStatus = this.value;
                     if (statusDateWrapper) {
                         if (newStatus !== originalStatusOnLoad) {
@@ -953,7 +955,7 @@ function initPoEntry() {
                     totalGoodsCostInput.required = false;
                     paidByAccountIdInput.required = false;
                 });
-                
+
                 receiptModalEl.addEventListener('hide.bs.modal', () => {
                     if (!receiptSubmitted) { statusSelect.value = originalStatusOnLoad; }
                     logisticCostInput.required = false;
@@ -962,7 +964,7 @@ function initPoEntry() {
 
                 const submitPaymentBtn = document.getElementById('submitPaymentBtn');
                 if (submitPaymentBtn) {
-                    submitPaymentBtn.addEventListener('click', function() {
+                    submitPaymentBtn.addEventListener('click', function () {
                         if (!totalGoodsCostInput.value || !paidByAccountIdInput.value) { alert('Please fill in all fields in the payment form.'); return; }
                         paymentSubmitted = true;
                         document.getElementById('hidden_total_goods_cost').value = totalGoodsCostInput.value;
@@ -970,10 +972,10 @@ function initPoEntry() {
                         paymentModal.hide();
                     });
                 }
-                
+
                 const submitReceiptBtn = document.getElementById('submitReceiptBtn');
                 if (submitReceiptBtn) {
-                    submitReceiptBtn.addEventListener('click', function() {
+                    submitReceiptBtn.addEventListener('click', function () {
                         if (!logisticCostInput.value || !logisticPaidByInput.value) { alert('Please fill in all fields in the receipt form.'); return; }
                         receiptSubmitted = true;
                         document.getElementById('hidden_total_logistic_cost').value = logisticCostInput.value;
@@ -1043,7 +1045,7 @@ function initPoEntry() {
             };
             addRow(false);
             if (addRowBtn) addRowBtn.addEventListener('click', () => addRow(true));
-            itemRowsContainer.addEventListener('click', function(e) {
+            itemRowsContainer.addEventListener('click', function (e) {
                 if (e.target.closest('.remove-item-row')) {
                     e.target.closest('.po-item-row').remove();
                 }
@@ -1199,15 +1201,15 @@ function initPurchaseOrderList() {
                 data.forEach(po => {
                     const tr = document.createElement('tr');
                     const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
-                    
+
                     // --- THIS LOGIC IS CORRECT ---
                     let linkedOrdersHtml = '<span class="text-muted">N/A</span>';
                     if (po.linked_orders && po.linked_orders.length > 0) {
-                        linkedOrdersHtml = po.linked_orders.map(orderId => 
+                        linkedOrdersHtml = po.linked_orders.map(orderId =>
                             `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank">${escapeHtml(orderId)}</a>`
                         ).join('<br>');
                     }
-                    
+
                     // --- THIS TEMPLATE IS NOW CORRECTED ---
                     tr.innerHTML = `
                         <td>${escapeHtml(po.purchase_order_id)}</td>
@@ -1237,7 +1239,7 @@ function initPurchaseOrderList() {
     // Load initial data
     doPoSearch();
 
-// ──────────────────────────────────────── End ─────────────────────────────────────────
+    // ──────────────────────────────────────── End ─────────────────────────────────────────
 }
 // ──────────────────────────────────────── End ─────────────────────────────────────────
 
@@ -1285,13 +1287,13 @@ function initPurchaseOrderList() {
                 data.forEach(po => {
                     const tr = document.createElement('tr');
                     const poDate = new Date(po.po_date + 'T00:00:00').toLocaleDateString('en-GB');
-                    
+
                     // --- THIS IS THE FINAL CORRECTED LOGIC ---
                     let linkedOrdersHtml = '<span class="text-muted">N/A</span>';
                     // It now correctly checks the `po.linked_orders` array
                     if (po.linked_orders && po.linked_orders.length > 0) {
                         // It maps over the array to create a link for each ID
-                        linkedOrdersHtml = po.linked_orders.map(orderId => 
+                        linkedOrdersHtml = po.linked_orders.map(orderId =>
                             `<a href="/modules/sales/entry_order.php?order_id=${escapeHtml(orderId)}" target="_blank">${escapeHtml(orderId)}</a>`
                         ).join('<br>'); // And joins them with a line break
                     }
@@ -1379,7 +1381,7 @@ function initStockLevelList() {
             });
     }, 300);
 
-    categoryIdInput.addEventListener('change', function() {
+    categoryIdInput.addEventListener('change', function () {
         const categoryId = this.value;
         subCategoryIdInput.innerHTML = '<option value="">All Sub-Categories</option>';
         subCategoryIdInput.disabled = true;
@@ -1395,7 +1397,7 @@ function initStockLevelList() {
                 })
                 .catch(error => console.error('[SubCategoryFetch] Error:', error));
         }
-        
+
         doStockSearch();
     });
 
@@ -1419,7 +1421,7 @@ function initItemViewPage() {
     }
 
     thumbnails.forEach(thumb => {
-        thumb.addEventListener('click', function() {
+        thumb.addEventListener('click', function () {
             // When a thumbnail is clicked, set its 'src' as the 'src' of the main image view
             mainImageView.src = this.src;
 
@@ -1447,7 +1449,7 @@ function initCourierCalculator() {
     const weightInput = document.getElementById('weight');
     const valueInput = document.getElementById('value');
 
-    form.addEventListener('submit', function(event) {
+    form.addEventListener('submit', function (event) {
         event.preventDefault();
 
         const weight = weightInput.value;
@@ -1500,9 +1502,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('customerForm')) { initCustomerEntry(); }
     if (document.getElementById('categoryForm')) { initCategoryEntry(); }
     if (document.getElementById('subCategoryForm')) { initSubCategoryEntry(); }
-//    if (document.getElementById('itemForm')) { initItemEntry(); }
+    //    if (document.getElementById('itemForm')) { initItemEntry(); }
     if (document.getElementById('itemForm')) { initItemManagement(); }
-    if (document.getElementById('stockAdjustmentForm')) { initStockAdjustmentEntry(); }    
+    if (document.getElementById('stockAdjustmentForm')) { initStockAdjustmentEntry(); }
     if (document.getElementById('orderForm')) { initOrderEntry(); }
     if (document.getElementById('orderSearchForm')) { initOrderList(); }
     if (document.getElementById('poForm')) { initPoEntry(); }
@@ -1527,19 +1529,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const forceSaveButton = document.getElementById('savePoBtn');
     if (forceSaveButton) {
         const poForm = document.getElementById('poForm');
-        
+
         console.log('Attaching force save listener to button: savePoBtn');
-        
-        forceSaveButton.addEventListener('click', function(event) {
+
+        forceSaveButton.addEventListener('click', function (event) {
             event.preventDefault(); // Always prevent default for a button click
             console.log('Manual save button was clicked.');
-            
+
             if (poForm && poForm.checkValidity()) {
                 console.log('Form is valid. Manually submitting...');
-                
+
                 this.disabled = true;
                 this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
-                
+
                 poForm.submit();
             } else {
                 console.log('Form is invalid. Showing validation errors.');
