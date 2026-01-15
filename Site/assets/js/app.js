@@ -538,7 +538,8 @@ function initOrderEntry() {
     // --- KEY FIX FOR EDIT MODE ---
     if (isEditMode) {
         // Run calculation once on page load to set initial totals.
-        calculateTotals();
+        // [FIX] Removed automatic client-side calculation on load to prevent overwriting server-side values.
+        // calculateTotals();
 
         const orderStatusDateWrapper = document.getElementById('order_status_date_wrapper');
         const paymentStatusDateWrapper = document.getElementById('payment_status_date_wrapper');
