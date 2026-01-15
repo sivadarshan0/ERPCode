@@ -491,48 +491,8 @@ require_once __DIR__ . '/../../includes/header.php';
         if (paymentStatusSelect && paymentWrapper) toggleDateWrapper({ select: paymentStatusSelect, wrapper: paymentWrapper });
 
         // --- [FIX] Real-time Calculation Logic ---
-        function recalculateTotals() {
-            let grandItemsTotal = 0;
+        // Calculation is handled by app.js initOrderEntry() to prevent duplicates.
 
-            // Loop through all visible rows
-            document.querySelectorAll('#orderItemRows .order-item-row').forEach(row => {
-                const priceInput = row.querySelector('.price-input');
-                const qtyInput = row.querySelector('.quantity-input');
-                const subtotalDisplay = row.querySelector('.subtotal-display');
-
-                if (priceInput && qtyInput && subtotalDisplay) {
-                    const price = parseFloat(priceInput.value.replace(/,/g, '')) || 0;
-                    const qty = parseFloat(qtyInput.value.replace(/,/g, '')) || 0;
-                    const total = price * qty;
-                    grandItemsTotal += total;
-
-                    subtotalDisplay.textContent = total.toFixed(2);
-                }
-            });
-
-            // Update Items Total (Footer)
-            const itemsTotalDisplay = document.getElementById('itemsTotalDisplay');
-            if (itemsTotalDisplay) itemsTotalDisplay.textContent = grandItemsTotal.toFixed(2);
-
-            // Update Order Total (Header) = Items Total (as requested, exclude expenses)
-            const orderTotalDisplay = document.getElementById('orderTotalDisplay');
-            if (orderTotalDisplay) {
-                // If user wanted Exclude expenses, just show Items Total
-                // Or if they mean "Total shouldn't include expenses in the Items Total line", but usually Order Total includes everything.
-                // User said: "Total should not contain other expence"
-                // Assuming this refers to the big "Total: ..." in the header card
-                orderTotalDisplay.textContent = grandItemsTotal.toFixed(2);
-            }
-        }
-
-        // Attach listener to form for input events (delegation)
-        if (orderForm) {
-            orderForm.addEventListener('input', function (e) {
-                if (e.target.matches('.price-input') || e.target.matches('.quantity-input')) {
-                    recalculateTotals();
-                }
-            });
-        }
 
         // Only run toggle logic if we are in edit mode
         if (statusSelect && updateItemsBtn) {
@@ -574,8 +534,6 @@ require_once __DIR__ . '/../../includes/header.php';
             // Listen for changes
             statusSelect.addEventListener('change', updateEditability);
 
-            // Initial calculation on load
-            recalculateTotals();
         }
     });
 </script>
