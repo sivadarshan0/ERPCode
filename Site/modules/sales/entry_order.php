@@ -260,7 +260,20 @@ require_once __DIR__ . '/../../includes/header.php';
                                 min="0.00" step="0.01"></div>
                         <hr>
                         <!-- CORRECTED ID -->
-                        <h3 class="text-end">Total: <span id="orderTotalDisplay">0.00</span></h3>
+
+                        <?php
+                        // [FIX] Calculate Total Items Sum for Header Display
+                        $items_total_header = 0;
+                        if ($is_edit && !empty($order['items'])) {
+                            foreach ($order['items'] as $it) {
+                                // Clean and parse price/quantity
+                                $cl_p = (float) preg_replace('/[^0-9.]/', '', $it['price']);
+                                $cl_q = (float) preg_replace('/[^0-9.]/', '', $it['quantity']);
+                                $items_total_header += $cl_p * $cl_q;
+                            }
+                        }
+                        ?>
+                        <h3 class="text-end">Total: <span id="orderTotalDisplay"><?= number_format($items_total_header, 2) ?></span></h3>
                     </div>
                 </div>
             </div>
