@@ -211,10 +211,12 @@ require_once __DIR__ . '/../../includes/header.php';
                             <?php if ($is_edit && !empty($order['items'])): ?>
                                 <?php foreach ($order['items'] as $item): ?>
                                     <tr class="order-item-row">
-                                        <input type="hidden" name="items[order_item_id][]" value="<?= htmlspecialchars($item['order_item_id']) ?>">
-                                        <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
-                                        <input type="hidden" name="items[cost][]" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
-                                        <td><?= htmlspecialchars($item['item_name']) ?></td>
+                                        <td>
+                                            <input type="hidden" name="items[order_item_id][]" value="<?= htmlspecialchars($item['order_item_id']) ?>">
+                                            <input type="hidden" name="items[id][]" class="item-id-input" value="<?= htmlspecialchars($item['item_id']) ?>">
+                                            <input type="hidden" name="items[cost][]" class="cost-input" value="<?= htmlspecialchars($item['cost_price']) ?>">
+                                            <?= htmlspecialchars($item['item_name']) ?>
+                                        </td>
                                         <td><?= htmlspecialchars($item['uom']) ?></td>
                                         <td class="stock-col"><?= htmlspecialchars(number_format($item['stock_on_hand'], 2)) ?></td>
                                         <td class="cost-col"><?= htmlspecialchars(number_format($item['cost_price'], 2)) ?></td>

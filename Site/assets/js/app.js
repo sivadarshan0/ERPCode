@@ -458,17 +458,39 @@ function initOrderEntry() {
         });
 
         let itemsTotal = 0;
+        console.log('--- Starting Calculation ---');
         if (itemRowsContainer) {
-            itemRowsContainer.querySelectorAll('.order-item-row').forEach(row => {
+            itemRowsContainer.querySelectorAll('.order-item-row').forEach((row, index) => {
                 const priceEl = row.querySelector('.price-input') || row.querySelector('.price-display');
                 const quantityEl = row.querySelector('.quantity-input') || row.querySelector('.quantity-display');
                 const subtotalDisplay = row.querySelector('.subtotal-display');
                 const costInput = row.querySelector('.cost-input');
                 const marginDisplay = row.querySelector('.margin-display');
 
-                const price = parseFloat(priceEl.value || priceEl.textContent.replace(/,/g, '')) || 0;
-                const quantity = parseFloat(quantityEl.value || quantityEl.textContent.replace(/,/g, '')) || 0;
+                // Robust Value Extraction
+                let rawPrice = '0';
+                if (priceEl) {
+                    if (priceEl.tagName === 'INPUT') {
+                        rawPrice = priceEl.value;
+                    } else {
+                        rawPrice = priceEl.textContent.replace(/,/g, '');
+                    }
+                }
+                
+                let rawQuantity = '0';
+                if (quantityEl) {
+                    if (quantityEl.tagName === 'INPUT') {
+                        rawQuantity = quantityEl.value;
+                    } else {
+                        rawQuantity = quantityEl.textContent.replace(/,/g, '');
+                    }
+                }
+
+                const price = parseFloat(rawPrice) || 0;
+                const quantity = parseFloat(rawQuantity) || 0;
                 const cost = parseFloat(costInput ? costInput.value : 0) || 0;
+
+                console.log(`Row ${index}: Price=${price} (Raw: ${rawPrice}), Qty=${quantity} (Raw: ${rawQuantity}), Cost=${cost}`);
 
                 const subtotal = price * quantity;
                 if (subtotalDisplay) {
@@ -486,6 +508,8 @@ function initOrderEntry() {
             });
         }
         
+        console.log('Items Total:', itemsTotal);
+
         if (itemsTotalDisplay) {
             // Use the formatter for the items total
             itemsTotalDisplay.textContent = formatter.format(itemsTotal);
